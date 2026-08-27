@@ -1,0 +1,12 @@
+version: 1
+kind: devstack
+name: dev
+
+env_files:
+  - .env
+
+services:
+  # detected: package.json scripts.dev present
+  web:
+    run: npm run dev
+    workdir: .

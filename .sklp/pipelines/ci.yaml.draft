@@ -1,0 +1,18 @@
+version: 1
+kind: pipeline
+name: ci
+description: |
+  Lint + test each module whose files changed since base_ref.
+
+tools:
+  node: ">=24"
+
+scopes:
+  node:
+    - "**"
+
+steps:
+  - name: test-node
+    scope: [node]
+    tools: [node, npm]
+    run: cd . && npm run test
