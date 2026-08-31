@@ -21,7 +21,7 @@ registries:
 
 services:
   app:
-    image: rg.fr-par.scw.cloud/lalternative/tornade:20260828-0000-0000000000000
+    image: rg.fr-par.scw.cloud/lalternative/tornade:20260831-0805-8aa82bdd5799
     port: 8080
     # A render can hold 300-500MB+ of Chromium per active request; the cap is
     # generous rather than tight because an OOM kill here drops whatever page
