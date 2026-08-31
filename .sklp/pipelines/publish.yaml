@@ -30,5 +30,5 @@ steps:
     scan: false
     context: .
     dockerfile: Dockerfile
-    image: rg.fr-par.scw.cloud/tornade/app
+    image: rg.fr-par.scw.cloud/lalternative/tornade
     tag: "{{ publish_tag }}"
