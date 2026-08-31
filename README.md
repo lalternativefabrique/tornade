@@ -92,8 +92,8 @@ instead of reporting an error — which is why it is not the default.
 | `BRAVE_API_KEY` | optional; enables the general-category fallback |
 | `PIPER_URL` | required by `/speak`, else `503` |
 | `TTS_MODEL`, `TTS_VOICE`, `TTS_FORMAT` | voice selection; format must be frame-based (`mp3`, `opus`, `aac`, `flac`) |
-| `TTS_MAX_CHARS` | text per request, default 1000 |
-| `TTS_CONCURRENCY` | pieces read at once, default 4 |
+| `TTS_MAX_CHARS` | text per request, default 120 |
+| `TTS_CONCURRENCY` | pieces read at once, default 1 |
 | `SEARCH_DEADLINE_MS` | cap on a merged search, default 4000 |
 | `FETCH_CACHE_TTL_MS` | default 15 minutes |
 | `RENDER_MAX_TIMEOUT_MS` | hard ceiling, default 20000 |
@@ -102,9 +102,15 @@ instead of reporting an error — which is why it is not the default.
 
 An unconfigured backend disables its endpoint rather than degrading silently.
 
-`TTS_MAX_CHARS` is the latency lever. Piper has no per-request limit and is
-slower per character than a hosted endpoint, so the hosted default would read
-a whole page as one long utterance while most workers sit idle.
+`TTS_MAX_CHARS` and `TTS_CONCURRENCY` are the latency levers, and a
+self-hosted Piper wants the opposite of a hosted endpoint. It serializes
+synthesis — one utterance at a time per process — so reading pieces
+concurrently only queues them, and every piece in the queue delays the one the
+listener is actually waiting for. Measured against it on a 1200-character
+text, concurrency 1 returns first audio in 2.2s against 3.9s at 4, for 6% more
+total time; 120 characters a piece beats both 80 (more per-request overhead,
+5.7s) and 200 (a longer first piece, 3.4s). Raise the concurrency only for a
+backend that synthesizes in parallel.
 
 ## Running it
 

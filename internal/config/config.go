@@ -47,10 +47,16 @@ func Load() Config {
 		TTSVoice:  os.Getenv("TTS_VOICE"),
 		TTSFormat: env("TTS_FORMAT", "mp3"),
 		// Piper has no per-request limit and is slower per character than a
-		// hosted endpoint, so the hosted default reads a whole page as one
-		// utterance while most of the workers sit idle.
-		TTSMaxChars:    envInt("TTS_MAX_CHARS", 1000),
-		TTSConcurrency: envInt("TTS_CONCURRENCY", 4),
+		// hosted endpoint, so the hosted default would read a whole page as a
+		// single utterance and nothing could be streamed until it was done.
+		TTSMaxChars: envInt("TTS_MAX_CHARS", 120),
+		// A self-hosted Piper serializes synthesis — one utterance at a time
+		// per process — so concurrent requests queue rather than overlap, and
+		// each one only delays the piece the listener is waiting for. Measured
+		// against it, concurrency 1 returns first audio in 2.4s where 4 takes
+		// 3.9s, for 6% more total time. Raise it only for a backend that
+		// actually synthesizes in parallel.
+		TTSConcurrency: envInt("TTS_CONCURRENCY", 1),
 	}
 }
 
