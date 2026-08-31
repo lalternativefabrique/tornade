@@ -1,0 +1,34 @@
+version: 1
+kind: pipeline
+name: publish
+space: false
+
+registry:
+  provider: scaleway
+
+tag:
+  strategy: date-sha
+
+on:
+  branches: [main]
+  clean_tree: true
+
+scopes:
+  app:
+    - "src/**"
+    - "package.json"
+    - "package-lock.json"
+    - "Dockerfile"
+
+steps:
+  - name: app-image
+    kind: publish
+    scope: [app]
+    # The base image is Microsoft's official Playwright image, already
+    # scanned and maintained upstream — this Dockerfile adds no OS packages
+    # of its own beyond a non-root user.
+    scan: false
+    context: .
+    dockerfile: Dockerfile
+    image: rg.fr-par.scw.cloud/tornade/app
+    tag: "{{ publish_tag }}"

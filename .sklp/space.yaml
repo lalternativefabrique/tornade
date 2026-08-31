@@ -1,10 +1,11 @@
 runner:
-  registry: rg.fr-par.scw.cloud/lalternative
+  registry: rg.fr-par.scw.cloud/tornade
   registry_auth_secret: scw-registry-credentials
 
   toolchain:
-    node: "24.18.1"
+    node: "24.16.0"
 
   packages:
     - git
     - ca-certificates
+    - curl
