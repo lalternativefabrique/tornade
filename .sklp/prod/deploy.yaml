@@ -25,10 +25,20 @@ services:
     port: 8080
     # A render can hold 300-500MB+ of Chromium per active request; the cap is
     # generous rather than tight because an OOM kill here drops whatever page
-    # was mid-render, not just this request's memory.
+    # was mid-render, not just this request's memory. Search and speech are
+    # thin by comparison — they ride along with the browser's budget.
     resources:
       cpu: 1
       memory: 1536Mi
+    # SEARXNG_URL and PIPER_URL must point at the instances this node reaches;
+    # an endpoint whose backend is unset answers 503 rather than failing at
+    # startup, so a missing value shows up as a dead endpoint, not a crash.
+    env:
+      SEARXNG_URL: ${SEARXNG_URL}
+      PIPER_URL: ${PIPER_URL}
+      BRAVE_API_KEY: ${BRAVE_API_KEY}
+      TTS_VOICE: fr_FR-siwis-medium
+      TTS_MODEL: fr_FR-siwis-medium
     ready:
       http: http://localhost:8080/healthz
       timeout: 60s

@@ -6,7 +6,8 @@ env_files:
   - .env
 
 services:
-  # detected: package.json scripts.dev present
-  web:
-    run: npm run dev
+  app:
+    run: go run ./cmd/tornade
     workdir: .
+    ready:
+      http: http://localhost:8080/healthz

@@ -3,22 +3,35 @@ kind: pipeline
 name: ci
 
 tools:
+  go: "1.26.0"
   node: "24.16.0"
 
 on:
   branches: ['**', '!main']
 
 scopes:
-  app:
-    - "src/**"
-    - "package.json"
-    - "package-lock.json"
+  facade:
+    - "cmd/**"
+    - "internal/**"
+    - "go.mod"
+    - "go.sum"
     - "Dockerfile"
+  render:
+    - "render/**"
 
 steps:
-  - name: test
-    scope: [app]
+  - name: facade-test
+    scope: [facade]
+    tools: [go]
+    run: |
+      go build ./...
+      go vet ./...
+      go test ./...
+
+  - name: render-test
+    scope: [render]
     tools: [node]
+    workdir: render
     run: |
       npm install
       npm test

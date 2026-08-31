@@ -15,19 +15,16 @@ on:
 
 scopes:
   app:
-    - "src/**"
-    - "package.json"
-    - "package-lock.json"
+    - "cmd/**"
+    - "internal/**"
+    - "go.mod"
+    - "go.sum"
     - "Dockerfile"
 
 steps:
   - name: app-image
     kind: publish
     scope: [app]
-    # The base image is Microsoft's official Playwright image, already
-    # scanned and maintained upstream — this Dockerfile adds no OS packages
-    # of its own beyond a non-root user.
-    scan: false
     context: .
     dockerfile: Dockerfile
     image: rg.fr-par.scw.cloud/lalternative/tornade
