@@ -35,7 +35,7 @@ spec:
         - name: scw-registry-credentials
       containers:
         - name: tornade
-          image: rg.fr-par.scw.cloud/lalternative/tornade:TO_BE_REPLACED
+          image: rg.fr-par.scw.cloud/lalternative/tornade
           imagePullPolicy: IfNotPresent
           env:
             # searxng and piper live in synthiz's `ai` namespace, so they are

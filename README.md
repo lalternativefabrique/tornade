@@ -135,8 +135,10 @@ Manifests live in `infra/k8s/base`; ArgoCD syncs them from `main` through the
 Application in `infra/k8s/argocd`, which the cluster's `tornade-root`
 app-of-apps discovers (declared in kube-infra's `app-v1` stack).
 
-Rolling a version means publishing an image and bumping its tag in
-`infra/k8s/base/tornade.yaml` — nothing reads `latest`.
+Rolling a version means publishing an image: argocd-image-updater watches the
+registry for immutable date-sha tags and writes the new one back to `main`
+itself. The tag committed in `infra/k8s/base/kustomization.yaml` is only the
+version a fresh cluster starts from. Nothing reads `latest`.
 
 ## Design notes
 

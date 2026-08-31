@@ -3,6 +3,13 @@ kind: Application
 metadata:
   name: tornade-production
   namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: tornade=rg.fr-par.scw.cloud/lalternative/tornade
+    argocd-image-updater.argoproj.io/tornade.kustomize.image-name: rg.fr-par.scw.cloud/lalternative/tornade
+    argocd-image-updater.argoproj.io/tornade.update-strategy: alphabetical
+    argocd-image-updater.argoproj.io/tornade.allow-tags: regexp:^[0-9]{8}-[0-9]{4}-[0-9a-f]+$
+    argocd-image-updater.argoproj.io/write-back-method: git
+    argocd-image-updater.argoproj.io/git-branch: main
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:

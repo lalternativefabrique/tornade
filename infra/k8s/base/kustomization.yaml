@@ -7,6 +7,14 @@ resources:
   - namespace.yaml
   - tornade.yaml
 
+# An immutable date-sha tag produced by `sklp run publish`. Never `latest`.
+# This is a floor, not a pin: argocd-image-updater rewrites it in place as
+# newer tags reach the registry, so what is committed here is only the version
+# a fresh cluster starts from.
+images:
+  - name: rg.fr-par.scw.cloud/lalternative/tornade
+    newTag: "TO_BE_REPLACED"
+
 labels:
   - pairs:
       app.kubernetes.io/part-of: tornade
