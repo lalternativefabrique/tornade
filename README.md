@@ -127,6 +127,17 @@ docker build -t tornade .
 docker run -p 8080:8080 -e SEARXNG_URL=… -e PIPER_URL=… tornade
 ```
 
+## Deployment
+
+It runs on the OVH cluster in its own `tornade-prod` namespace, reaching
+searxng and piper across synthiz's `ai` namespace by their cluster DNS names.
+Manifests live in `infra/k8s/base`; ArgoCD syncs them from `main` through the
+Application in `infra/k8s/argocd`, which the cluster's `tornade-root`
+app-of-apps discovers (declared in kube-infra's `app-v1` stack).
+
+Rolling a version means publishing an image and bumping its tag in
+`infra/k8s/base/tornade.yaml` — nothing reads `latest`.
+
 ## Design notes
 
 **One Chromium, many tabs.** The browser process is shared and started
