@@ -1,0 +1,37 @@
+# What runs on the node.
+#
+#   sklp deploy prod        bring the space up
+#   sklp deploy ls          what is running
+#   sklp deploy logs app    what it is saying
+#
+# The published image is pinned by an immutable date-sha tag; bump it here to
+# roll a version. Nothing reads `latest`.
+#
+# No gateway route: tornade is consumed in-cluster by lalter and synthiz over
+# the space's internal DNS (http://app:8080 inside this space), the same way
+# Synthiz's own SearXNG is never exposed publicly. See README.md for how a
+# caller in a different space reaches it.
+version: 1
+kind: deploy
+name: prod
+registries:
+  rg.fr-par.scw.cloud:
+    username: nologin
+    password: ${SCW_SECRET_KEY}
+
+services:
+  app:
+    image: rg.fr-par.scw.cloud/tornade/app:20260828-0000-0000000000000
+    port: 8080
+    # A render can hold 300-500MB+ of Chromium per active request; the cap is
+    # generous rather than tight because an OOM kill here drops whatever page
+    # was mid-render, not just this request's memory.
+    resources:
+      cpu: 1
+      memory: 1536Mi
+    ready:
+      http: http://localhost:8080/healthz
+      timeout: 60s
+
+spaces:
+  tornade-production: {}
