@@ -13,6 +13,16 @@ FROM mcr.microsoft.com/playwright:v1.62.1-noble
 WORKDIR /app
 COPY --from=build /out/tornade /usr/local/bin/tornade
 
+# GStreamer carries CVE-2025-3887 (H265 parsing, remote code execution) with no
+# fixed version published, which fails the publish scan. It is Chromium's video
+# decoding path: this service renders HTML and reads no media, so the
+# dependency buys nothing here and removing it beats ignoring the finding.
+RUN apt-get remove -y --purge \
+      gstreamer1.0-plugins-bad \
+      libgstreamer-plugins-bad1.0-0 \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
+
 # This service renders arbitrary third-party JavaScript; a compromised render
 # should not run as root in its own container.
 RUN groupadd -r tornade && useradd -r -g tornade -G audio,video tornade \
