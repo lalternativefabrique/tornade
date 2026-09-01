@@ -26,6 +26,8 @@ type Config struct {
 	TTSFormat      string
 	TTSMaxChars    int
 	TTSConcurrency int
+
+	AudioOpeningChars int
 }
 
 func Load() Config {
@@ -57,6 +59,14 @@ func Load() Config {
 		// 3.9s, for 6% more total time. Raise it only for a backend that
 		// actually synthesizes in parallel.
 		TTSConcurrency: envInt("TTS_CONCURRENCY", 1),
+
+		// Not TTSMaxChars, though both are a number of characters. That one is
+		// how small a reading is cut for Piper to work on; this is how much of
+		// a text counts as its opening, and the primer and the reader must
+		// agree on it exactly — they each split the text themselves, and a
+		// disagreement has the two halves meet somewhere other than the same
+		// cut, reading a word twice or skipping one.
+		AudioOpeningChars: envInt("AUDIO_OPENING_CHARS", 800),
 	}
 }
 

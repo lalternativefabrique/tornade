@@ -1,95 +1,178 @@
 package httpapi
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"log"
 	"net/http"
-	"strconv"
+	"time"
 
-	"github.com/lalternative/packages/go/tts"
+	"github.com/lalternative/packages/go/audioreader"
 )
 
 type speakRequest struct {
-	Text   string `json:"text"`
+	Text string `json:"text"`
+	// Scope and ID name where a reading is kept. Both optional: an ID lets a
+	// caller prime a reading before anyone asks for it, since priming means
+	// naming ahead of time what will be listened to. Without one the reading
+	// is still cached, keyed by the text alone — a second listen of the same
+	// words finds it, which no caller has to opt into.
+	Scope  string `json:"scope"`
+	ID     string `json:"id"`
 	Stream bool   `json:"stream"`
 }
 
+const defaultScope = "speak"
+
+// primeTimeout bounds work nobody is waiting for. Detached from the request
+// that asked for it, which is answered before the reading starts.
+const primeTimeout = 2 * time.Minute
+
+// request builds the reading this asks for, defaulting the names it leaves
+// out. An absent ID becomes the text's own hash, which makes the reading
+// content-addressed and nothing else: it cannot be primed, because a caller
+// that does not name a text now cannot name the same one later.
+func (r speakRequest) request() audioreader.Request {
+	scope, id := r.Scope, r.ID
+	if scope == "" {
+		scope = defaultScope
+	}
+	if id == "" {
+		sum := sha256.Sum256([]byte(r.Text))
+		id = hex.EncodeToString(sum[:])[:16]
+	}
+	return audioreader.Request{Scope: scope, ID: id, Text: r.Text}
+}
+
+// decodeSpeak reads and validates a speak-shaped body, reporting whether the
+// handler should carry on.
+func decodeSpeak(w http.ResponseWriter, r *http.Request) (speakRequest, bool) {
+	var req speakRequest
+	if err := decode(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON body")
+		return req, false
+	}
+	if req.Text == "" {
+		writeError(w, http.StatusBadRequest, "text is required")
+		return req, false
+	}
+	return req, true
+}
+
+// handleSpeak serves a reading: from the cache when one is kept, otherwise by
+// reading the text aloud and keeping the result.
+//
+// A cached reading is served whole, with a Content-Length and byte ranges, so
+// a second listen starts at once and can be seeked. Only the listen that pays
+// for the reading streams, and only when it asks to.
 func handleSpeak(d Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if d.Voice == nil {
+		if d.Reader == nil {
 			writeError(w, http.StatusServiceUnavailable, "speech is not configured")
 			return
 		}
-
-		var req speakRequest
-		if err := decode(r, &req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid JSON body")
-			return
-		}
-		if req.Text == "" {
-			writeError(w, http.StatusBadRequest, "text is required")
+		req, ok := decodeSpeak(w, r)
+		if !ok {
 			return
 		}
 
-		if req.Stream {
-			speakStream(w, r, d, req.Text)
-			return
+		ar := req.request()
+		// audioreader reads the stream flag off the query string; the body is
+		// where this API has always carried it. Both are honoured so a caller
+		// can ask either way.
+		if req.Stream && !audioreader.WantsStream(r) {
+			q := r.URL.Query()
+			q.Set("stream", "1")
+			r = r.Clone(r.Context())
+			r.URL.RawQuery = q.Encode()
 		}
 
-		audio, mime, err := d.Voice.Speak(r.Context(), req.Text)
-		if err != nil {
-			writeError(w, http.StatusBadGateway, err.Error())
-			return
-		}
-		// Content-Length matters: without it browsers infer the duration from
-		// the first frame header and stop playback at the first seam, so a long
-		// text plays only its opening seconds with nothing reported as wrong.
-		w.Header().Set("Content-Type", mime)
-		w.Header().Set("Content-Length", strconv.Itoa(len(audio)))
-		w.WriteHeader(http.StatusOK)
-		w.Write(audio)
+		d.Reader.Serve(w, r, ar, map[string]any{"scope": ar.Scope, "id": ar.ID})
 	}
 }
 
-// speakStream emits each piece as it is ready, so listening starts on the
-// first one instead of after the last.
+// handlePrime reads the opening of a text before anyone asks for it, so the
+// first listen starts on audio that is already made while the rest is read
+// behind it.
 //
-// Once a piece has been written the 200 is committed and a later failure can
-// no longer be reported as a 502 — the response is cut short instead, which is
-// the only honest outcome in a chunked body, and the reason streaming is not
-// the default.
-func speakStream(w http.ResponseWriter, r *http.Request, d Deps, text string) {
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		writeError(w, http.StatusInternalServerError, "streaming is unsupported")
-		return
-	}
+// It answers 202 without waiting: nobody is listening yet, and the caller
+// that asked has a reply to finish writing. A failure is logged rather than
+// reported, because nothing is broken without it — the first listener waits
+// exactly as they did before.
+func handlePrime(d Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if d.Primer == nil {
+			writeError(w, http.StatusServiceUnavailable, "priming needs both speech and a store")
+			return
+		}
+		req, ok := decodeSpeak(w, r)
+		if !ok {
+			return
+		}
+		if req.ID == "" {
+			writeError(w, http.StatusBadRequest, "id is required to prime: a reading nobody can name again cannot be found later")
+			return
+		}
 
-	// SpeakStream only reports the MIME type when it returns, which is after
-	// the first piece has to be written, so the header comes from the
-	// configured format instead.
-	mime := tts.MIMEFor(d.VoiceFormat)
-	sent := 0
-	_, err := d.Voice.SpeakStream(r.Context(), text, func(audio []byte) error {
-		if sent == 0 {
-			w.Header().Set("Content-Type", mime)
-			w.WriteHeader(http.StatusOK)
-		}
-		n, err := w.Write(audio)
-		sent += n
-		if err != nil {
-			// Nobody is listening any more; returning the error stops the
-			// library paying for the pieces still to come.
-			return err
-		}
-		flusher.Flush()
-		return nil
-	})
-	if err == nil {
-		return
+		ar := req.request()
+		go func() {
+			// Detached: this outlives the 202 by design, and the request's
+			// context is torn down the moment that answer lands.
+			ctx, cancel := context.WithTimeout(context.Background(), primeTimeout)
+			defer cancel()
+			if err := d.Primer.PrimeOpening(ctx, ar.Scope, ar.ID, ar.Text); err != nil {
+				log.Printf("tornade: prime %s/%s: %v", ar.Scope, ar.ID, err)
+			}
+		}()
+		w.WriteHeader(http.StatusAccepted)
 	}
-	if sent == 0 {
-		writeError(w, http.StatusBadGateway, err.Error())
-		return
+}
+
+// handlePregenerate reads a text in full and caches it, so every listen after
+// it is served from the store.
+//
+// For a reading that will be heard more than once — a published page — where
+// paying the whole synthesis up front is amortised. A reading heard at most
+// once wants /speak/prime instead, which pays for the opening alone.
+func handlePregenerate(d Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if d.Reader == nil {
+			writeError(w, http.StatusServiceUnavailable, "speech is not configured")
+			return
+		}
+		req, ok := decodeSpeak(w, r)
+		if !ok {
+			return
+		}
+
+		ar := req.request()
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), primeTimeout)
+			defer cancel()
+			if err := d.Reader.Pregenerate(ctx, ar); err != nil {
+				log.Printf("tornade: pregenerate %s/%s: %v", ar.Scope, ar.ID, err)
+			}
+		}()
+		w.WriteHeader(http.StatusAccepted)
 	}
-	log.Printf("tornade: speak stream cut short after %d bytes: %v", sent, err)
+}
+
+// handleExists reports whether a reading is already stored, without reading
+// its bytes — for a caller deciding whether to offer a play button, which
+// would otherwise download the whole file to answer a yes or no.
+func handleExists(d Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if d.Reader == nil {
+			writeError(w, http.StatusServiceUnavailable, "speech is not configured")
+			return
+		}
+		req, ok := decodeSpeak(w, r)
+		if !ok {
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]bool{
+			"ready": d.Reader.Exists(r.Context(), req.request()),
+		})
+	}
 }
