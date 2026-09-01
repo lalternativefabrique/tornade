@@ -48,6 +48,43 @@ spec:
               value: fr_FR-siwis-medium
             - name: TTS_VOICE
               value: fr_FR-siwis-medium
+            # OVH, bucket tornade-prod-audio: where a finished reading is
+            # kept so the same text is never read twice, and where an opening
+            # read ahead of time waits for the listener who presses play.
+            #
+            # optional, and marked so: absent, tornade reads text aloud as it
+            # did before there was a bucket — every reading simply paid for
+            # again — rather than failing to start.
+            - name: S3_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: tornade-audio-creds
+                  key: S3_ENDPOINT
+                  optional: true
+            - name: S3_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: tornade-audio-creds
+                  key: S3_REGION
+                  optional: true
+            - name: S3_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: tornade-audio-creds
+                  key: S3_BUCKET
+                  optional: true
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tornade-audio-creds
+                  key: S3_ACCESS_KEY
+                  optional: true
+            - name: S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tornade-audio-creds
+                  key: S3_SECRET_KEY
+                  optional: true
           ports:
             - containerPort: 8080
               name: http
