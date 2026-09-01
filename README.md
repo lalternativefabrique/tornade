@@ -9,6 +9,9 @@ POST /search   {"q": "gramsci"}                     -> ranked results
 POST /fetch    {"url": "https://…"}                 -> the page's main text
 POST /render   {"url": "https://…"}                 -> rendered HTML
 POST /speak    {"text": "…"}                        -> audio
+POST /speak/prime       {"text": "…", "id": "…"}    -> 202, opening read ahead
+POST /speak/pregenerate {"text": "…", "id": "…"}    -> 202, whole reading cached
+POST /speak/exists      {"text": "…", "id": "…"}    -> {"ready": true}
 GET  /healthz                                       -> {"ok": true}
 ```
 
@@ -69,20 +72,75 @@ never settles answers `502` — routine on the open web, and callers treat it as
 ### `POST /speak`
 
 ```json
-{"text": "…", "stream": false}
+{"text": "…", "scope": "chat", "id": "msg-42", "stream": false}
 ```
 
 Reads text through Piper over the OpenAI `/v1/audio/speech` protocol.
 
+`scope` and `id` name where the reading is kept. Both are optional: with an
+`id` a caller can have a reading made before anyone asks for it, since reading
+ahead means naming ahead of time what will be listened to. Without one the
+reading is still cached under the hash of its own text, so a second listen of
+the same words finds it with nothing to opt into.
+
+The key holds a hash of the text, so an edited text misses and is read again
+rather than being served the audio of words that are no longer there. Nothing
+has to be invalidated: a draft that changes on every keystroke simply writes
+under a new key, and a bucket lifecycle rule collects the ones nobody came
+back to.
+
 `stream: false` returns the finished audio with a `Content-Length`, which a
 plain `<audio src>` needs — without one, browsers infer the duration from the
 first frame header and stop at the first seam, playing only the opening
-seconds of a long text with nothing reported as wrong.
+seconds of a long text with nothing reported as wrong. A reading already in
+the store is always served this way, ranges included, so a second listen
+starts at once and can be seeked.
 
 `stream: true` emits each piece as it is ready, so listening starts on the
-first one. It needs `MediaSource` on the receiving end. Once a piece has been
-sent the `200` is committed, so a later failure cuts the response short
-instead of reporting an error — which is why it is not the default.
+first one instead of after the last. Pieces arrive length-prefixed — a
+big-endian `uint32` byte count then that many bytes — under
+`application/x-lalter-audio-frames`, because concatenated mp3 frames carry no
+boundary a player could find on its own. Once a piece has been sent the `200`
+is committed, so a later failure cuts the response short instead of reporting
+an error — which is why it is not the default.
+
+### `POST /speak/prime`
+
+```json
+{"text": "…", "scope": "chat", "id": "msg-42"}
+```
+
+Reads the **opening** of a text — one piece, `AUDIO_OPENING_CHARS` — and
+stores it, so the first listen starts on audio that already exists while the
+rest is read behind it. Answers `202` without waiting: nobody is listening
+yet, and a failure only means the first listener waits as they used to.
+
+The cut is the one the reading itself would make, so the two halves meet
+exactly where a seam would have fallen anyway — no word is read twice, none is
+skipped.
+
+This is what to use for a text that will be heard once or not at all — a reply
+to a prompt. It buys the seconds that matter for the price of one piece,
+instead of paying for a whole reading on the chance that someone might listen.
+`id` is required: a reading nobody can name again cannot be found later.
+
+### `POST /speak/pregenerate`
+
+Reads a text **in full** and caches it, so every listen after it is served
+from the store. For a text that will be heard more than once — a published
+page — where paying the whole synthesis up front is amortised, and where the
+first visitor should not be the one who triggers it.
+
+Piper synthesizes one utterance at a time, so a reading nobody asked for
+occupies the voice while someone who pressed play waits behind it. Reach for
+`/speak/prime` unless the reading is genuinely expected to be heard more than
+once.
+
+### `POST /speak/exists`
+
+Reports whether a reading is already stored, without reading its bytes — for a
+caller deciding whether to offer a play button, which would otherwise download
+the whole file to answer yes or no.
 
 ## Configuration
 
@@ -93,6 +151,8 @@ instead of reporting an error — which is why it is not the default.
 | `PIPER_URL` | required by `/speak`, else `503` |
 | `TTS_MODEL`, `TTS_VOICE`, `TTS_FORMAT` | voice selection; format must be frame-based (`mp3`, `opus`, `aac`, `flac`) |
 | `TTS_MAX_CHARS` | text per request, default 120 |
+| `AUDIO_OPENING_CHARS` | how much of a text counts as its opening, default 800 |
+| `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION` | where readings are kept; unset disables the cache, half-set is fatal |
 | `TTS_CONCURRENCY` | pieces read at once, default 1 |
 | `SEARCH_DEADLINE_MS` | cap on a merged search, default 4000 |
 | `FETCH_CACHE_TTL_MS` | default 15 minutes |
@@ -101,6 +161,17 @@ instead of reporting an error — which is why it is not the default.
 | `LISTEN_ADDR` | default `:8080` |
 
 An unconfigured backend disables its endpoint rather than degrading silently.
+
+`AUDIO_OPENING_CHARS` is not `TTS_MAX_CHARS`, though both count characters.
+The latter is how small a reading is cut for Piper to work on; the former is
+how much of a text counts as its opening. They must not be conflated: the
+primer and the reader each split the text themselves, and two different sizes
+have the halves meet somewhere other than the same cut.
+
+With no `S3_*` set, tornade still reads text aloud — every reading is simply
+paid for again, which is what it did before there was a bucket. A half-set
+configuration is fatal instead: someone meant to have a cache, and starting
+without one would hide that behind a bill nobody notices until it arrives.
 
 `TTS_MAX_CHARS` and `TTS_CONCURRENCY` are the latency levers, and a
 self-hosted Piper wants the opposite of a hosted endpoint. It serializes
@@ -156,6 +227,25 @@ reason rendering exists here. Tornade watches CDP network events and settles
 once nothing has been in flight for 500ms, then keeps watching a further two
 seconds: a script that fires its request on a timer leaves the network idle in
 the meantime, and calling that lull "settled" returns the shell.
+
+**The opening, not the whole reading.** A text of a few thousand characters
+takes Piper tens of seconds to read, so a listener who presses play waits out
+a spinner. Streaming cuts that to the first piece — two seconds instead of
+thirty — and reading that first piece before anyone asks removes even those:
+the start comes out of the store at once, and the rest is read while it plays.
+The listener hears one recording.
+
+Only the opening, because most readings never happen. Reading a whole text
+ahead of time pays for all of them on the chance that someone listens to one,
+and it occupies a voice that synthesizes one utterance at a time — a burst of
+texts nobody opened would put someone who did press play at the back of a
+queue. The opening is a single request, and it buys the seconds that actually
+show.
+
+Reading everything ahead is still the right answer where a text will be heard
+more than once, or where the first listener must not be the one who pays:
+that is `/speak/pregenerate`, and the choice between the two is a question
+about how many listens are expected, not about which caller is asking.
 
 **Non-root, without Chromium's inner sandbox.** That sandbox needs
 unprivileged user namespaces, which a container's default seccomp profile

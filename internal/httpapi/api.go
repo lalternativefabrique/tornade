@@ -12,20 +12,24 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/lalternative/packages/go/audioreader"
 	"github.com/lalternative/packages/go/search"
 	"github.com/lalternative/packages/go/search/fetch"
-	"github.com/lalternative/packages/go/tts"
 )
 
-// Deps are the backends the handlers speak to. A nil Voice or Renderer means
+// Deps are the backends the handlers speak to. A nil Reader or Renderer means
 // that feature is not configured, which the handlers report rather than
 // working around.
+//
+// A nil Primer with a non-nil Reader is the ordinary shape of a tornade with
+// no bucket: readings still stream and are still served, they are just never
+// kept, and nothing can be read ahead of time.
 type Deps struct {
-	Providers   map[search.Category]search.Provider
-	Renderer    fetch.Renderer
-	Cache       fetch.Cache
-	Voice       tts.Voice
-	VoiceFormat string
+	Providers map[search.Category]search.Provider
+	Renderer  fetch.Renderer
+	Cache     fetch.Cache
+	Reader    *audioreader.Reader
+	Primer    *audioreader.Primer
 
 	SearchDeadline   time.Duration
 	RenderMaxTimeout time.Duration
@@ -40,6 +44,9 @@ func New(d Deps) http.Handler {
 	mux.Handle("POST /fetch", handleFetch(d))
 	mux.Handle("POST /render", handleRender(d))
 	mux.Handle("POST /speak", handleSpeak(d))
+	mux.Handle("POST /speak/prime", handlePrime(d))
+	mux.Handle("POST /speak/pregenerate", handlePregenerate(d))
+	mux.Handle("POST /speak/exists", handleExists(d))
 	return mux
 }
 
