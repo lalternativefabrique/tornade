@@ -38,6 +38,16 @@ spec:
       labels:
         app: piper
     spec:
+      # Named here rather than left to the default ServiceAccount. That
+      # account carries the same secret, but only because a Terraform run
+      # patched it once — a patch that does not replay when the namespace is
+      # recreated, which is how this image became unpullable the moment the
+      # namespace was rebuilt from these manifests. Stating it on the pod
+      # makes the namespace reproducible from what is committed here.
+      #
+      # Only piper needs it: searxng and redis come from public registries.
+      imagePullSecrets:
+        - name: scw-registry-credentials
       containers:
         - name: piper
           image: rg.fr-par.scw.cloud/synthiz/piper-server:20260829-1639-33b17b97ecb6
