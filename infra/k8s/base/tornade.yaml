@@ -51,40 +51,24 @@ spec:
             # OVH, bucket tornade-prod-audio: where a finished reading is
             # kept so the same text is never read twice, and where an opening
             # read ahead of time waits for the listener who presses play.
-            #
-            # optional, and marked so: absent, tornade reads text aloud as it
-            # did before there was a bucket — every reading simply paid for
-            # again — rather than failing to start.
+            # None of these three is a credential — only the two keys below
+            # are, and they come from the Scaleway entry.
             - name: S3_ENDPOINT
-              valueFrom:
-                secretKeyRef:
-                  name: tornade-audio-creds
-                  key: S3_ENDPOINT
-                  optional: true
+              value: https://s3.gra.io.cloud.ovh.net
             - name: S3_REGION
-              valueFrom:
-                secretKeyRef:
-                  name: tornade-audio-creds
-                  key: S3_REGION
-                  optional: true
+              value: gra
             - name: S3_BUCKET
-              valueFrom:
-                secretKeyRef:
-                  name: tornade-audio-creds
-                  key: S3_BUCKET
-                  optional: true
+              value: tornade-prod-audio
             - name: S3_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
                   name: tornade-audio-creds
                   key: S3_ACCESS_KEY
-                  optional: true
             - name: S3_SECRET_KEY
               valueFrom:
                 secretKeyRef:
                   name: tornade-audio-creds
                   key: S3_SECRET_KEY
-                  optional: true
           ports:
             - containerPort: 8080
               name: http
