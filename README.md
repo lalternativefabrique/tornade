@@ -201,10 +201,22 @@ docker run -p 8080:8080 -e SEARXNG_URL=… -e PIPER_URL=… tornade
 ## Deployment
 
 It runs on the OVH cluster in its own `tornade-prod` namespace, reaching
-searxng and piper across synthiz's `ai` namespace by their cluster DNS names.
+searxng and piper across the `ai` namespace by their cluster DNS names.
 Manifests live in `infra/k8s/base`; ArgoCD syncs them from `main` through the
 Application in `infra/k8s/argocd`, which the cluster's `tornade-root`
 app-of-apps discovers (declared in kube-infra's `app-v1` stack).
+
+The `ai` namespace is declared here too, in `infra/k8s/base-ai` behind the
+`production-ai` overlay. It holds searxng, piper and the redis searxng caches
+into — the backends this service exists to put one HTTP contract in front of.
+They used to be declared in synthiz, which reaches them the same way tornade
+does; the namespace kept its name through the move, so every caller's DNS
+still resolves.
+
+It stays a namespace of its own rather than folding into `tornade-prod`: its
+ResourceQuota covers workloads shared by more than one product, and that
+budget is easier to reason about next to them than mixed into a single
+service's.
 
 Rolling a version means publishing an image: argocd-image-updater watches the
 registry for immutable date-sha tags and writes the new one back to `main`
