@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tornade-prod
+
+resources:
+  - namespace.yaml
+  - tornade.yaml
+
+# An immutable date-sha tag produced by `sklp run publish`. Never `latest`.
+# This is a floor, not a pin: argocd-image-updater rewrites it in place as
+# newer tags reach the registry, so what is committed here is only the version
+# a fresh cluster starts from. The placeholder stands until the first publish
+# has produced a tag to put here.
+images:
+  - name: rg.fr-par.scw.cloud/lalternative/tornade
+    newTag: "SET_ON_FIRST_PUBLISH"
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: tornade
+      app.kubernetes.io/managed-by: kustomize
+    includeSelectors: false
