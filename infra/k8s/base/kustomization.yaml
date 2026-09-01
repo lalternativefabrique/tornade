@@ -10,11 +10,10 @@ resources:
 # An immutable date-sha tag produced by `sklp run publish`. Never `latest`.
 # This is a floor, not a pin: argocd-image-updater rewrites it in place as
 # newer tags reach the registry, so what is committed here is only the version
-# a fresh cluster starts from. The placeholder stands until the first publish
-# has produced a tag to put here.
+# a fresh cluster starts from.
 images:
   - name: rg.fr-par.scw.cloud/lalternative/tornade
-    newTag: "SET_ON_FIRST_PUBLISH"
+    newTag: "20260901-0336-25c86d5159f8"
 
 labels:
   - pairs:
