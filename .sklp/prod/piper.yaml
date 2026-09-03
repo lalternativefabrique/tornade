@@ -1,0 +1,18 @@
+version: 1
+kind: deploy
+name: piper
+
+registries:
+  rg.fr-par.scw.cloud:
+    username: nologin
+    password: ${SCW_SECRET_KEY}
+
+services:
+  piper:
+    image: rg.fr-par.scw.cloud/synthiz/piper-server:20260829-1639-33b17b97ecb6
+    port: 5000
+    env:
+      DEFAULT_VOICE: fr_FR-siwis-medium
+    ready:
+      http: /docs
+      timeout: 120s
