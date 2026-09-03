@@ -1,0 +1,8 @@
+# Tags rolled onto the node by Skalpai's image watches — WRITTEN BY THE
+# ROLL, not by hand. image-watches.yaml declares what to watch; this
+# file records what actually shipped, so a redeploy from Git can
+# reproduce the running version and `git log` answers what was live
+# when. Editing it changes nothing: the next roll overwrites it.
+# last updated: 2026-09-03T20:05:53Z
+tags:
+  tornade-app: "20260901-0555-ee5332ac9518"
