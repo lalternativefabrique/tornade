@@ -2,12 +2,89 @@ version: 1
 kind: devstack
 name: dev
 
+# The whole platform on one machine: the three deployments of
+# .sklp/deploy-root.yaml (app, piper, searxng+redis) in a single space, reached
+# by service name exactly as in production.
 env_files:
   - .env
 
 services:
+  redis:
+    image: redis:7-alpine
+    network: bridge
+    port: 6379
+    command: ["redis-server", "--save", "60", "1"]
+    volumes: ["sklp-dev-redis-data:/data"]
+    ready:
+      tcp: "6379"
+      timeout: 60s
+
+  # The stock image only serves HTML; the search client asks for JSON, which
+  # SearXNG refuses (403) unless the format is enabled in settings.yml. The
+  # image has no env override for it, so the file is written into the config
+  # volume before searxng starts.
+  searxng-config:
+    image: alpine:3.21
+    network: bridge
+    oneshot: true
+    volumes: ["sklp-dev-searxng-config:/etc/searxng"]
+    command:
+      - sh
+      - -c
+      - |
+        cat > /etc/searxng/settings.yml <<'YAML'
+        use_default_settings: true
+        server:
+          limiter: false
+        search:
+          default_lang: "fr"
+          formats:
+            - html
+            - json
+        YAML
+
+  # 8888, not the image's 8080: a service's host ingress is bound on its own
+  # container port, and the app already owns 8080.
+  searxng:
+    image: docker.io/searxng/searxng@sha256:e45d5894bfaa0bf8773b9f283795ae57f1c15ddb29c8cecb70b3665b0ce9ec60
+    network: bridge
+    port: 8888
+    depends_on: [redis, searxng-config]
+    volumes: ["sklp-dev-searxng-config:/etc/searxng"]
+    env:
+      SEARXNG_PORT: "8888"
+      SEARXNG_BASE_URL: http://searxng:8888
+      SEARXNG_REDIS_URL: redis://redis:6379/0
+      SEARXNG_SECRET: dev-only-searxng-secret
+    ready:
+      http: /healthz
+      timeout: 120s
+
+  # amd64 only: on an arm64 host (Apple silicon, its sklp VM included) this
+  # image dies with "exec format error", and one crashed service takes the
+  # stack down. The app does not depend on it so `sklp dev stack --only app`
+  # brings up everything else there; /speak then answers 502 until a piper is
+  # reachable at PIPER_URL.
+  piper:
+    image: rg.fr-par.scw.cloud/synthiz/piper-server:20260829-1639-33b17b97ecb6
+    network: bridge
+    port: 5000
+    env:
+      DEFAULT_VOICE: fr_FR-siwis-medium
+    ready:
+      http: /docs
+      timeout: 300s
+
   app:
     run: go run ./cmd/tornade
     workdir: .
+    port: 8080
+    depends_on: [searxng]
+    env:
+      SEARXNG_URL: http://searxng:8888
+      PIPER_URL: http://piper:5000
+      TTS_VOICE: fr_FR-siwis-medium
+      CHROMIUM_PATH: /usr/bin/chromium
     ready:
-      http: http://localhost:8080/healthz
+      http: /healthz
+      timeout: 120s
