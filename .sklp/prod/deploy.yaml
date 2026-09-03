@@ -2,24 +2,36 @@ version: 1
 kind: deploy
 name: prod
 
-# Where Skalpai applies this file on a push. Core reads exactly this path and
-# reconciles exactly the space named here — one deploy.yaml, one space.
-target:
-  node_id: 192940ec-2d7e-45b3-b07d-06cff65fd05b
-  space: tornade-production
-
 registries:
   rg.fr-par.scw.cloud:
     username: nologin
     password: ${SCW_SECRET_KEY}
 
-gateway:
-  email: codesyl@pm.me
-
 services:
   app:
-    image: rg.fr-par.scw.cloud/lalternative/tornade:20260831-0805-8aa82bdd5799
+    image: rg.fr-par.scw.cloud/lalternative/tornade:20260901-0555-ee5332ac9518
     port: 8080
+    env:
+      LISTEN_ADDR: ":8080"
+      # piper and searxng run in their own spaces on this node (.sklp/prod/piper.yaml,
+      # .sklp/prod/searxng.yaml), reached over the node's internal DNS.
+      SEARXNG_URL: http://searxng.searxng-production.internal:8080
+      PIPER_URL: http://piper.piper-production.internal:5000
+      TTS_MODEL: fr_FR-siwis-medium
+      TTS_VOICE: fr_FR-siwis-medium
+      S3_ENDPOINT: https://s3.gra.io.cloud.ovh.net
+      S3_REGION: gra
+      S3_BUCKET: tornade-prod-audio
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+    resources:
+      # A render holds 300-500MB+ of Chromium; an OOM kill drops the page
+      # mid-render, so the limit is generous rather than tight.
+      cpu: "1"
+      memory: 1536M
     ready:
-      http: http://localhost:8080/healthz
+      http: /healthz
       timeout: 60s
+
+spaces:
+  tornade-production: {}

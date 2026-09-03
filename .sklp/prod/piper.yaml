@@ -13,6 +13,12 @@ services:
     port: 5000
     env:
       DEFAULT_VOICE: fr_FR-siwis-medium
+    resources:
+      cpu: "1"
+      memory: 1G
     ready:
       http: /docs
       timeout: 120s
+
+spaces:
+  piper-production: {}
