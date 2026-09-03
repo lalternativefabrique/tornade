@@ -1,0 +1,25 @@
+version: 1
+kind: deploy
+name: prod
+
+# Where Skalpai applies this file on a push. Core reads exactly this path and
+# reconciles exactly the space named here — one deploy.yaml, one space.
+target:
+  node_id: 192940ec-2d7e-45b3-b07d-06cff65fd05b
+  space: tornade-production
+
+registries:
+  rg.fr-par.scw.cloud:
+    username: nologin
+    password: ${SCW_SECRET_KEY}
+
+gateway:
+  email: codesyl@pm.me
+
+services:
+  app:
+    image: rg.fr-par.scw.cloud/lalternative/tornade:20260831-0805-8aa82bdd5799
+    port: 8080
+    ready:
+      http: http://localhost:8080/healthz
+      timeout: 60s

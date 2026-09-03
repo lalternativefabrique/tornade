@@ -1,0 +1,13 @@
+# Image watches, reconciled into Skalpai core on every push (the file is the
+# source of truth — an entry removed here is a watch deleted there). When a
+# newer immutable tag lands in the registry, core rolls the named service on
+# the node over the control API.
+#
+# The registry credential is NOT here: it is shared per registry prefix at the
+# stack level, so nothing secret reaches Git.
+watches:
+  - name: tornade-app
+    service: app
+    image_repo: rg.fr-par.scw.cloud/lalternative/tornade
+    node_id: 192940ec-2d7e-45b3-b07d-06cff65fd05b
+    registry_user: nologin

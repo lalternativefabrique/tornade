@@ -1,0 +1,26 @@
+version: 1
+kind: deploy
+name: searxng
+
+services:
+  redis:
+    image: redis:7-alpine
+    port: 6379
+    command: ["redis-server", "--save", "60", "1"]
+    volumes: ["redis-data:/data"]
+    ready:
+      tcp: "6379"
+      timeout: 60s
+
+  searxng:
+    # Pinned by digest: searxng publishes no immutable tags, so a tag would
+    # silently change what runs.
+    image: docker.io/searxng/searxng@sha256:e45d5894bfaa0bf8773b9f283795ae57f1c15ddb29c8cecb70b3665b0ce9ec60
+    port: 8080
+    depends_on: [redis]
+    env:
+      SEARXNG_BASE_URL: http://searxng.searxng-production.internal:8080
+      SEARXNG_REDIS_URL: redis://redis:6379/0
+    ready:
+      http: /healthz
+      timeout: 120s
