@@ -1,6 +1,6 @@
 version: 1
 kind: deploy
-name: prod
+name: tornade
 
 registries:
   rg.fr-par.scw.cloud:
@@ -13,8 +13,8 @@ services:
     port: 8080
     env:
       LISTEN_ADDR: ":8080"
-      # piper and searxng run in their own spaces on this node (.sklp/prod/piper.yaml,
-      # .sklp/prod/searxng.yaml), reached over the node's internal DNS.
+      # piper and searxng run in their own spaces on this node (.sklp/piper/deploy.yaml,
+      # .sklp/searxng/deploy.yaml), reached over the node's internal DNS.
       SEARXNG_URL: http://searxng.searxng-production.internal:8080
       PIPER_URL: http://piper.piper-production.internal:5000
       TTS_MODEL: fr_FR-siwis-medium

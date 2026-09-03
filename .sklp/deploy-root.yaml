@@ -1,17 +1,11 @@
 kind: deploy-root
 
-# What this repo deploys, and where each manifest lives. Core reads exactly
-# this file and reconciles every deployment listed — one manifest per space.
-#
-# piper and searxng are shared infrastructure (TTS, search) reached over the
-# internal network by the apps, not services of tornade: they get their own
-# spaces, declared here so a lost node can rebuild them.
 node_id: 192940ec-2d7e-45b3-b07d-06cff65fd05b
 
 deployments:
   - space: tornade-production
-    path: .sklp/prod/deploy.yaml
+    path: .sklp/tornade/deploy.yaml
   - space: piper-production
-    path: .sklp/prod/piper.yaml
+    path: .sklp/piper/deploy.yaml
   - space: searxng-production
-    path: .sklp/prod/searxng.yaml
+    path: .sklp/searxng/deploy.yaml
