@@ -1,6 +1,6 @@
 kind: deploy-root
 
-node_id: 192940ec-2d7e-45b3-b07d-06cff65fd05b
+node: sklet-prod-v2
 
 deployments:
   - space: tornade-production

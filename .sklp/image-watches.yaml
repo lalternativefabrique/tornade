@@ -3,5 +3,5 @@ watches:
     service: app
     space: tornade-production
     image_repo: rg.fr-par.scw.cloud/lalternative/tornade
-    node_id: 192940ec-2d7e-45b3-b07d-06cff65fd05b
+    node: sklet-prod-v2
     registry_user: nologin
