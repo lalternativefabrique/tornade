@@ -19,7 +19,7 @@ services:
     port: 8080
     depends_on: [redis]
     env:
-      SEARXNG_BASE_URL: http://searxng.searxng-production.internal:8080
+      SEARXNG_BASE_URL: http://searxng:8080
       SEARXNG_REDIS_URL: redis://redis:6379/0
     ready:
       http: /healthz

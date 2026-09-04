@@ -15,8 +15,8 @@ services:
       LISTEN_ADDR: ":8080"
       # piper and searxng run in their own spaces on this node (.sklp/piper/deploy.yaml,
       # .sklp/searxng/deploy.yaml), reached over the node's internal DNS.
-      SEARXNG_URL: http://searxng.searxng-production.internal:8080
-      PIPER_URL: http://piper.piper-production.internal:5000
+      SEARXNG_URL: http://searxng.searxng-production.internal
+      PIPER_URL: http://piper.piper-production.internal
       TTS_MODEL: fr_FR-siwis-medium
       TTS_VOICE: fr_FR-siwis-medium
       S3_ENDPOINT: https://s3.gra.io.cloud.ovh.net
