@@ -9,3 +9,6 @@ runner:
     - git
     - ca-certificates
     - curl
+    # /render drives a browser: chromedp only needs the binary, the flags it
+    # passes (no-sandbox, no /dev/shm) already fit a container.
+    - chromium
