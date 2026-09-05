@@ -4,6 +4,9 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY cmd/ cmd/
 COPY internal/ internal/
+# signed/ is not internal/: the applications that hand out signed /speak URLs
+# import it to build them, so it has to be a package they can reach.
+COPY signed/ signed/
 RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/tornade ./cmd/tornade
 
 # Chromium plus the system libraries it needs is the hard part of this image;
