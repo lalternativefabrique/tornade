@@ -3,3 +3,4 @@ node_modules/
 .sklp/cache/
 .sklp/logs/
 .sklp/run/
+.env
