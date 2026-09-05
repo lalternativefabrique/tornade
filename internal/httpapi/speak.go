@@ -78,6 +78,10 @@ func handleSpeak(d Deps) http.HandlerFunc {
 		}
 
 		ar := req.request()
+		if err := d.guardSpeak(r, ar.Scope, ar.ID, ar.Text); err != nil {
+			writeAuthError(w, err)
+			return
+		}
 		// audioreader reads the stream flag off the query string; the body is
 		// where this API has always carried it. Both are honoured so a caller
 		// can ask either way.
@@ -116,6 +120,10 @@ func handlePrime(d Deps) http.HandlerFunc {
 		}
 
 		ar := req.request()
+		if err := d.guardSpeak(r, ar.Scope, ar.ID, ar.Text); err != nil {
+			writeAuthError(w, err)
+			return
+		}
 		go func() {
 			// Detached: this outlives the 202 by design, and the request's
 			// context is torn down the moment that answer lands.
@@ -147,6 +155,10 @@ func handlePregenerate(d Deps) http.HandlerFunc {
 		}
 
 		ar := req.request()
+		if err := d.guardSpeak(r, ar.Scope, ar.ID, ar.Text); err != nil {
+			writeAuthError(w, err)
+			return
+		}
 		go func() {
 			ctx, cancel := context.WithTimeout(context.Background(), primeTimeout)
 			defer cancel()
@@ -171,8 +183,13 @@ func handleExists(d Deps) http.HandlerFunc {
 		if !ok {
 			return
 		}
+		ar := req.request()
+		if err := d.guardSpeak(r, ar.Scope, ar.ID, ar.Text); err != nil {
+			writeAuthError(w, err)
+			return
+		}
 		writeJSON(w, http.StatusOK, map[string]bool{
-			"ready": d.Reader.Exists(r.Context(), req.request()),
+			"ready": d.Reader.Exists(r.Context(), ar),
 		})
 	}
 }

@@ -146,6 +146,8 @@ the whole file to answer yes or no.
 
 | | |
 |---|---|
+| `SPEAK_SIGNING_KEYS` | `issuer:secret` pairs authorising browser calls to `/speak`; unset accepts none |
+| `SPEAK_APP_KEYS` | keys services authenticate with on `X-Tornade-Key`; unset accepts none |
 | `SEARXNG_URL` | required by `/search`, else `503` |
 | `BRAVE_API_KEY` | optional; enables the general-category fallback |
 | `PIPER_URL` | required by `/speak`, else `503` |
@@ -182,6 +184,38 @@ text, concurrency 1 returns first audio in 2.2s against 3.9s at 4, for 6% more
 total time; 120 characters a piece beats both 80 (more per-request overhead,
 5.7s) and 200 (a longer first piece, 3.4s). Raise the concurrency only for a
 backend that synthesizes in parallel.
+
+## Who may speak
+
+`/speak*` answers two callers, and nothing else.
+
+A **service** on the cluster's own network sends its key on `X-Tornade-Key`.
+A **browser** cannot hold a key, so it carries a signature instead: the
+application that knows who is listening signs `scope`, `id`, a hash of the
+text and an expiry with its own secret, and hands the listener a URL good for
+that one reading. Tornade recomputes the MAC and compares. It still knows
+nothing about users — a signature over what was asked for is the whole of its
+notion of identity, the same shape as an S3 presigned URL and for the same
+reason: the service holding the bytes serves them, the service holding the
+rights only authorises.
+
+The signature covers the text because it is what stops a link from being spent
+on anything else: without it, an authorisation for one reading is an
+authorisation to have any text at all synthesized on that account.
+
+With neither variable set both checks are skipped, which is what a deployment
+reachable only from inside the cluster wants — the network is its boundary,
+and a credential invented to talk to itself is one that exists only to be
+checked.
+
+The browser calls tornade directly rather than through the application that
+authorised it. A reading is tens of seconds of bytes: relaying it would have
+that application's own server stream media for the whole of it, one goroutine
+per listener, and buffering anywhere along the way would undo what
+`/speak/prime` buys. In production only `/speak` and `/speak/exists` are
+routed publicly — `/render` and `/fetch` execute third-party JavaScript
+against a URL the caller picks, which on the open internet is an SSRF offered
+to anyone.
 
 ## Running it
 

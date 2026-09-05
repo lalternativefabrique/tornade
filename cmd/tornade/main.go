@@ -23,6 +23,7 @@ import (
 	"github.com/lalternativefabrique/tornade/internal/config"
 	"github.com/lalternativefabrique/tornade/internal/httpapi"
 	"github.com/lalternativefabrique/tornade/internal/render"
+	"github.com/lalternativefabrique/tornade/signed"
 )
 
 func main() {
@@ -41,6 +42,8 @@ func main() {
 		Primer:           primer,
 		SearchDeadline:   cfg.SearchDeadline,
 		RenderMaxTimeout: cfg.RenderMaxTimeout,
+		Verifier:         signed.NewVerifier(cfg.SigningKeys),
+		AppKeys:          cfg.AppKeys,
 	}
 
 	srv := &http.Server{Addr: cfg.Addr, Handler: httpapi.New(deps)}

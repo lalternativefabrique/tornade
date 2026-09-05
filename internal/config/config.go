@@ -4,6 +4,7 @@ package config
 import (
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -28,6 +29,15 @@ type Config struct {
 	TTSConcurrency int
 
 	AudioOpeningChars int
+
+	// SigningKeys are the secrets applications sign browser-bound /speak URLs
+	// with, read from SPEAK_SIGNING_KEYS as "issuer:secret" pairs. Empty
+	// accepts no browser call, which is what a deployment reachable only from
+	// the cluster wants.
+	SigningKeys map[string]string
+	// AppKeys authenticate a service calling /speak on its own behalf, read
+	// from SPEAK_APP_KEYS as a comma-separated list.
+	AppKeys map[string]bool
 }
 
 func Load() Config {
@@ -67,7 +77,36 @@ func Load() Config {
 		// disagreement has the two halves meet somewhere other than the same
 		// cut, reading a word twice or skipping one.
 		AudioOpeningChars: envInt("AUDIO_OPENING_CHARS", 800),
+
+		SigningKeys: envPairs("SPEAK_SIGNING_KEYS"),
+		AppKeys:     envSet("SPEAK_APP_KEYS"),
 	}
+}
+
+// envPairs reads "issuer:secret,issuer:secret" into a map. A malformed entry
+// is dropped rather than guessed at: a key read wrong is a key that rejects
+// every signature made with it, and silence about it would look like the
+// application signing incorrectly.
+func envPairs(key string) map[string]string {
+	out := map[string]string{}
+	for _, entry := range strings.Split(os.Getenv(key), ",") {
+		issuer, secret, ok := strings.Cut(strings.TrimSpace(entry), ":")
+		if !ok || issuer == "" || secret == "" {
+			continue
+		}
+		out[issuer] = secret
+	}
+	return out
+}
+
+func envSet(key string) map[string]bool {
+	out := map[string]bool{}
+	for _, entry := range strings.Split(os.Getenv(key), ",") {
+		if entry = strings.TrimSpace(entry); entry != "" {
+			out[entry] = true
+		}
+	}
+	return out
 }
 
 func env(key, fallback string) string {
