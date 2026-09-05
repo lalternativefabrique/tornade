@@ -15,6 +15,8 @@ import (
 	"github.com/lalternative/packages/go/audioreader"
 	"github.com/lalternative/packages/go/search"
 	"github.com/lalternative/packages/go/search/fetch"
+
+	"github.com/lalternativefabrique/tornade/signed"
 )
 
 // Deps are the backends the handlers speak to. A nil Reader or Renderer means
@@ -33,6 +35,13 @@ type Deps struct {
 
 	SearchDeadline   time.Duration
 	RenderMaxTimeout time.Duration
+
+	// Verifier authenticates a /speak request that came straight from a
+	// browser. Nil accepts none, which is what a deployment reachable only
+	// from the cluster wants.
+	Verifier *signed.Verifier
+	// AppKeys are the keys services authenticate with on a call of their own.
+	AppKeys map[string]bool
 }
 
 func New(d Deps) http.Handler {

@@ -69,6 +69,21 @@ spec:
                 secretKeyRef:
                   name: tornade-audio-creds
                   key: S3_SECRET_KEY
+            # The secrets applications sign browser-bound /speak URLs with,
+            # as "issuer:secret" pairs. A listener's browser calls /speak
+            # directly rather than through the application that authorised
+            # it — a reading is tens of seconds of bytes, and relaying it
+            # would have that application stream media for the whole of it.
+            #
+            # Optional: unset, tornade accepts no browser call at all, which
+            # is what it did before the ingress existed and what a
+            # cluster-internal deployment still wants.
+            - name: SPEAK_SIGNING_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: tornade-speak-keys
+                  key: SPEAK_SIGNING_KEYS
+                  optional: true
           ports:
             - containerPort: 8080
               name: http

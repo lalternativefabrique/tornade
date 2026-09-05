@@ -1,0 +1,140 @@
+# Public access to the speak endpoints, and to nothing else.
+#
+# A listener's browser fetches its audio from tornade directly rather than
+# through the application that authorised it: a reading is tens of seconds of
+# bytes, and relaying it would have that application's own server stream media
+# for the whole of it, one goroutine per listener. What the browser carries is
+# a signature over the one reading it is allowed — see the signed package.
+#
+# Only /speak* is routed here. /search, /fetch and /render stay reachable on
+# the cluster's network alone: /render and /fetch run third-party JavaScript
+# in a browser against a URL the caller picks, which on the open internet is
+# an SSRF offered to anyone — every service in the namespace, and the cloud
+# metadata endpoint, are a request away. Traefik routes only what is listed,
+# so the omission is the control.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: tornade-redirect-https
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
+# The browser fetching audio is on the application's origin, not tornade's, so
+# the request is cross-origin and needs the headers to match. Listed
+# explicitly rather than reflecting the caller: a signature authorises one
+# reading, but there is no reason to let any page on the internet be the one
+# that spends it.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: tornade-speak-cors
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  headers:
+    accessControlAllowMethods:
+      - GET
+      - POST
+      - OPTIONS
+    accessControlAllowHeaders:
+      - Content-Type
+      - Range
+    accessControlAllowOriginList:
+      - https://lalter.fr
+      - https://console.lalter.fr
+    # Range and Content-Length are what a player needs to seek and to know how
+    # long the audio is; a cross-origin response hides every header but a
+    # short safelist unless they are named here.
+    accessControlExposeHeaders:
+      - Accept-Ranges
+      - Content-Length
+      - Content-Range
+    accessControlMaxAge: 86400
+    addVaryHeader: true
+---
+# Signed or not, a /speak call that misses the cache occupies the voice, which
+# synthesizes one utterance at a time. The signature bounds what can be read
+# and for how long; this bounds how fast.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: tornade-speak-ratelimit
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  rateLimit:
+    average: 30
+    burst: 60
+    period: 1m
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tornade-ingress-http
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+    traefik.ingress.kubernetes.io/router.middlewares: tornade-prod-tornade-redirect-https@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: audio.lalter.fr
+      http:
+        paths:
+          - path: /speak
+            pathType: Exact
+            backend:
+              service:
+                name: tornade
+                port:
+                  number: 8080
+          - path: /speak/exists
+            pathType: Exact
+            backend:
+              service:
+                name: tornade
+                port:
+                  number: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tornade-ingress
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+    cert-manager.io/cluster-issuer: "letsencrypt-ovh"
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: tornade-prod-tornade-speak-cors@kubernetescrd,tornade-prod-tornade-speak-ratelimit@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - audio.lalter.fr
+      secretName: tornade-tls
+  rules:
+    - host: audio.lalter.fr
+      http:
+        paths:
+          # Exact, not Prefix: /speak/prime and /speak/pregenerate both start
+          # a synthesis nobody is waiting for, and the applications call them
+          # from their own servers. Exposing them would let a signed link be
+          # spent queueing work ahead of a listener who is actually waiting,
+          # on a voice that reads one utterance at a time.
+          - path: /speak
+            pathType: Exact
+            backend:
+              service:
+                name: tornade
+                port:
+                  number: 8080
+          - path: /speak/exists
+            pathType: Exact
+            backend:
+              service:
+                name: tornade
+                port:
+                  number: 8080
