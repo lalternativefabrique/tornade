@@ -22,7 +22,7 @@ func guardedDeps(t *testing.T) httpapi.Deps {
 	t.Helper()
 	d := audioDeps(&stubVoice{pieces: [][]byte{[]byte("aaa"), []byte("bb")}}, newMemStore())
 	d.Verifier = signed.NewVerifier(map[string]string{testIssuer: testKey})
-	d.AppKeys = map[string]bool{"an-app-key": true}
+	d.AppKeys = map[string]string{"an-app-key": "lalter"}
 	return d
 }
 
@@ -137,5 +137,39 @@ func TestSearchIsNotGuarded(t *testing.T) {
 	rec := post(t, httpapi.New(d), "/search", `{"q":"gramsci"}`)
 	if rec.Code == http.StatusForbidden {
 		t.Fatal("/search answered 403: the speak guard leaked onto it")
+	}
+}
+
+// A front door that routes by path prefix sends /speak/prime the same URL as
+// /speak, and the signature names what to read rather than where it was sent.
+// So a link good for playing one reply must not also buy the synthesis of a
+// whole article ahead of whoever is waiting on the voice.
+func TestASignatureDoesNotReachPrime(t *testing.T) {
+	path := signedQuery("/speak/prime", "chat", "m1", longText, time.Now().Add(5*time.Minute))
+	rec := post(t, httpapi.New(guardedDeps(t)), path, `{"text":"`+longText+`","scope":"chat","id":"m1"}`)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403: a signed link reached prime", rec.Code)
+	}
+}
+
+func TestASignatureDoesNotReachPregenerate(t *testing.T) {
+	path := signedQuery("/speak/pregenerate", "chat", "m1", longText, time.Now().Add(5*time.Minute))
+	rec := post(t, httpapi.New(guardedDeps(t)), path, `{"text":"`+longText+`","scope":"chat","id":"m1"}`)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403: a signed link reached pregenerate", rec.Code)
+	}
+}
+
+// Exists reads no bytes and starts no synthesis, but it is still about
+// someone's own conversation, so a browser reaches it the same way it reaches
+// /speak — with an app key, since its signature is only good for /speak.
+func TestPrimeStillAcceptsAnAppKey(t *testing.T) {
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/speak/prime", strings.NewReader(`{"text":"`+longText+`","scope":"chat","id":"m1"}`))
+	req.Header.Set(httpapi.HeaderAppKey, "an-app-key")
+	httpapi.New(guardedDeps(t)).ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status = %d, want 202 (body %q)", rec.Code, rec.Body.String())
 	}
 }
