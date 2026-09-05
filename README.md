@@ -147,7 +147,7 @@ the whole file to answer yes or no.
 | | |
 |---|---|
 | `SPEAK_SIGNING_KEYS` | `issuer:secret` pairs authorising browser calls to `/speak`; unset accepts none |
-| `SPEAK_APP_KEYS` | keys services authenticate with on `X-Tornade-Key`; unset accepts none |
+| `SPEAK_APP_KEYS` | `issuer:secret` pairs services authenticate with on `X-Tornade-Key`; unset accepts none |
 | `SEARXNG_URL` | required by `/search`, else `503` |
 | `BRAVE_API_KEY` | optional; enables the general-category fallback |
 | `PIPER_URL` | required by `/speak`, else `503` |
@@ -190,6 +190,9 @@ backend that synthesizes in parallel.
 `/speak*` answers two callers, and nothing else.
 
 A **service** on the cluster's own network sends its key on `X-Tornade-Key`.
+Both key variables take the same `issuer:secret,issuer:secret` shape, so one
+application's key can be rotated or revoked without touching another's, and a
+log line can name who called.
 A **browser** cannot hold a key, so it carries a signature instead: the
 application that knows who is listening signs `scope`, `id`, a hash of the
 text and an expiry with its own secret, and hands the listener a URL good for
@@ -208,14 +211,20 @@ reachable only from inside the cluster wants — the network is its boundary,
 and a credential invented to talk to itself is one that exists only to be
 checked.
 
+A signature is good for `/speak` and nothing else. `/speak/prime` and
+`/speak/pregenerate` start a synthesis nobody is waiting for, on a voice that
+reads one utterance at a time, so they take an app key: a link handed to a
+listener must not also buy a whole article being read ahead of them. That is
+enforced in the handler rather than left to routing, because a front door that
+matches paths by prefix sends `/speak/prime` the same URL as `/speak`.
+
 The browser calls tornade directly rather than through the application that
 authorised it. A reading is tens of seconds of bytes: relaying it would have
 that application's own server stream media for the whole of it, one goroutine
 per listener, and buffering anywhere along the way would undo what
-`/speak/prime` buys. In production only `/speak` and `/speak/exists` are
-routed publicly — `/render` and `/fetch` execute third-party JavaScript
-against a URL the caller picks, which on the open internet is an SSRF offered
-to anyone.
+`/speak/prime` buys. In production only the speak routes are public —
+`/render` and `/fetch` execute third-party JavaScript against a URL the caller
+picks, which on the open internet is an SSRF offered to anyone.
 
 ## Running it
 
@@ -233,6 +242,17 @@ docker run -p 8080:8080 -e SEARXNG_URL=… -e PIPER_URL=… tornade
 ```
 
 ## Deployment
+
+Two paths, and each needs the same three values supplied at deploy time —
+`SPEAK_SIGNING_KEYS` (`<issuer>:<secret>` pairs, one per application allowed to
+hand out browser URLs), `SPEAK_APP_KEYS` (the same shape, for the keys services
+present on `X-Tornade-Key`), and, on the sklp path, `TORNADE_AUDIO_HOST` (the public name
+the speak route answers on). None of them is committed: unset, tornade simply
+accepts nothing it did not already accept on the internal network.
+
+The public name must resolve before the certificate can be issued — the
+challenge is served on that host — so point the DNS at the front door first
+and let the issuer follow.
 
 It runs on the OVH cluster in its own `tornade-prod` namespace, reaching
 searxng and piper across the `ai` namespace by their cluster DNS names.

@@ -40,8 +40,9 @@ type Deps struct {
 	// browser. Nil accepts none, which is what a deployment reachable only
 	// from the cluster wants.
 	Verifier *signed.Verifier
-	// AppKeys are the keys services authenticate with on a call of their own.
-	AppKeys map[string]bool
+	// AppKeys are the keys services authenticate with on a call of their own,
+	// mapping each secret to the name of the service holding it.
+	AppKeys map[string]string
 }
 
 func New(d Deps) http.Handler {

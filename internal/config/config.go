@@ -36,8 +36,11 @@ type Config struct {
 	// the cluster wants.
 	SigningKeys map[string]string
 	// AppKeys authenticate a service calling /speak on its own behalf, read
-	// from SPEAK_APP_KEYS as a comma-separated list.
-	AppKeys map[string]bool
+	// from SPEAK_APP_KEYS in the same "issuer:secret" shape as SigningKeys —
+	// one format for both rather than two that look alike and are not. Keyed
+	// by secret here, since that is what a request presents; the name it maps
+	// to is what the logs report.
+	AppKeys map[string]string
 }
 
 func Load() Config {
@@ -79,7 +82,7 @@ func Load() Config {
 		AudioOpeningChars: envInt("AUDIO_OPENING_CHARS", 800),
 
 		SigningKeys: envPairs("SPEAK_SIGNING_KEYS"),
-		AppKeys:     envSet("SPEAK_APP_KEYS"),
+		AppKeys:     bySecret(envPairs("SPEAK_APP_KEYS")),
 	}
 }
 
@@ -99,12 +102,12 @@ func envPairs(key string) map[string]string {
 	return out
 }
 
-func envSet(key string) map[string]bool {
-	out := map[string]bool{}
-	for _, entry := range strings.Split(os.Getenv(key), ",") {
-		if entry = strings.TrimSpace(entry); entry != "" {
-			out[entry] = true
-		}
+// bySecret inverts an issuer-to-secret map, since a request presents the
+// secret and what is wanted from it is the name.
+func bySecret(pairs map[string]string) map[string]string {
+	out := make(map[string]string, len(pairs))
+	for issuer, secret := range pairs {
+		out[secret] = issuer
 	}
 	return out
 }

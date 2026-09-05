@@ -92,13 +92,6 @@ spec:
                 name: tornade
                 port:
                   number: 8080
-          - path: /speak/exists
-            pathType: Exact
-            backend:
-              service:
-                name: tornade
-                port:
-                  number: 8080
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -121,17 +114,10 @@ spec:
         paths:
           # Exact, not Prefix: /speak/prime and /speak/pregenerate both start
           # a synthesis nobody is waiting for, and the applications call them
-          # from their own servers. Exposing them would let a signed link be
-          # spent queueing work ahead of a listener who is actually waiting,
-          # on a voice that reads one utterance at a time.
+          # from their own servers. A signature is refused there in any case
+          # (httpapi.guardSpeak), since not every front door can express an
+          # exact path — but not routing them is the cheaper control.
           - path: /speak
-            pathType: Exact
-            backend:
-              service:
-                name: tornade
-                port:
-                  number: 8080
-          - path: /speak/exists
             pathType: Exact
             backend:
               service:

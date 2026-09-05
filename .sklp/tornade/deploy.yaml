@@ -22,7 +22,19 @@ services:
       S3_BUCKET: tornade-prod-audio
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
+      # The secrets applications sign browser-bound /speak URLs with, as
+      # "issuer:secret" pairs. A listener's browser fetches its audio here
+      # directly rather than through the application that authorised it: a
+      # reading is tens of seconds of bytes, and relaying it would have that
+      # application stream media for the whole of it.
+      #
+      # Unset, no browser call is accepted and tornade answers only what
+      # reaches it on the node's internal network, as it did before.
       SPEAK_SIGNING_KEYS: ${SPEAK_SIGNING_KEYS}
+      # Authenticates a service calling /speak on its own behalf — priming an
+      # opening, which no browser is ever handed. Same "issuer:secret" shape
+      # as the signing keys: one format for both, and one application's key
+      # revoked without touching another's.
       SPEAK_APP_KEYS: ${SPEAK_APP_KEYS}
     resources:
       cpu: "1"
@@ -32,4 +44,37 @@ services:
       timeout: 60s
 
 spaces:
-  tornade-production: {}
+  tornade-production:
+    gateway:
+      routes:
+        # Public for the one endpoint a browser has business calling.
+        #
+        # /render and /fetch execute third-party JavaScript against a URL the
+        # caller picks, which on the open internet is an SSRF offered to
+        # anyone: every service on the node, and the metadata endpoint, a
+        # request away. /search would hand out the SearXNG instance and the
+        # Brave quota. Nothing routes what is not listed here, so the
+        # omission is the control.
+        #
+        # The front door matches a path by PREFIX, so this entry also reaches
+        # /speak/prime and /speak/pregenerate. That is why a signature is
+        # accepted on /speak alone (httpapi.guardSpeak): those two start a
+        # synthesis nobody is waiting for, and only a service holding a key
+        # may ask for it.
+        #
+        # `expensive` because a miss occupies the voice, and Piper reads one
+        # utterance at a time: a burst here is a queue in front of whoever
+        # pressed play.
+        - service: app
+          host: ${TORNADE_AUDIO_HOST}
+          path: /speak
+          kind: expensive
+          security_headers: true
+          # A reading streams for as long as it takes to synthesize, which on
+          # a long reply is minutes. A timeout would cut the audio mid-word
+          # with the 200 already committed, so the response could not even
+          # report why it stopped.
+          timeout: "0"
+          # A whole article is a legitimate body here, and the handler already
+          # bounds it at 4MB itself — a cap declared here too would only be a
+          # second number to keep in step.
