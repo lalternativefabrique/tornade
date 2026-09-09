@@ -5,6 +5,8 @@ import (
 	"net/url"
 
 	"github.com/lalternative/packages/go/search/fetch"
+
+	"github.com/lalternativefabrique/tornade/internal/challenge"
 )
 
 type fetchRequest struct {
@@ -45,6 +47,9 @@ func handleFetch(d Deps) http.HandlerFunc {
 		}
 
 		page, err := fetch.FetchWithFallback(r.Context(), req.URL, renderer, maxRunes, d.Cache)
+		if err == nil {
+			err = challenge.Check(page)
+		}
 		if err != nil {
 			writeError(w, http.StatusBadGateway, err.Error())
 			return
