@@ -22,6 +22,13 @@ scopes:
     - "go.mod"
     - "go.sum"
     - "Dockerfile"
+  web:
+    - "apps/web/**"
+    - "lib/front/**"
+    - "package.json"
+    - "pnpm-lock.yaml"
+    - "pnpm-workspace.yaml"
+    - "Dockerfile.web"
 
 steps:
   - name: app-image
@@ -30,4 +37,12 @@ steps:
     context: .
     dockerfile: Dockerfile
     image: rg.fr-par.scw.cloud/lalternative/tornade
+    tag: "{{ publish_tag }}"
+
+  - name: web-image
+    kind: publish
+    scope: [web]
+    context: .
+    dockerfile: Dockerfile.web
+    image: rg.fr-par.scw.cloud/lalternative/tornade-web
     tag: "{{ publish_tag }}"

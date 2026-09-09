@@ -5,3 +5,9 @@ watches:
     image_repo: rg.fr-par.scw.cloud/lalternative/tornade
     node: sklet-prod-v2
     registry_user: nologin
+  - name: tornade-web
+    service: web
+    space: tornade-production
+    image_repo: rg.fr-par.scw.cloud/lalternative/tornade-web
+    node: sklet-prod-v2
+    registry_user: nologin

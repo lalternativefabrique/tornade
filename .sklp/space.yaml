@@ -4,6 +4,8 @@ runner:
 
   toolchain:
     go: "1.26.0"
+    node: "24.16.0"
+    pnpm: "10.27.0"
 
   packages:
     - git

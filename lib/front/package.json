@@ -1,0 +1,26 @@
+{
+  "name": "@tornade/front",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared front library: the typed React Query API client generated from the core OpenAPI.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./orval-fetcher": "./src/orval-fetcher.ts",
+    "./api/generated.schemas": "./src/api/generated.schemas/index.ts",
+    "./api/*": "./src/api/*.ts"
+  },
+  "scripts": {
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.20"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "typescript": "^5.9.3"
+  }
+}

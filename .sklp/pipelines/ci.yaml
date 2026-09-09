@@ -5,6 +5,7 @@ name: ci
 tools:
   go: "1.26.0"
   node: "24.16.0"
+  pnpm: "10.27.0"
 
 on:
   branches: ['**', '!main']
@@ -20,6 +21,12 @@ scopes:
     - "Dockerfile"
   render:
     - "render/**"
+  web:
+    - "apps/web/**"
+    - "lib/front/**"
+    - "package.json"
+    - "pnpm-lock.yaml"
+    - "pnpm-workspace.yaml"
 
 steps:
   - name: facade-test
@@ -37,3 +44,11 @@ steps:
     run: |
       npm install
       npm test
+
+  - name: web-check
+    scope: [web]
+    tools: [node, pnpm]
+    run: |
+      pnpm install --frozen-lockfile
+      pnpm --filter @tornade/web lint
+      pnpm --filter @tornade/web typecheck

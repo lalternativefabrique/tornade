@@ -8,11 +8,28 @@ registries:
     password: ${SCW_SECRET_KEY}
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    port: 5432
+    env:
+      POSTGRES_USER: tornade
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: tornade
+    volumes: ["tornade-pg-data:/var/lib/postgresql/data"]
+    ready:
+      tcp: "5432"
+      timeout: 60s
+
   app:
     image: rg.fr-par.scw.cloud/lalternative/tornade:20260901-0555-ee5332ac9518
     port: 8080
+    depends_on: [postgres]
     env:
       LISTEN_ADDR: ":8080"
+      # The registry of applications and the admin's accounts. Both live
+      # here; the speak guard reads the keys from it at request time.
+      DATABASE_URL: postgres://tornade:${POSTGRES_PASSWORD}@postgres:5432/tornade?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET}
       SEARXNG_URL: http://searxng.searxng-production.internal
       PIPER_URL: http://piper.piper-production.internal
       TTS_MODEL: fr_FR-siwis-medium
@@ -48,6 +65,28 @@ services:
     ready:
       http: /healthz
       timeout: 60s
+
+  # The admin web app: registers, rotates and revokes the applications that
+  # speak through tornade. It reaches the app only through its own proxy,
+  # minting the JWT the admin API verifies from the Better Auth session.
+  web:
+    image: rg.fr-par.scw.cloud/lalternative/tornade-web:20260909-0000-000000000000
+    port: 5273
+    depends_on: [postgres, app]
+    env:
+      PORT: "5273"
+      NODE_ENV: production
+      DATABASE_URL: postgres://tornade:${POSTGRES_PASSWORD}@postgres:5432/tornade?sslmode=disable
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: https://vvaves.dev
+      JWT_SECRET: ${JWT_SECRET}
+      CORE_API_URL: http://app:8080
+    resources:
+      cpu: "0.5"
+      memory: 512M
+    ready:
+      http: /admin/login
+      timeout: 120s
 
 spaces:
   tornade-production:
@@ -92,3 +131,9 @@ spaces:
           # A whole article is a legitimate body here, and the handler already
           # bounds it at 4MB itself — a cap declared here too would only be a
           # second number to keep in step.
+        # Everything else on the name is the admin. /speak stays the app's:
+        # the front door matches the longest prefix first.
+        - service: web
+          host: vvaves.dev
+          path: /
+          security_headers: true
