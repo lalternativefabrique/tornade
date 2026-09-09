@@ -264,3 +264,28 @@ func TestNoAppKeyHeaderWithoutOne(t *testing.T) {
 		t.Fatal("an empty app key was sent as a header")
 	}
 }
+
+func TestExistsAsksByNameAndReadsReady(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/speak/exists" {
+			t.Errorf("path = %q, want /speak/exists", r.URL.Path)
+		}
+		json.NewDecoder(r.Body).Decode(&got)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"ready":true}`))
+	}))
+	defer srv.Close()
+
+	v := New(Config{BaseURL: srv.URL, Scope: "pensee-note"})
+	ready, err := v.Exists(context.Background(), "p-1", "le texte")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ready {
+		t.Fatal("ready = false, want what the server said")
+	}
+	if got["id"] != "p-1" || got["scope"] != "pensee-note" || got["text"] != "le texte" {
+		t.Fatalf("request body = %v", got)
+	}
+}
