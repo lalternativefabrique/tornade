@@ -1,67 +1,55 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { randomUUID } from 'node:crypto'
-import { hashPassword } from 'better-auth/crypto'
+import { bootstrapFirstAdmin } from '@lalternative/auth/server'
+import { auth } from '@/lib/auth'
 import { pool } from '@/lib/db'
+import { checkAdminSetupGate } from '@/lib/admin-setup-gate'
+
+function json(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
+}
 
 /**
- * First-admin bootstrap. GET reports whether any admin exists; POST creates the
- * very first one directly in the DB (before any admin exists, the normal
- * sign-up flow can't mint an admin). Closes itself once an admin is present.
+ * First-admin bootstrap. GET reports whether any admin exists; POST mints the
+ * first one behind the setup gate, and refuses once any admin exists.
  */
 export const Route = createFileRoute('/api/admin/setup')({
   server: {
     handlers: {
       GET: async () => {
-        const result = await pool.query(
-          `SELECT COUNT(*) as count FROM "user" WHERE role = 'admin'`,
-        )
-        const hasAdmin = parseInt(result.rows[0].count, 10) > 0
-        return new Response(JSON.stringify({ hasAdmin }), {
-          headers: { 'Content-Type': 'application/json' },
-        })
+        const result = await pool.query(`SELECT COUNT(*)::int AS count FROM "user" WHERE role = 'admin'`)
+        return json(200, { hasAdmin: result.rows[0].count > 0 })
       },
 
       POST: async ({ request }: { request: Request }) => {
-        const check = await pool.query(
-          `SELECT COUNT(*) as count FROM "user" WHERE role = 'admin'`,
-        )
-        if (parseInt(check.rows[0].count, 10) > 0) {
-          return new Response(JSON.stringify({ error: 'Setup already completed' }), {
-            status: 403,
-            headers: { 'Content-Type': 'application/json' },
-          })
-        }
-
         const body = (await request.json()) as {
-          email: string
-          password: string
-          name: string
+          email?: string
+          password?: string
+          name?: string
+          setupToken?: string
         }
         if (!body.email || !body.password || !body.name) {
-          return new Response(
-            JSON.stringify({ error: 'Email, password and name are required' }),
-            { status: 400, headers: { 'Content-Type': 'application/json' } },
-          )
+          return json(400, { error: 'Email, password and name are required' })
         }
+        if (body.password.length < 8) {
+          return json(400, { error: 'Password must be at least 8 characters' })
+        }
+        const gateError = checkAdminSetupGate(body.email, body.setupToken)
+        if (gateError) return json(403, { error: gateError })
 
-        const hashedPassword = await hashPassword(body.password)
-        const userId = randomUUID()
-
-        await pool.query(
-          `INSERT INTO "user" (id, name, email, "emailVerified", role, "createdAt", "updatedAt")
-           VALUES ($1, $2, $3, true, 'admin', NOW(), NOW())`,
-          [userId, body.name, body.email],
-        )
-        await pool.query(
-          `INSERT INTO account (id, "accountId", "providerId", "userId", password, "createdAt", "updatedAt")
-           VALUES ($1, $2, 'credential', $3, $4, NOW(), NOW())`,
-          [randomUUID(), userId, userId, hashedPassword],
-        )
-
-        return new Response(
-          JSON.stringify({ success: true, email: body.email }),
-          { headers: { 'Content-Type': 'application/json' } },
-        )
+        try {
+          const result = await bootstrapFirstAdmin(auth, pool, {
+            email: body.email,
+            password: body.password,
+            name: body.name,
+          })
+          if (!result.ok) return json(403, { error: 'Setup already completed' })
+          return json(200, { success: true, email: body.email })
+        } catch (err) {
+          const duplicate =
+            typeof err === 'object' && err !== null && 'code' in err && (err as { code?: string }).code === '23505'
+          if (duplicate) return json(409, { error: 'This email is already registered' })
+          throw err
+        }
       },
     },
   },
