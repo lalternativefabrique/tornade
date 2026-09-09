@@ -71,8 +71,16 @@ spaces:
         # `expensive` because a miss occupies the voice, and Piper reads one
         # utterance at a time: a burst here is a queue in front of whoever
         # pressed play.
+        #
+        # The host is written here rather than interpolated from a project
+        # secret: it is a public name, in the DNS, the certificate and every
+        # request a browser makes, and keeping it out of the repo only made
+        # the deployment fail for a reason that had nothing to do with a
+        # credential. It is tornade's own name, not one application's: every
+        # app that reads aloud sends its listeners here, and the signature's
+        # issuer is what tells them apart.
         - service: app
-          host: ${TORNADE_AUDIO_HOST}
+          host: vvaves.dev
           path: /speak
           kind: expensive
           security_headers: true
