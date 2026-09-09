@@ -280,16 +280,17 @@ docker run -p 8080:8080 -e SEARXNG_URL=… -e PIPER_URL=… tornade
 
 ## Deployment
 
-Two paths, and each needs the same three values supplied at deploy time —
+Two paths, and each needs the same two values supplied at deploy time —
 `SPEAK_SIGNING_KEYS` (`<issuer>:<secret>` pairs, one per application allowed to
-hand out browser URLs), `SPEAK_APP_KEYS` (the same shape, for the keys services
-present on `X-Tornade-Key`), and, on the sklp path, `TORNADE_AUDIO_HOST` (the public name
-the speak route answers on). None of them is committed: unset, tornade simply
-accepts nothing it did not already accept on the internal network.
+hand out browser URLs) and `SPEAK_APP_KEYS` (the same shape, for the keys
+services present on `X-Tornade-Key`). Neither is committed: unset, tornade
+simply accepts nothing it did not already accept on the internal network.
 
-The public name must resolve before the certificate can be issued — the
-challenge is served on that host — so point the DNS at the front door first
-and let the issuer follow.
+The speak route answers on `vvaves.dev`, written in the sklp deploy file: it
+is tornade's own name, not one application's, and every app that reads aloud
+sends its listeners there. The name must resolve before the certificate can
+be issued — the challenge is served on that host — so point the DNS at the
+front door first and let the issuer follow.
 
 It runs on the OVH cluster in its own `tornade-prod` namespace, reaching
 searxng and piper across the `ai` namespace by their cluster DNS names.
