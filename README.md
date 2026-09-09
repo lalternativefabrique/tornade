@@ -150,7 +150,7 @@ the whole file to answer yes or no.
 | `SPEAK_APP_KEYS` | `issuer:secret` pairs services authenticate with on `X-Tornade-Key`; unset accepts none |
 | `SEARXNG_URL` | required by `/search`, else `503` |
 | `BRAVE_API_KEY` | optional; enables the general-category fallback |
-| `FETCH_PROXY` | residential endpoint `/fetch` reads through; unset fetches direct, unparseable is fatal |
+| `FETCH_PROXY` | residential endpoint `/fetch` and its render fallback read through; unset goes direct, unparseable is fatal |
 | `PIPER_URL` | required by `/speak`, else `503` |
 | `TTS_MODEL`, `TTS_VOICE`, `TTS_FORMAT` | voice selection; format must be frame-based (`mp3`, `opus`, `aac`, `flac`) |
 | `TTS_MAX_CHARS` | text per request, default 120 |
@@ -170,6 +170,20 @@ honest one — so the exit IP, not the headers, is what decides whether a page
 can be read at all. Unset fetches direct and is reported at startup;
 unparseable is fatal, since a typo there would otherwise look like a working
 service reading a fraction of what it is asked for.
+
+The IP is not the whole story: a residential exit still presents Go's TLS
+handshake, which matches no browser, and bot management compares the two. So
+`/fetch`'s **render fallback** — the browser it falls back to when a static
+fetch fails or comes back near-empty — goes through the proxy too, which is
+the one path that carries both a residential address and a real browser's
+fingerprint. A challenge page meant to be solved by a browser is solved there;
+a flat refusal usually stays refused, and is reported as such.
+
+`/render` itself does not use the proxy. It is a JavaScript renderer, not a
+way around a block, and residential bandwidth is metered by the gigabyte
+while a rendered page pulls megabytes of images and scripts — so the cost is
+spent on retries, not on every render. The two run as separate Chromium
+processes, since `--proxy-server` is process-wide.
 
 An unconfigured backend disables its endpoint rather than degrading silently.
 

@@ -39,7 +39,10 @@ func main() {
 	}
 	log.Printf("tornade: page fetch proxy %s", fetch.ProxyState())
 
-	browser := render.New(cfg.ChromiumPath)
+	browser, err := render.New(cfg.ChromiumPath, cfg.FetchProxy)
+	if err != nil {
+		log.Fatalf("tornade: FETCH_PROXY: %v", err)
+	}
 	defer browser.Close()
 
 	reader, primer := buildAudio(cfg)
