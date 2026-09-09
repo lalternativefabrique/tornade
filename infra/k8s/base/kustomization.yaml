@@ -8,7 +8,6 @@ resources:
   - s3-external-secret.yaml
   - fetch-proxy-external-secret.yaml
   - tornade.yaml
-  - ingress.yaml
 
 # An immutable date-sha tag produced by `sklp run publish`. Never `latest`.
 # This is a floor, not a pin: argocd-image-updater rewrites it in place as

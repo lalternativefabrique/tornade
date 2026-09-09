@@ -75,9 +75,11 @@ spec:
             # it — a reading is tens of seconds of bytes, and relaying it
             # would have that application stream media for the whole of it.
             #
-            # Optional: unset, tornade accepts no browser call at all, which
-            # is what it did before the ingress existed and what a
-            # cluster-internal deployment still wants.
+            # Left here and unset: this deployment has no ingress, so no
+            # browser reaches it and there is no signature to check. It is
+            # what the sklet deployment serves, on the name the DNS actually
+            # points at. Setting it here would only matter if this cluster
+            # were given a public name of its own.
             - name: SPEAK_SIGNING_KEYS
               valueFrom:
                 secretKeyRef:
