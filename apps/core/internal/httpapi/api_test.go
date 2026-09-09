@@ -171,8 +171,11 @@ func (m *memStore) keys() []string {
 
 // audioDeps wires a voice and a store the way main does, so a test exercises
 // the same reader and primer the service runs.
+// audioDeps is a tornade nobody outside reaches, so it says Unguarded the
+// way a laptop's stack does; the guard tests set keys or unset it.
 func audioDeps(voice tts.Voice, store audioreader.Store) httpapi.Deps {
 	d := baseDeps()
+	d.Unguarded = true
 	provider := audio.NewProvider(voice)
 	d.Reader = audioreader.NewReader(provider, store, testOpeningChars, nil)
 	if store != nil {

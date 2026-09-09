@@ -12,13 +12,16 @@ const HeaderAppKey = client.HeaderAppKey
 
 // guardSpeak refuses a /speak request that authenticates as neither.
 //
-// Both checks are skipped entirely when nothing is configured: a deployment
-// reachable only from inside the cluster has the network as its boundary, and
-// making it invent a key to talk to itself would be a credential that exists
-// only to be checked.
+// With nothing configured it refuses everything, unless the deployment said
+// Unguarded: a tornade that reaches the internet with no key is not an
+// internal one, it is an open voice, and silence about a missing key must
+// not look like a working service.
 func (d Deps) guardSpeak(r *http.Request, scope, id, text string) error {
 	if d.Verifier == nil && d.AppKeyIssuer == nil {
-		return nil
+		if d.Unguarded {
+			return nil
+		}
+		return ErrNoGuard
 	}
 	if key := r.Header.Get(HeaderAppKey); key != "" && d.AppKeyIssuer != nil {
 		if _, ok := d.AppKeyIssuer(key); ok {
@@ -43,6 +46,10 @@ const speakPath = "/speak"
 // ErrSignatureNotAcceptedHere is a signed request to an endpoint that only
 // services may call.
 var ErrSignatureNotAcceptedHere = errors.New("signed: this endpoint takes an app key, not a signature")
+
+// ErrNoGuard is a speak request on a tornade with no key configured and no
+// leave to run without one.
+var ErrNoGuard = errors.New("speak: no key configured, and not unguarded")
 
 // writeAuthError answers a failed guard.
 //

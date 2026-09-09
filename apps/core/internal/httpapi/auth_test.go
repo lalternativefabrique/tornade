@@ -38,10 +38,24 @@ func signedQuery(path, scope, id, text string, expires time.Time) string {
 	return path + "?" + q.Encode()
 }
 
-// A deployment reachable only from the cluster configures neither, and must
-// keep answering: the network is its boundary, and demanding a credential to
-// talk to itself would be one that exists only to be checked.
-func TestSpeakWithoutAnyAuthConfiguredStaysOpen(t *testing.T) {
+// A tornade with no key configured refuses: an internet-facing one that
+// forgot its keys would otherwise serve anyone a paid reading, and a bogus
+// signature would not even be looked at.
+func TestSpeakWithoutAnyAuthConfiguredRefuses(t *testing.T) {
+	d := audioDeps(&stubVoice{pieces: [][]byte{[]byte("aaa")}}, nil)
+	d.Unguarded = false
+	h := httpapi.New(d)
+	for name, path := range map[string]string{"bare": "/speak", "bogus signature": "/speak?exp=1&iss=synthiz&sig=x"} {
+		if rec := post(t, h, path, `{"text":"bonjour"}`); rec.Code != http.StatusForbidden {
+			t.Errorf("%s: status = %d, want 403", name, rec.Code)
+		}
+	}
+}
+
+// A deployment reachable only from the cluster, or a laptop, says so and
+// keeps answering: the network is its boundary, and demanding a credential
+// to talk to itself would be one that exists only to be checked.
+func TestSpeakStaysOpenWhenUnguardedIsSaid(t *testing.T) {
 	rec := post(t, httpapi.New(audioDeps(&stubVoice{pieces: [][]byte{[]byte("aaa")}}, nil)), "/speak", `{"text":"bonjour"}`)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", rec.Code)

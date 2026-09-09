@@ -54,6 +54,10 @@ type Config struct {
 	// JWTSecret verifies the admin web app's tokens on the admin API. It is
 	// the same value the web app mints with.
 	JWTSecret string
+	// SpeakUnguarded lets the speak routes answer with no key at all, read
+	// from SPEAK_UNGUARDED=true. For a tornade nothing outside the cluster
+	// reaches, and for a laptop; never for one behind a public name.
+	SpeakUnguarded bool
 	// RegistryEncryptionKey seals the applications' keys at rest, a base64
 	// 32-byte key. Required with a database: a registry that stores secrets
 	// in the clear is one that must not start.
@@ -105,6 +109,7 @@ func Load() Config {
 		DatabaseURL:           os.Getenv("DATABASE_URL"),
 		JWTSecret:             os.Getenv("JWT_SECRET"),
 		RegistryEncryptionKey: os.Getenv("REGISTRY_ENCRYPTION_KEY"),
+		SpeakUnguarded:        os.Getenv("SPEAK_UNGUARDED") == "true",
 	}
 }
 
