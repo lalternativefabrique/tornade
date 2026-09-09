@@ -13,7 +13,8 @@
     "lint": "eslint",
     "typecheck": "vite build && tsc --noEmit",
     "format": "prettier --write . && eslint --fix",
-    "check": "prettier --check ."
+    "check": "prettier --check .",
+    "test": "vitest run"
   },
   "dependencies": {
     "@lalternative/admin": "^0.9.0",
@@ -44,5 +45,7 @@
     "eslint": "^9.20.0",
     "prettier": "^3.8.1",
     "typescript": "^6.0.2",
-    "vite": "^8.0.0"
-  }}
+    "vite": "^8.0.0",
+    "vitest": "^4.1.10"
+  }
+}

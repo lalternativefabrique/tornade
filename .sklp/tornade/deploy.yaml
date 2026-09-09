@@ -69,6 +69,10 @@ services:
       BETTER_AUTH_URL: https://vvaves.dev
       JWT_SECRET: ${JWT_SECRET}
       CORE_API_URL: http://app:8080
+      # /admin/setup mints the first admin with no session. The token rides
+      # in the URL the operator is handed, ?token=; without it, production
+      # refuses every setup rather than letting whoever comes first in.
+      ADMIN_SETUP_TOKEN: ${ADMIN_SETUP_TOKEN}
     resources:
       cpu: "0.5"
       memory: 512M

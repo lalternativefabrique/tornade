@@ -260,7 +260,9 @@ it presents on its own calls. Rotating mints a new pair and keeps the old one
 working for a day; revoking ends both at once. The speak guard reads the
 registry at request time, so none of it needs a restart.
 
-The registry lives in Postgres beside the admin's own accounts
+The first admin is minted on `/admin/setup?token=…`, behind `ADMIN_SETUP_TOKEN`
+and, optionally, `ADMIN_ALLOWED_EMAILS`; in production an unconfigured gate
+refuses everyone. The registry lives in Postgres beside the admin's own accounts
 (`DATABASE_URL`), the keys sealed with `REGISTRY_ENCRYPTION_KEY` the way the
 platform's other credentials are; the list shows their last four characters. Without one, tornade runs as before on `SPEAK_SIGNING_KEYS`
 and `SPEAK_APP_KEYS`; with one, those pairs still count, under the registry's

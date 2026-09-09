@@ -52,3 +52,4 @@ steps:
       pnpm install --frozen-lockfile
       pnpm --filter @tornade/web lint
       pnpm --filter @tornade/web typecheck
+      pnpm --filter @tornade/web test
