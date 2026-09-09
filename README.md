@@ -256,7 +256,7 @@ rewrite the contract:
 
 - `client` (Go) is a `tts.Voice` that speaks through tornade. `client.New`
   takes the `AppKey` for server-to-server calls; `PrimeOpening`,
-  `Pregenerate` and the `*Named` variants map onto the routes above.
+  `Pregenerate`, `Exists` and the `*Named` variants map onto the routes above.
 - `signed` (Go) holds the signature scheme. `signed.NewSigner` mints the URL
   the application hands its browser; tornade verifies with the same package.
 - `sdk-react` (npm, `@lalternative/tornade-sdk-react`) plays a signed reading

@@ -175,6 +175,28 @@ func (v *Voice) PrimeOpening(ctx context.Context, id, text string) error {
 	return nil
 }
 
+// Exists reports whether a reading kept under id is ready to be served
+// without paying for a synthesis: what a public page checks before offering
+// a listen to a visitor who has no account to bill one to.
+func (v *Voice) Exists(ctx context.Context, id, text string) (bool, error) {
+	resp, err := v.post(ctx, "/speak/exists", map[string]any{
+		"text":  text,
+		"scope": v.cfg.Scope,
+		"id":    id,
+	})
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+	var body struct {
+		Ready bool `json:"ready"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return false, fmt.Errorf("tts: read body: %w", err)
+	}
+	return body.Ready, nil
+}
+
 func (v *Voice) speak(ctx context.Context, id, text string, stream bool) (*http.Response, error) {
 	payload := map[string]any{
 		"text":   text,
