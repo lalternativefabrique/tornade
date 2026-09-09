@@ -28,10 +28,10 @@ type Service struct {
 	keys     *KeySource
 }
 
-// NewService wires the context on pool. envSigning and envApp are the
-// "issuer:secret" pairs read from the environment, still honoured under the
-// registry's own entries.
-func NewService(pool *pgxpool.Pool, envSigning, envApp map[string]string) (*Service, error) {
+// NewService wires the context on pool. cipher seals the keys at rest;
+// envSigning and envApp are the "issuer:secret" pairs read from the
+// environment, still honoured under the registry's own entries.
+func NewService(pool *pgxpool.Pool, cipher *infrastructure.Cipher, envSigning, envApp map[string][]string) (*Service, error) {
 	reg := di.New()
 
 	di.Provide[logger.Logger](reg, func(_ *di.Resolver) (logger.Logger, error) {
@@ -44,8 +44,8 @@ func NewService(pool *pgxpool.Pool, envSigning, envApp map[string]string) (*Serv
 		repo := di.MustFrom[*infrastructure.Repository](rv)
 		log := di.MustFrom[logger.Logger](rv)
 		router := cqrs.NewCommandRouter()
-		registerCommand(router, log, register_app.NewHandler(repo).Handle)
-		registerCommand(router, log, rotate_keys.NewHandler(repo).Handle)
+		registerCommand(router, log, register_app.NewHandler(repo, cipher).Handle)
+		registerCommand(router, log, rotate_keys.NewHandler(repo, cipher).Handle)
 		registerCommand(router, log, revoke_app.NewHandler(repo).Handle)
 		return router, nil
 	})
@@ -60,7 +60,7 @@ func NewService(pool *pgxpool.Pool, envSigning, envApp map[string]string) (*Serv
 	return &Service{
 		commands: di.MustResolve[*cqrs.CommandRouter](reg),
 		queries:  di.MustResolve[*cqrs.QueryRouter](reg),
-		keys:     NewKeySource(repo, envSigning, envApp),
+		keys:     NewKeySource(repo, cipher, envSigning, envApp),
 	}, nil
 }
 

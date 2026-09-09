@@ -38,14 +38,14 @@ type Config struct {
 	AudioOpeningChars int
 
 	// SigningKeys are the secrets applications sign browser-bound /speak URLs
-	// with, read from SPEAK_SIGNING_KEYS as "issuer:secret" pairs. Empty
-	// accepts no browser call, which is what a deployment reachable only from
-	// the cluster wants.
-	SigningKeys map[string]string
+	// with, read from SPEAK_SIGNING_KEYS as "issuer:secret" pairs. An issuer
+	// may appear more than once. Empty accepts no browser call, which is
+	// what a deployment reachable only from the cluster wants.
+	SigningKeys map[string][]string
 	// AppKeys authenticate a service calling /speak on its own behalf, read
 	// from SPEAK_APP_KEYS in the same "issuer:secret" shape as SigningKeys —
 	// one format for both rather than two that look alike and are not.
-	AppKeys map[string]string
+	AppKeys map[string][]string
 
 	// DatabaseURL opens the registry of applications and the admin's own
 	// accounts. Empty runs without either: the environment pairs above are
@@ -54,6 +54,10 @@ type Config struct {
 	// JWTSecret verifies the admin web app's tokens on the admin API. It is
 	// the same value the web app mints with.
 	JWTSecret string
+	// RegistryEncryptionKey seals the applications' keys at rest, a base64
+	// 32-byte key. Required with a database: a registry that stores secrets
+	// in the clear is one that must not start.
+	RegistryEncryptionKey string
 }
 
 func Load() Config {
@@ -98,8 +102,9 @@ func Load() Config {
 		SigningKeys: envPairs("SPEAK_SIGNING_KEYS"),
 		AppKeys:     envPairs("SPEAK_APP_KEYS"),
 
-		DatabaseURL: os.Getenv("DATABASE_URL"),
-		JWTSecret:   os.Getenv("JWT_SECRET"),
+		DatabaseURL:           os.Getenv("DATABASE_URL"),
+		JWTSecret:             os.Getenv("JWT_SECRET"),
+		RegistryEncryptionKey: os.Getenv("REGISTRY_ENCRYPTION_KEY"),
 	}
 }
 
@@ -107,14 +112,14 @@ func Load() Config {
 // is dropped rather than guessed at: a key read wrong is a key that rejects
 // every signature made with it, and silence about it would look like the
 // application signing incorrectly.
-func envPairs(key string) map[string]string {
-	out := map[string]string{}
+func envPairs(key string) map[string][]string {
+	out := map[string][]string{}
 	for _, entry := range strings.Split(os.Getenv(key), ",") {
 		issuer, secret, ok := strings.Cut(strings.TrimSpace(entry), ":")
 		if !ok || issuer == "" || secret == "" {
 			continue
 		}
-		out[issuer] = secret
+		out[issuer] = append(out[issuer], secret)
 	}
 	return out
 }

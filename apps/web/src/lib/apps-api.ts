@@ -1,6 +1,8 @@
 export interface RegisteredApp {
   name: string
   active: boolean
+  signing_last4: string
+  app_last4: string
   created_at: string
   rotated_at?: string
   revoked_at?: string

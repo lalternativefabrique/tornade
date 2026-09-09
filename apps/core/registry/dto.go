@@ -9,12 +9,14 @@ type RegisterRequest struct {
 
 // AppDTO names an application without its secrets.
 type AppDTO struct {
-	Name       string     `json:"name"`
-	Active     bool       `json:"active"`
-	CreatedAt  time.Time  `json:"created_at"`
-	RotatedAt  *time.Time `json:"rotated_at,omitempty"`
-	RevokedAt  *time.Time `json:"revoked_at,omitempty"`
-	GraceUntil *time.Time `json:"grace_until,omitempty"`
+	Name         string     `json:"name"`
+	Active       bool       `json:"active"`
+	SigningLast4 string     `json:"signing_last4"`
+	AppLast4     string     `json:"app_last4"`
+	CreatedAt    time.Time  `json:"created_at"`
+	RotatedAt    *time.Time `json:"rotated_at,omitempty"`
+	RevokedAt    *time.Time `json:"revoked_at,omitempty"`
+	GraceUntil   *time.Time `json:"grace_until,omitempty"`
 }
 
 // AppListDTO is the GET /admin/apps answer.

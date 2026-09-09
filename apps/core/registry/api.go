@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/lalternative/packages/go/eda/pkg/cqrs"
 
@@ -31,7 +32,7 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	out := AppListDTO{Apps: make([]AppDTO, 0, len(res.Apps))}
 	for _, v := range res.Apps {
 		out.Apps = append(out.Apps, AppDTO{
-			Name: v.Name, Active: v.Active, CreatedAt: v.CreatedAt,
+			Name: v.Name, Active: v.Active, SigningLast4: v.SigningLast4, AppLast4: v.AppLast4, CreatedAt: v.CreatedAt,
 			RotatedAt: v.RotatedAt, RevokedAt: v.RevokedAt, GraceUntil: v.GraceUntil,
 		})
 	}
@@ -61,7 +62,7 @@ func (s *Service) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.keys.Invalidate()
-	writeJSON(w, http.StatusCreated, credentials(res.App))
+	writeJSON(w, http.StatusCreated, credentials(res.App, res.Keys))
 }
 
 // Rotate godoc
@@ -82,7 +83,7 @@ func (s *Service) Rotate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.keys.Invalidate()
-	writeJSON(w, http.StatusOK, credentials(res.App))
+	writeJSON(w, http.StatusOK, credentials(res.App, res.Keys))
 }
 
 // Revoke godoc
@@ -103,13 +104,8 @@ func (s *Service) Revoke(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func credentials(a *domain.App) CredentialsDTO {
-	out := CredentialsDTO{Name: a.Name, SigningKey: a.SigningKey, AppKey: a.AppKey}
-	if a.RotatedAt != nil {
-		until := a.RotatedAt.Add(domain.Grace)
-		out.GraceUntil = &until
-	}
-	return out
+func credentials(a *domain.App, keys domain.Keys) CredentialsDTO {
+	return CredentialsDTO{Name: a.Name, SigningKey: keys.Signing, AppKey: keys.App, GraceUntil: a.GraceUntil(time.Now().UTC())}
 }
 
 func writeError(w http.ResponseWriter, err error) {

@@ -171,6 +171,9 @@ const docTemplate = `{
                 "active": {
                     "type": "boolean"
                 },
+                "app_last4": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -184,6 +187,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "rotated_at": {
+                    "type": "string"
+                },
+                "signing_last4": {
                     "type": "string"
                 }
             }

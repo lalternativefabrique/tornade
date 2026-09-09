@@ -30,6 +30,8 @@ services:
       # here; the speak guard reads the keys from it at request time.
       DATABASE_URL: postgres://tornade:${POSTGRES_PASSWORD}@postgres:5432/tornade?sslmode=disable
       JWT_SECRET: ${JWT_SECRET}
+      # Seals the applications' keys at rest: base64 of 32 random bytes.
+      REGISTRY_ENCRYPTION_KEY: ${REGISTRY_ENCRYPTION_KEY}
       SEARXNG_URL: http://searxng.searxng-production.internal
       PIPER_URL: http://piper.piper-production.internal
       TTS_MODEL: fr_FR-siwis-medium

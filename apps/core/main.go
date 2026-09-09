@@ -36,6 +36,7 @@ import (
 	"github.com/lalternativefabrique/tornade/core/middleware"
 	"github.com/lalternativefabrique/tornade/core/pkg/db"
 	"github.com/lalternativefabrique/tornade/core/registry"
+	registryinfra "github.com/lalternativefabrique/tornade/core/registry/infrastructure"
 	"github.com/lalternativefabrique/tornade/signed"
 )
 
@@ -105,7 +106,11 @@ func main() {
 func buildRegistry(cfg config.Config) (*registry.Service, *registry.KeySource) {
 	if cfg.DatabaseURL == "" {
 		log.Print("tornade: no DATABASE_URL, the applications registry is off")
-		return nil, registry.NewKeySource(nil, cfg.SigningKeys, cfg.AppKeys)
+		return nil, registry.NewKeySource(nil, nil, cfg.SigningKeys, cfg.AppKeys)
+	}
+	cipher, err := registryinfra.NewCipherFromBase64(cfg.RegistryEncryptionKey)
+	if err != nil {
+		log.Fatalf("tornade: REGISTRY_ENCRYPTION_KEY: %v", err)
 	}
 	ctx := context.Background()
 	pool, err := db.Open(ctx, cfg.DatabaseURL)
@@ -115,7 +120,7 @@ func buildRegistry(cfg config.Config) (*registry.Service, *registry.KeySource) {
 	if err := db.Migrate(ctx, pool, "./migrations/postgres"); err != nil {
 		log.Fatalf("tornade: migrate: %v", err)
 	}
-	apps, err := registry.NewService(pool, cfg.SigningKeys, cfg.AppKeys)
+	apps, err := registry.NewService(pool, cipher, cfg.SigningKeys, cfg.AppKeys)
 	if err != nil {
 		log.Fatalf("tornade: registry: %v", err)
 	}

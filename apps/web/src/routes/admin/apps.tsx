@@ -183,6 +183,7 @@ function AppsTable({
           <tr>
             <th className="py-2 pr-4">Nom</th>
             <th className="py-2 pr-4">État</th>
+            <th className="py-2 pr-4">Clés</th>
             <th className="py-2 pr-4">Créée</th>
             <th className="py-2 pr-4">Dernière rotation</th>
             <th className="py-2 pr-4">Grâce jusqu'au</th>
@@ -195,6 +196,9 @@ function AppsTable({
               <td className="py-2 pr-4 font-mono">{a.name}</td>
               <td className="py-2 pr-4">
                 {a.active ? 'active' : `révoquée le ${date(a.revoked_at)}`}
+              </td>
+              <td className="py-2 pr-4 font-mono text-xs">
+                ····{a.signing_last4} / ····{a.app_last4}
               </td>
               <td className="py-2 pr-4">{date(a.created_at)}</td>
               <td className="py-2 pr-4">{date(a.rotated_at)}</td>

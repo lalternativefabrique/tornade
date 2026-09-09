@@ -14,6 +14,11 @@ type keyLister interface {
 	List(ctx context.Context) ([]*domain.App, error)
 }
 
+// opener unseals a stored key.
+type opener interface {
+	Decrypt(blob []byte) (string, error)
+}
+
 // KeySource answers the speak guard's two questions: which secrets may an
 // issuer's signature verify against, and which application presented this
 // app key. It merges the registry with the pairs read from the environment,
@@ -21,8 +26,9 @@ type keyLister interface {
 // wins where both name the same issuer.
 type KeySource struct {
 	apps       keyLister
-	envSigning map[string]string
-	envApp     map[string]string
+	cipher     opener
+	envSigning map[string][]string
+	envApp     map[string][]string
 	ttl        time.Duration
 	now        func() time.Time
 
@@ -34,8 +40,8 @@ type KeySource struct {
 
 // NewKeySource reads the registry through apps, or only the environment when
 // apps is nil.
-func NewKeySource(apps keyLister, envSigning, envApp map[string]string) *KeySource {
-	return &KeySource{apps: apps, envSigning: envSigning, envApp: envApp, ttl: 15 * time.Second, now: time.Now}
+func NewKeySource(apps keyLister, cipher opener, envSigning, envApp map[string][]string) *KeySource {
+	return &KeySource{apps: apps, cipher: cipher, envSigning: envSigning, envApp: envApp, ttl: 15 * time.Second, now: time.Now}
 }
 
 // SigningKeys are the secrets issuer's signatures may verify against now.
@@ -68,11 +74,13 @@ func (k *KeySource) snapshot() (map[string][]string, map[string]string) {
 	}
 	signing := map[string][]string{}
 	issuerOf := map[string]string{}
-	for issuer, secret := range k.envSigning {
-		signing[issuer] = []string{secret}
+	for issuer, secrets := range k.envSigning {
+		signing[issuer] = append([]string(nil), secrets...)
 	}
-	for issuer, secret := range k.envApp {
-		issuerOf[secret] = issuer
+	for issuer, secrets := range k.envApp {
+		for _, secret := range secrets {
+			issuerOf[secret] = issuer
+		}
 	}
 	if k.apps != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -85,11 +93,30 @@ func (k *KeySource) snapshot() (map[string][]string, map[string]string) {
 			}
 		}
 		for _, a := range apps {
-			if keys := a.SigningKeys(now); len(keys) > 0 {
-				signing[a.Name] = keys
+			if !a.Active() {
+				continue
 			}
-			for _, key := range a.AppKeys(now) {
-				issuerOf[key] = a.Name
+			pairs := []domain.Encrypted{a.Current}
+			if a.PreviousValidAt(now) {
+				pairs = append(pairs, a.Previous)
+			}
+			var secrets []string
+			for _, sealed := range pairs {
+				s, err := k.cipher.Decrypt(sealed.Signing)
+				if err != nil {
+					log.Printf("registry: %s: %v", a.Name, err)
+					continue
+				}
+				p, err := k.cipher.Decrypt(sealed.App)
+				if err != nil {
+					log.Printf("registry: %s: %v", a.Name, err)
+					continue
+				}
+				secrets = append(secrets, s)
+				issuerOf[p] = a.Name
+			}
+			if len(secrets) > 0 {
+				signing[a.Name] = secrets
 			}
 		}
 	}

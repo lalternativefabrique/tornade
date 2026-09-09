@@ -10,6 +10,7 @@ import (
 
 	"github.com/lalternative/packages/go/eda/pkg/cqrs"
 
+	"github.com/lalternativefabrique/tornade/core/registry/application"
 	"github.com/lalternativefabrique/tornade/core/registry/domain"
 	"github.com/lalternativefabrique/tornade/core/registry/infrastructure"
 )
@@ -19,16 +20,18 @@ type Command struct {
 }
 
 type Result struct {
-	App *domain.App
+	App  *domain.App
+	Keys domain.Keys
 }
 
 type Handler struct {
-	repo *infrastructure.Repository
-	now  func() time.Time
+	repo   *infrastructure.Repository
+	cipher *infrastructure.Cipher
+	now    func() time.Time
 }
 
-func NewHandler(repo *infrastructure.Repository) *Handler {
-	return &Handler{repo: repo, now: time.Now}
+func NewHandler(repo *infrastructure.Repository, cipher *infrastructure.Cipher) *Handler {
+	return &Handler{repo: repo, cipher: cipher, now: time.Now}
 }
 
 func (h *Handler) Handle(ctx context.Context, cmd Command) (Result, error) {
@@ -39,11 +42,15 @@ func (h *Handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	if err := a.Rotate(h.now().UTC()); err != nil {
+	keys, sealed, err := application.Mint(h.cipher)
+	if err != nil {
+		return Result{}, err
+	}
+	if err := a.Rotate(sealed, keys, h.now().UTC()); err != nil {
 		return Result{}, fmt.Errorf("%w: %v", cqrs.ErrValidation, err)
 	}
 	if err := h.repo.Save(ctx, a); err != nil {
 		return Result{}, err
 	}
-	return Result{App: a}, nil
+	return Result{App: a, Keys: keys}, nil
 }

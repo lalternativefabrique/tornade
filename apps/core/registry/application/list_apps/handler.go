@@ -12,15 +12,16 @@ import (
 type Query struct{}
 
 // View names an application without its secrets: those are shown once, at
-// creation or rotation, and never listed.
+// creation or rotation, and only their last four characters after that.
 type View struct {
-	Name      string
-	Active    bool
-	CreatedAt time.Time
-	RotatedAt *time.Time
-	RevokedAt *time.Time
-	// GraceUntil is when the previous pair stops working after a rotation.
-	GraceUntil *time.Time
+	Name         string
+	Active       bool
+	SigningLast4 string
+	AppLast4     string
+	CreatedAt    time.Time
+	RotatedAt    *time.Time
+	RevokedAt    *time.Time
+	GraceUntil   *time.Time
 }
 
 type Result struct {
@@ -29,10 +30,11 @@ type Result struct {
 
 type Handler struct {
 	repo *infrastructure.Repository
+	now  func() time.Time
 }
 
 func NewHandler(repo *infrastructure.Repository) *Handler {
-	return &Handler{repo: repo}
+	return &Handler{repo: repo, now: time.Now}
 }
 
 func (h *Handler) Handle(ctx context.Context, _ Query) (Result, error) {
@@ -40,14 +42,13 @@ func (h *Handler) Handle(ctx context.Context, _ Query) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
+	now := h.now().UTC()
 	out := Result{Apps: make([]View, 0, len(apps))}
 	for _, a := range apps {
-		v := View{Name: a.Name, Active: a.Active(), CreatedAt: a.CreatedAt, RotatedAt: a.RotatedAt, RevokedAt: a.RevokedAt}
-		if a.RotatedAt != nil && a.Active() {
-			until := a.RotatedAt.Add(24 * time.Hour)
-			v.GraceUntil = &until
-		}
-		out.Apps = append(out.Apps, v)
+		out.Apps = append(out.Apps, View{
+			Name: a.Name, Active: a.Active(), SigningLast4: a.SigningLast4, AppLast4: a.AppLast4,
+			CreatedAt: a.CreatedAt, RotatedAt: a.RotatedAt, RevokedAt: a.RevokedAt, GraceUntil: a.GraceUntil(now),
+		})
 	}
 	return out, nil
 }

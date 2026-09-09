@@ -4,6 +4,8 @@ definitions:
     properties:
       active:
         type: boolean
+      app_last4:
+        type: string
       created_at:
         type: string
       grace_until:
@@ -13,6 +15,8 @@ definitions:
       revoked_at:
         type: string
       rotated_at:
+        type: string
+      signing_last4:
         type: string
     type: object
   registry.AppListDTO:

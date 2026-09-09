@@ -1,4 +1,5 @@
-// Package infrastructure persists App aggregates in Postgres.
+// Package infrastructure persists App aggregates in Postgres and seals their
+// keys.
 package infrastructure
 
 import (
@@ -22,7 +23,7 @@ func NewRepository(pool *pgxpool.Pool) *Repository {
 	return &Repository{pool: pool}
 }
 
-const columns = `name, signing_key, app_key, previous_signing_key, previous_app_key, rotated_at, revoked_at, created_at, updated_at`
+const columns = `name, signing_key, app_key, signing_last4, app_last4, previous_signing_key, previous_app_key, rotated_at, revoked_at, created_at, updated_at`
 
 func (r *Repository) Get(ctx context.Context, name string) (*domain.App, error) {
 	row := r.pool.QueryRow(ctx, `SELECT `+columns+` FROM registry_apps WHERE name = $1`, name)
@@ -54,16 +55,19 @@ func (r *Repository) List(ctx context.Context) ([]*domain.App, error) {
 func (r *Repository) Save(ctx context.Context, a *domain.App) error {
 	_, err := r.pool.Exec(ctx, `
 		INSERT INTO registry_apps (`+columns+`)
-		VALUES ($1, $2, $3, NULLIF($4, ''), NULLIF($5, ''), $6, $7, $8, $9)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		ON CONFLICT (name) DO UPDATE SET
 			signing_key = EXCLUDED.signing_key,
 			app_key = EXCLUDED.app_key,
+			signing_last4 = EXCLUDED.signing_last4,
+			app_last4 = EXCLUDED.app_last4,
 			previous_signing_key = EXCLUDED.previous_signing_key,
 			previous_app_key = EXCLUDED.previous_app_key,
 			rotated_at = EXCLUDED.rotated_at,
 			revoked_at = EXCLUDED.revoked_at,
 			updated_at = EXCLUDED.updated_at`,
-		a.Name, a.SigningKey, a.AppKey, a.PreviousSigningKey, a.PreviousAppKey,
+		a.Name, a.Current.Signing, a.Current.App, a.SigningLast4, a.AppLast4,
+		nullBytes(a.Previous.Signing), nullBytes(a.Previous.App),
 		a.RotatedAt, a.RevokedAt, a.CreatedAt, a.UpdatedAt)
 	if err != nil {
 		return fmt.Errorf("registry: save %s: %w", a.Name, err)
@@ -73,16 +77,18 @@ func (r *Repository) Save(ctx context.Context, a *domain.App) error {
 
 func scan(row pgx.Row) (*domain.App, error) {
 	var a domain.App
-	var prevSign, prevApp *string
-	if err := row.Scan(&a.Name, &a.SigningKey, &a.AppKey, &prevSign, &prevApp,
-		&a.RotatedAt, &a.RevokedAt, &a.CreatedAt, &a.UpdatedAt); err != nil {
+	var prevSigning, prevApp []byte
+	if err := row.Scan(&a.Name, &a.Current.Signing, &a.Current.App, &a.SigningLast4, &a.AppLast4,
+		&prevSigning, &prevApp, &a.RotatedAt, &a.RevokedAt, &a.CreatedAt, &a.UpdatedAt); err != nil {
 		return nil, err
 	}
-	if prevSign != nil {
-		a.PreviousSigningKey = *prevSign
-	}
-	if prevApp != nil {
-		a.PreviousAppKey = *prevApp
-	}
+	a.Previous = domain.Encrypted{Signing: prevSigning, App: prevApp}
 	return &a, nil
+}
+
+func nullBytes(b []byte) any {
+	if len(b) == 0 {
+		return nil
+	}
+	return b
 }
