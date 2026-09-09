@@ -1,0 +1,27 @@
+# web image — the admin, a TanStack Start SSR app behind a small Node server
+FROM node:22-bookworm AS build
+RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
+WORKDIR /src
+ENV CI=true
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json ./apps/web/package.json
+COPY lib/front/package.json ./lib/front/package.json
+RUN pnpm install --frozen-lockfile
+COPY apps/web ./apps/web
+COPY lib/front ./lib/front
+RUN pnpm --filter @tornade/web build
+RUN pnpm deploy --filter @tornade/web --prod --legacy /prod
+
+FROM node:22-bookworm-slim
+ENV NODE_ENV=production
+WORKDIR /app
+COPY --from=build /prod/node_modules ./node_modules
+# TanStack Start writes dist/, a fetch handler; server.js is what listens.
+COPY --from=build /src/apps/web/dist ./dist
+COPY --from=build /src/apps/web/server.js ./server.js
+COPY --from=build /src/apps/web/package.json ./package.json
+RUN groupadd -g 10001 app && useradd -u 10001 -g app -M -s /usr/sbin/nologin app
+USER 10001:10001
+ENV PORT=5273
+EXPOSE 5273
+CMD ["node", "server.js"]

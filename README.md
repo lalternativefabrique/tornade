@@ -249,6 +249,24 @@ per listener, and buffering anywhere along the way would undo what
 `/render` and `/fetch` execute third-party JavaScript against a URL the caller
 picks, which on the open internet is an SSRF offered to anyone.
 
+## Admin
+
+Which applications may speak through tornade is a registry tornade owns, not
+a pair of environment variables. `apps/web` is the back-office: an operator
+signs in, registers an application by its issuer name, and is shown its two
+keys once — the signing key its server signs browser URLs with, the app key
+it presents on its own calls. Rotating mints a new pair and keeps the old one
+working for a day; revoking ends both at once. The speak guard reads the
+registry at request time, so none of it needs a restart.
+
+The registry lives in Postgres beside the admin's own accounts
+(`DATABASE_URL`), the keys sealed with `REGISTRY_ENCRYPTION_KEY` the way the
+platform's other credentials are; the list shows their last four characters. Without one, tornade runs as before on `SPEAK_SIGNING_KEYS`
+and `SPEAK_APP_KEYS`; with one, those pairs still count, under the registry's
+entries. The admin API (`/api/v1/admin/apps`) sits behind the JWT the web app
+mints from its Better Auth session with `JWT_SECRET`; the browser only ever
+reaches it through the web app's own proxy.
+
 ## Clients
 
 This module ships both halves of that arrangement, so an application does not

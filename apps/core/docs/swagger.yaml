@@ -1,0 +1,154 @@
+basePath: /api/v1
+definitions:
+  registry.AppDTO:
+    properties:
+      active:
+        type: boolean
+      app_last4:
+        type: string
+      created_at:
+        type: string
+      grace_until:
+        type: string
+      name:
+        type: string
+      revoked_at:
+        type: string
+      rotated_at:
+        type: string
+      signing_last4:
+        type: string
+    type: object
+  registry.AppListDTO:
+    properties:
+      apps:
+        items:
+          $ref: '#/definitions/registry.AppDTO'
+        type: array
+    type: object
+  registry.CredentialsDTO:
+    properties:
+      app_key:
+        type: string
+      grace_until:
+        type: string
+      name:
+        type: string
+      signing_key:
+        type: string
+    type: object
+  registry.ErrorDTO:
+    properties:
+      error:
+        type: string
+    type: object
+  registry.RegisterRequest:
+    properties:
+      name:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Search, fetch, render and speak for every product, plus the admin API
+    of the applications registry.
+  title: Tornade
+  version: 0.3.0
+paths:
+  /admin/apps:
+    get:
+      operationId: listApps
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/registry.AppListDTO'
+      security:
+      - BearerAuth: []
+      summary: Every registered application, keys withheld
+      tags:
+      - admin
+    post:
+      consumes:
+      - application/json
+      operationId: registerApp
+      parameters:
+      - description: The issuer name the application signs as
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/registry.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/registry.CredentialsDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/registry.ErrorDTO'
+      security:
+      - BearerAuth: []
+      summary: Admit an application and hand its keys out once
+      tags:
+      - admin
+  /admin/apps/{name}:
+    delete:
+      operationId: revokeApp
+      parameters:
+      - description: Application name
+        in: path
+        name: name
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/registry.ErrorDTO'
+      security:
+      - BearerAuth: []
+      summary: End an application's access at once
+      tags:
+      - admin
+  /admin/apps/{name}/rotate:
+    post:
+      operationId: rotateAppKeys
+      parameters:
+      - description: Application name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/registry.CredentialsDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/registry.ErrorDTO'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/registry.ErrorDTO'
+      security:
+      - BearerAuth: []
+      summary: Mint an application a new pair; the old one works for a day
+      tags:
+      - admin
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

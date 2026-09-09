@@ -75,16 +75,49 @@ services:
       http: /docs
       timeout: 300s
 
+  postgres:
+    image: postgres:16-alpine
+    network: bridge
+    port: 5432
+    env:
+      POSTGRES_USER: tornade
+      POSTGRES_PASSWORD: tornade
+      POSTGRES_DB: tornade
+    volumes: ["sklp-dev-tornade-pg:/var/lib/postgresql/data"]
+    ready:
+      tcp: postgres:5432
+      timeout: 30s
+
   app:
-    run: go run ./cmd/tornade
-    workdir: .
+    run: go run .
+    workdir: apps/core
     port: 8080
-    depends_on: [searxng]
+    depends_on: [searxng, postgres]
     env:
       SEARXNG_URL: http://searxng:8888
       PIPER_URL: http://piper:5000
       TTS_VOICE: fr_FR-siwis-medium
       CHROMIUM_PATH: /usr/bin/chromium
+      DATABASE_URL: postgres://tornade:tornade@postgres:5432/tornade?sslmode=disable
+      JWT_SECRET: dev-only-jwt-secret
+      REGISTRY_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
     ready:
       http: /healthz
       timeout: 120s
+
+  # The admin: who may speak through tornade. Better Auth owns the accounts in
+  # the same Postgres; the app only ever reaches tornade through its proxy.
+  web:
+    run: pnpm install --frozen-lockfile && pnpm --filter @tornade/web dev
+    port: 5273
+    depends_on: [app]
+    env:
+      DATABASE_URL: postgres://tornade:tornade@postgres:5432/tornade?sslmode=disable
+      BETTER_AUTH_SECRET: dev-only-better-auth-secret
+      BETTER_AUTH_URL: http://localhost:5273
+      JWT_SECRET: dev-only-jwt-secret
+      CORE_API_URL: http://app:8080
+      PORT: "5273"
+    ready:
+      http: /admin/login
+      timeout: 300s

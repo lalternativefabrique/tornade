@@ -46,7 +46,7 @@ type Params struct {
 // is what an internal-only deployment wants: nothing reaches /speak that did
 // not already reach the cluster.
 type Verifier struct {
-	keys map[string][]byte
+	keys func(issuer string) [][]byte
 	now  func() time.Time
 }
 
@@ -64,7 +64,32 @@ func NewVerifier(keys map[string]string) *Verifier {
 	if len(parsed) == 0 {
 		return nil
 	}
-	return &Verifier{keys: parsed, now: time.Now}
+	return &Verifier{keys: func(issuer string) [][]byte {
+		if k, ok := parsed[issuer]; ok {
+			return [][]byte{k}
+		}
+		return nil
+	}, now: time.Now}
+}
+
+// NewLookupVerifier checks signatures against whatever lookup returns for an
+// issuer at verification time: several secrets while a rotation's grace
+// lasts, none once the application is revoked. It is how a registry that
+// changes at runtime feeds the guard without a restart.
+func NewLookupVerifier(lookup func(issuer string) []string) *Verifier {
+	if lookup == nil {
+		return nil
+	}
+	return &Verifier{keys: func(issuer string) [][]byte {
+		secrets := lookup(issuer)
+		keys := make([][]byte, 0, len(secrets))
+		for _, s := range secrets {
+			if s != "" {
+				keys = append(keys, []byte(s))
+			}
+		}
+		return keys
+	}, now: time.Now}
 }
 
 // Errors a caller distinguishes: an expired link is worth telling a listener
@@ -96,8 +121,8 @@ func (v *Verifier) Verify(q url.Values, scope, id, text string) error {
 	if sig == "" {
 		return ErrNoSignature
 	}
-	key, ok := v.keys[q.Get(QueryIssuer)]
-	if !ok {
+	keys := v.keys(q.Get(QueryIssuer))
+	if len(keys) == 0 {
 		return ErrUnknownIssue
 	}
 
@@ -107,10 +132,16 @@ func (v *Verifier) Verify(q url.Values, scope, id, text string) error {
 	}
 	expires := time.Unix(unix, 0)
 
-	want := sign(key, Params{Scope: scope, ID: id, TextHash: HashText(text), Expires: expires})
 	// Constant time: a byte-by-byte comparison leaks how much of a guess was
 	// right, which is enough to find the rest one byte at a time.
-	if !hmac.Equal([]byte(sig), []byte(want)) {
+	var genuine bool
+	for _, key := range keys {
+		want := sign(key, Params{Scope: scope, ID: id, TextHash: HashText(text), Expires: expires})
+		if hmac.Equal([]byte(sig), []byte(want)) {
+			genuine = true
+		}
+	}
+	if !genuine {
 		return ErrBadSignature
 	}
 	// Checked after the MAC, so an expired link and a forged one take the
