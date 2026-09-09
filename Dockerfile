@@ -4,8 +4,9 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY cmd/ cmd/
 COPY internal/ internal/
-# signed/ is not internal/: the applications that hand out signed /speak URLs
-# import it to build them, so it has to be a package they can reach.
+# client/ and signed/ are not internal/: the applications that speak through
+# tornade import them, so they have to be packages they can reach.
+COPY client/ client/
 COPY signed/ signed/
 RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/tornade ./cmd/tornade
 
