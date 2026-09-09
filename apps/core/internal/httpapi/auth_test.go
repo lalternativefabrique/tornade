@@ -21,6 +21,7 @@ const (
 func guardedDeps(t *testing.T) httpapi.Deps {
 	t.Helper()
 	d := audioDeps(&stubVoice{pieces: [][]byte{[]byte("aaa"), []byte("bb")}}, newMemStore())
+	d.Unguarded = false
 	d.Verifier = signed.NewVerifier(map[string]string{testIssuer: testKey})
 	d.AppKeyIssuer = func(key string) (string, bool) {
 		if key == "an-app-key" {
@@ -57,6 +58,18 @@ func TestSpeakWithoutAnyAuthConfiguredRefuses(t *testing.T) {
 // to talk to itself would be one that exists only to be checked.
 func TestSpeakStaysOpenWhenUnguardedIsSaid(t *testing.T) {
 	rec := post(t, httpapi.New(audioDeps(&stubVoice{pieces: [][]byte{[]byte("aaa")}}, nil)), "/speak", `{"text":"bonjour"}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rec.Code)
+	}
+}
+
+// main always wires a key lookup, even one that knows no key, so the flag
+// has to win over a configured verifier or it would never apply in the
+// binary itself.
+func TestUnguardedWinsOverAConfiguredVerifier(t *testing.T) {
+	d := guardedDeps(t)
+	d.Unguarded = true
+	rec := post(t, httpapi.New(d), "/speak?exp=1&iss=synthiz&sig=x", `{"text":"bonjour"}`)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", rec.Code)
 	}

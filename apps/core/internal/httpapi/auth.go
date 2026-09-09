@@ -12,15 +12,17 @@ const HeaderAppKey = client.HeaderAppKey
 
 // guardSpeak refuses a /speak request that authenticates as neither.
 //
-// With nothing configured it refuses everything, unless the deployment said
-// Unguarded: a tornade that reaches the internet with no key is not an
-// internal one, it is an open voice, and silence about a missing key must
-// not look like a working service.
+// Unguarded answers everyone whatever keys exist: main wires a key lookup
+// even when no key is configured, so the flag is read on its own rather than
+// inferred from a nil. Without it and without a key it refuses everything: a
+// tornade that reaches the internet with no key is not an internal one, it
+// is an open voice, and silence about a missing key must not look like a
+// working service.
 func (d Deps) guardSpeak(r *http.Request, scope, id, text string) error {
+	if d.Unguarded {
+		return nil
+	}
 	if d.Verifier == nil && d.AppKeyIssuer == nil {
-		if d.Unguarded {
-			return nil
-		}
 		return ErrNoGuard
 	}
 	if key := r.Header.Get(HeaderAppKey); key != "" && d.AppKeyIssuer != nil {
