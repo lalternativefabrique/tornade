@@ -6,6 +6,7 @@ namespace: tornade-prod
 resources:
   - namespace.yaml
   - s3-external-secret.yaml
+  - fetch-proxy-external-secret.yaml
   - tornade.yaml
   - ingress.yaml
 

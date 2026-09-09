@@ -150,6 +150,7 @@ the whole file to answer yes or no.
 | `SPEAK_APP_KEYS` | `issuer:secret` pairs services authenticate with on `X-Tornade-Key`; unset accepts none |
 | `SEARXNG_URL` | required by `/search`, else `503` |
 | `BRAVE_API_KEY` | optional; enables the general-category fallback |
+| `FETCH_PROXY` | residential endpoint `/fetch` reads through; unset fetches direct, unparseable is fatal |
 | `PIPER_URL` | required by `/speak`, else `503` |
 | `TTS_MODEL`, `TTS_VOICE`, `TTS_FORMAT` | voice selection; format must be frame-based (`mp3`, `opus`, `aac`, `flac`) |
 | `TTS_MAX_CHARS` | text per request, default 120 |
@@ -161,6 +162,14 @@ the whole file to answer yes or no.
 | `RENDER_MAX_TIMEOUT_MS` | hard ceiling, default 20000 |
 | `CHROMIUM_PATH` | browser binary; set in the image |
 | `LISTEN_ADDR` | default `:8080` |
+
+A page fetch goes out through `FETCH_PROXY` when one is set. Publishers behind
+bot management refuse a datacenter address whatever headers the request
+carries — a browser User-Agent from a cloud network is refused exactly like an
+honest one — so the exit IP, not the headers, is what decides whether a page
+can be read at all. Unset fetches direct and is reported at startup;
+unparseable is fatal, since a typo there would otherwise look like a working
+service reading a fraction of what it is asked for.
 
 An unconfigured backend disables its endpoint rather than degrading silently.
 

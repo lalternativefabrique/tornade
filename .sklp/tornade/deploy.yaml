@@ -36,6 +36,12 @@ services:
       # as the signing keys: one format for both, and one application's key
       # revoked without touching another's.
       SPEAK_APP_KEYS: ${SPEAK_APP_KEYS}
+      # The residential endpoint /fetch reads through. A publisher behind bot
+      # management refuses a datacenter address whatever headers the request
+      # carries, so without it /fetch is turned away by a growing share of
+      # the web it exists to read. Unset, the fetch goes direct and tornade
+      # says so at startup.
+      FETCH_PROXY: ${FETCH_PROXY}
     resources:
       cpu: "1"
       memory: 1536M

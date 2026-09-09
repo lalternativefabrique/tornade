@@ -29,6 +29,16 @@ import (
 func main() {
 	cfg := config.Load()
 
+	// A page refused on our egress is refused whatever headers we send, so a
+	// proxy that was meant to be configured and is not means /fetch quietly
+	// reads a fraction of the web it is asked for. Fatal rather than a
+	// warning: the value is a deployment's decision, and a typo in it must
+	// not look like a working service.
+	if err := fetch.UseProxy(cfg.FetchProxy); err != nil {
+		log.Fatalf("tornade: FETCH_PROXY: %v", err)
+	}
+	log.Printf("tornade: page fetch proxy %s", fetch.ProxyState())
+
 	browser := render.New(cfg.ChromiumPath)
 	defer browser.Close()
 
