@@ -20,6 +20,7 @@ import (
 	"github.com/lalternative/packages/go/tts"
 
 	"github.com/lalternativefabrique/tornade/internal/audio"
+	"github.com/lalternativefabrique/tornade/internal/challenge"
 	"github.com/lalternativefabrique/tornade/internal/config"
 	"github.com/lalternativefabrique/tornade/internal/httpapi"
 	"github.com/lalternativefabrique/tornade/internal/render"
@@ -50,7 +51,7 @@ func main() {
 	deps := httpapi.Deps{
 		Providers:        buildProviders(cfg),
 		Renderer:         browser,
-		Cache:            fetch.NewMemoryCache(cfg.FetchCacheTTL),
+		Cache:            challenge.GuardCache(fetch.NewMemoryCache(cfg.FetchCacheTTL)),
 		Reader:           reader,
 		Primer:           primer,
 		SearchDeadline:   cfg.SearchDeadline,
