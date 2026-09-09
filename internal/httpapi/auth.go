@@ -4,16 +4,11 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/lalternativefabrique/tornade/client"
 	"github.com/lalternativefabrique/tornade/signed"
 )
 
-// HeaderAppKey carries an application's own key on a server-to-server call.
-//
-// A browser never sends this — it cannot hold a secret — which is why the
-// signed URL exists alongside it. The two answer different callers: a service
-// on the cluster's own network authenticates as itself, a listener's browser
-// carries an authorisation for one reading.
-const HeaderAppKey = "X-Tornade-Key"
+const HeaderAppKey = client.HeaderAppKey
 
 // guardSpeak refuses a /speak request that authenticates as neither.
 //
