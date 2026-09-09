@@ -14,6 +14,13 @@ type Config struct {
 	SearxngURL  string
 	BraveAPIKey string
 
+	// FetchProxy is the residential endpoint page fetches go through, as
+	// "scheme://user:pass@host:port". Publishers behind bot management refuse
+	// a datacenter address whatever headers it carries, so without one /fetch
+	// is refused by a growing share of the web it exists to read. Empty
+	// fetches direct, which is what a local run wants.
+	FetchProxy string
+
 	SearchDeadline time.Duration
 	FetchCacheTTL  time.Duration
 
@@ -49,6 +56,7 @@ func Load() Config {
 
 		SearxngURL:  os.Getenv("SEARXNG_URL"),
 		BraveAPIKey: os.Getenv("BRAVE_API_KEY"),
+		FetchProxy:  os.Getenv("FETCH_PROXY"),
 
 		SearchDeadline: envDuration("SEARCH_DEADLINE_MS", 4*time.Second),
 		FetchCacheTTL:  envDuration("FETCH_CACHE_TTL_MS", 15*time.Minute),

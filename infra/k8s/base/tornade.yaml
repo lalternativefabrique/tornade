@@ -84,6 +84,19 @@ spec:
                   name: tornade-speak-keys
                   key: SPEAK_SIGNING_KEYS
                   optional: true
+            # The residential endpoint /fetch reads through. A publisher
+            # behind bot management refuses this cluster's address whatever
+            # headers the request carries — a browser User-Agent from here is
+            # refused exactly like an honest one — so without it /fetch is
+            # turned away by a growing share of the web it exists to read.
+            #
+            # Optional: unset, tornade fetches direct and says so at startup.
+            - name: FETCH_PROXY
+              valueFrom:
+                secretKeyRef:
+                  name: tornade-fetch-proxy
+                  key: FETCH_PROXY
+                  optional: true
           ports:
             - containerPort: 8080
               name: http

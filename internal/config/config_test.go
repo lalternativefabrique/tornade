@@ -41,3 +41,17 @@ func TestNoKeysConfiguredIsEmpty(t *testing.T) {
 		t.Errorf("keys = %v / %v, want both empty", cfg.AppKeys, cfg.SigningKeys)
 	}
 }
+
+func TestFetchProxyIsReadFromTheEnvironment(t *testing.T) {
+	t.Setenv("FETCH_PROXY", "http://user:pass@gate.decodo.com:7000")
+	if got := Load().FetchProxy; got != "http://user:pass@gate.decodo.com:7000" {
+		t.Errorf("FetchProxy = %q", got)
+	}
+}
+
+func TestFetchProxyDefaultsToDirect(t *testing.T) {
+	t.Setenv("FETCH_PROXY", "")
+	if got := Load().FetchProxy; got != "" {
+		t.Errorf("FetchProxy = %q, want empty so the fetch goes direct", got)
+	}
+}
