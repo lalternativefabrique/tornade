@@ -64,8 +64,8 @@ github.com/gogs/chardet v0.0.0-20211120154057-b7413eaefb8f/go.mod h1:Pcatq5tYkCW
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/lalternative/packages/go/audioreader v0.2.0 h1:m8/bZogBcjcQBi0w2fqu5zVnw3JDK5n8/H53Ce7C64k=
 github.com/lalternative/packages/go/audioreader v0.2.0/go.mod h1:qoQBKY1D2RqZcK7leFLRUr4tE0pBvMx+PcZDS95OzmE=
-github.com/lalternative/packages/go/search v0.1.0 h1:0qDw4If37Ss+NvU7uTWAvzJwOYQ1aQpE7vARrEem+p8=
-github.com/lalternative/packages/go/search v0.1.0/go.mod h1:G7ohkjwpS/n9HCByGUqihnzPL+2hAQ1wsAGK7EEcDUw=
+github.com/lalternative/packages/go/search v0.3.0 h1:0W9+pWd+OEaSZLHHNpT8tjBclSRLy69/4Z/cMMho5K8=
+github.com/lalternative/packages/go/search v0.3.0/go.mod h1:G7ohkjwpS/n9HCByGUqihnzPL+2hAQ1wsAGK7EEcDUw=
 github.com/lalternative/packages/go/tts v0.2.0 h1:kriyRo4zSWUqlYs4MY3ffEGSu1faBSp8qmoflO6UBnM=
 github.com/lalternative/packages/go/tts v0.2.0/go.mod h1:75KtxuFNBMQfVXAcg1cMllRMG/7iwfSSnjmCblFTYVA=
 github.com/ledongthuc/pdf v0.0.0-20220302134840-0c2507a12d80 h1:6Yzfa6GP0rIo/kULo2bwGEkFvCePZ3qHDDTC3/J9Swo=
