@@ -11,8 +11,10 @@ on:
 
 scopes:
   facade:
-    - "cmd/**"
-    - "internal/**"
+    - "apps/core/**"
+    - "client/**"
+    - "signed/**"
+    - "go.work"
     - "go.mod"
     - "go.sum"
     - "Dockerfile"
@@ -24,9 +26,9 @@ steps:
     scope: [facade]
     tools: [go]
     run: |
-      go build ./...
-      go vet ./...
-      go test ./...
+      go build ./... ./apps/core/...
+      go vet ./... ./apps/core/...
+      go test ./... ./apps/core/...
 
   - name: render-test
     scope: [render]

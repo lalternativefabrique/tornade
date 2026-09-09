@@ -76,8 +76,8 @@ services:
       timeout: 300s
 
   app:
-    run: go run ./cmd/tornade
-    workdir: .
+    run: go run .
+    workdir: apps/core
     port: 8080
     depends_on: [searxng]
     env:

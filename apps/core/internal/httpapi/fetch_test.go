@@ -10,8 +10,8 @@ import (
 
 	"github.com/lalternative/packages/go/search/fetch"
 
-	"github.com/lalternativefabrique/tornade/internal/challenge"
-	"github.com/lalternativefabrique/tornade/internal/httpapi"
+	"github.com/lalternativefabrique/tornade/core/internal/challenge"
+	"github.com/lalternativefabrique/tornade/core/internal/httpapi"
 )
 
 const cloudflareChallengeHTML = `<!DOCTYPE html>

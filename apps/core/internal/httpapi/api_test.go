@@ -20,8 +20,8 @@ import (
 	"github.com/lalternative/packages/go/search"
 	"github.com/lalternative/packages/go/tts"
 
-	"github.com/lalternativefabrique/tornade/internal/audio"
-	"github.com/lalternativefabrique/tornade/internal/httpapi"
+	"github.com/lalternativefabrique/tornade/core/internal/audio"
+	"github.com/lalternativefabrique/tornade/core/internal/httpapi"
 )
 
 type stubProvider struct {

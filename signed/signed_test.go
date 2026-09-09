@@ -191,3 +191,23 @@ func TestFieldsCannotBeShiftedAcrossTheSeparator(t *testing.T) {
 		t.Fatal("two different parameter sets produced the same signature")
 	}
 }
+
+// A lookup verifier accepts every secret an issuer currently holds, which is
+// what lets a rotated-out key keep verifying for its grace period, and
+// refuses an issuer the lookup no longer knows.
+func TestLookupVerifierAcceptsEveryCurrentSecret(t *testing.T) {
+	now := time.Now()
+	keys := map[string][]string{issuer: {"new-secret", key}}
+	v := NewLookupVerifier(func(name string) []string { return keys[name] })
+	old := Sign(issuer, key, Params{Scope: "s", ID: "id", TextHash: HashText("text"), Expires: now.Add(time.Hour)})
+	fresh := Sign(issuer, "new-secret", Params{Scope: "s", ID: "id", TextHash: HashText("text"), Expires: now.Add(time.Hour)})
+	for name, q := range map[string]url.Values{"previous": old, "current": fresh} {
+		if err := v.Verify(q, "s", "id", "text"); err != nil {
+			t.Errorf("%s secret refused: %v", name, err)
+		}
+	}
+	delete(keys, issuer)
+	if err := v.Verify(fresh, "s", "id", "text"); !errors.Is(err, ErrUnknownIssue) {
+		t.Fatalf("revoked issuer: err = %v, want ErrUnknownIssue", err)
+	}
+}

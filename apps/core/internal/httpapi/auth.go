@@ -17,11 +17,11 @@ const HeaderAppKey = client.HeaderAppKey
 // making it invent a key to talk to itself would be a credential that exists
 // only to be checked.
 func (d Deps) guardSpeak(r *http.Request, scope, id, text string) error {
-	if d.Verifier == nil && len(d.AppKeys) == 0 {
+	if d.Verifier == nil && d.AppKeyIssuer == nil {
 		return nil
 	}
-	if key := r.Header.Get(HeaderAppKey); key != "" {
-		if _, ok := d.AppKeys[key]; ok {
+	if key := r.Header.Get(HeaderAppKey); key != "" && d.AppKeyIssuer != nil {
+		if _, ok := d.AppKeyIssuer(key); ok {
 			return nil
 		}
 	}

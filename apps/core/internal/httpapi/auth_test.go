@@ -9,7 +9,7 @@ import (
 
 	"github.com/lalternative/packages/go/search"
 
-	"github.com/lalternativefabrique/tornade/internal/httpapi"
+	"github.com/lalternativefabrique/tornade/core/internal/httpapi"
 	"github.com/lalternativefabrique/tornade/signed"
 )
 
@@ -22,7 +22,12 @@ func guardedDeps(t *testing.T) httpapi.Deps {
 	t.Helper()
 	d := audioDeps(&stubVoice{pieces: [][]byte{[]byte("aaa"), []byte("bb")}}, newMemStore())
 	d.Verifier = signed.NewVerifier(map[string]string{testIssuer: testKey})
-	d.AppKeys = map[string]string{"an-app-key": "lalter"}
+	d.AppKeyIssuer = func(key string) (string, bool) {
+		if key == "an-app-key" {
+			return "lalter", true
+		}
+		return "", false
+	}
 	return d
 }
 

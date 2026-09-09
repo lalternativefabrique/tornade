@@ -40,12 +40,12 @@ type Deps struct {
 	// browser. Nil accepts none, which is what a deployment reachable only
 	// from the cluster wants.
 	Verifier *signed.Verifier
-	// AppKeys are the keys services authenticate with on a call of their own,
-	// mapping each secret to the name of the service holding it.
-	AppKeys map[string]string
+	// AppKeyIssuer names the service holding the key a request presents on
+	// a call of its own. Nil accepts no such call.
+	AppKeyIssuer func(key string) (string, bool)
 }
 
-func New(d Deps) http.Handler {
+func New(d Deps) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})

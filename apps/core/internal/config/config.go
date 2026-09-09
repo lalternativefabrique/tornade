@@ -44,10 +44,16 @@ type Config struct {
 	SigningKeys map[string]string
 	// AppKeys authenticate a service calling /speak on its own behalf, read
 	// from SPEAK_APP_KEYS in the same "issuer:secret" shape as SigningKeys —
-	// one format for both rather than two that look alike and are not. Keyed
-	// by secret here, since that is what a request presents; the name it maps
-	// to is what the logs report.
+	// one format for both rather than two that look alike and are not.
 	AppKeys map[string]string
+
+	// DatabaseURL opens the registry of applications and the admin's own
+	// accounts. Empty runs without either: the environment pairs above are
+	// then all that speaks, as before the registry existed.
+	DatabaseURL string
+	// JWTSecret verifies the admin web app's tokens on the admin API. It is
+	// the same value the web app mints with.
+	JWTSecret string
 }
 
 func Load() Config {
@@ -90,7 +96,10 @@ func Load() Config {
 		AudioOpeningChars: envInt("AUDIO_OPENING_CHARS", 800),
 
 		SigningKeys: envPairs("SPEAK_SIGNING_KEYS"),
-		AppKeys:     bySecret(envPairs("SPEAK_APP_KEYS")),
+		AppKeys:     envPairs("SPEAK_APP_KEYS"),
+
+		DatabaseURL: os.Getenv("DATABASE_URL"),
+		JWTSecret:   os.Getenv("JWT_SECRET"),
 	}
 }
 
@@ -106,16 +115,6 @@ func envPairs(key string) map[string]string {
 			continue
 		}
 		out[issuer] = secret
-	}
-	return out
-}
-
-// bySecret inverts an issuer-to-secret map, since a request presents the
-// secret and what is wanted from it is the name.
-func bySecret(pairs map[string]string) map[string]string {
-	out := make(map[string]string, len(pairs))
-	for issuer, secret := range pairs {
-		out[secret] = issuer
 	}
 	return out
 }

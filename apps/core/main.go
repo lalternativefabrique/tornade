@@ -1,5 +1,14 @@
 // Command tornade is the HTTP facade over this platform's search, page
-// extraction, JavaScript rendering and speech backends.
+// extraction, JavaScript rendering and speech backends, and the registry of
+// the applications allowed to speak through it.
+//
+// @title           Tornade
+// @version         0.3.0
+// @description     Search, fetch, render and speak for every product, plus the admin API of the applications registry.
+// @BasePath        /api/v1
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 package main
 
 import (
@@ -19,11 +28,14 @@ import (
 	"github.com/lalternative/packages/go/search/searxng"
 	"github.com/lalternative/packages/go/tts"
 
-	"github.com/lalternativefabrique/tornade/internal/audio"
-	"github.com/lalternativefabrique/tornade/internal/challenge"
-	"github.com/lalternativefabrique/tornade/internal/config"
-	"github.com/lalternativefabrique/tornade/internal/httpapi"
-	"github.com/lalternativefabrique/tornade/internal/render"
+	"github.com/lalternativefabrique/tornade/core/internal/audio"
+	"github.com/lalternativefabrique/tornade/core/internal/challenge"
+	"github.com/lalternativefabrique/tornade/core/internal/config"
+	"github.com/lalternativefabrique/tornade/core/internal/httpapi"
+	"github.com/lalternativefabrique/tornade/core/internal/render"
+	"github.com/lalternativefabrique/tornade/core/middleware"
+	"github.com/lalternativefabrique/tornade/core/pkg/db"
+	"github.com/lalternativefabrique/tornade/core/registry"
 	"github.com/lalternativefabrique/tornade/signed"
 )
 
@@ -48,6 +60,8 @@ func main() {
 
 	reader, primer := buildAudio(cfg)
 
+	apps, keys := buildRegistry(cfg)
+
 	deps := httpapi.Deps{
 		Providers:        buildProviders(cfg),
 		Renderer:         browser,
@@ -56,11 +70,16 @@ func main() {
 		Primer:           primer,
 		SearchDeadline:   cfg.SearchDeadline,
 		RenderMaxTimeout: cfg.RenderMaxTimeout,
-		Verifier:         signed.NewVerifier(cfg.SigningKeys),
-		AppKeys:          cfg.AppKeys,
+		Verifier:         signed.NewLookupVerifier(keys.SigningKeys),
+		AppKeyIssuer:     keys.IssuerOf,
 	}
 
-	srv := &http.Server{Addr: cfg.Addr, Handler: httpapi.New(deps)}
+	mux := httpapi.New(deps)
+	if apps != nil {
+		apps.RegisterRoutes(mux, "/api/v1", middleware.RequireAuth(cfg.JWTSecret))
+	}
+
+	srv := &http.Server{Addr: cfg.Addr, Handler: mux}
 
 	go func() {
 		log.Printf("tornade: listening on %s", cfg.Addr)
@@ -78,6 +97,29 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Printf("tornade: shutdown: %v", err)
 	}
+}
+
+// buildRegistry opens the applications registry when a database is
+// configured. Without one, the environment pairs are all that speaks, which
+// is what a tornade deployed before the registry existed still runs on.
+func buildRegistry(cfg config.Config) (*registry.Service, *registry.KeySource) {
+	if cfg.DatabaseURL == "" {
+		log.Print("tornade: no DATABASE_URL, the applications registry is off")
+		return nil, registry.NewKeySource(nil, cfg.SigningKeys, cfg.AppKeys)
+	}
+	ctx := context.Background()
+	pool, err := db.Open(ctx, cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("tornade: DATABASE_URL: %v", err)
+	}
+	if err := db.Migrate(ctx, pool, "./migrations/postgres"); err != nil {
+		log.Fatalf("tornade: migrate: %v", err)
+	}
+	apps, err := registry.NewService(pool, cfg.SigningKeys, cfg.AppKeys)
+	if err != nil {
+		log.Fatalf("tornade: registry: %v", err)
+	}
+	return apps, apps.Keys()
 }
 
 // buildProviders wires one provider per category. Brave has no academic index

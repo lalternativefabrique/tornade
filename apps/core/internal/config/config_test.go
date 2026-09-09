@@ -5,15 +5,15 @@ import "testing"
 // Both key variables take the same "issuer:secret" shape. Two formats that
 // look alike and are not is how a secret gets pasted into the wrong one and
 // silently authenticates nobody.
-func TestAppKeysAreReadByIssuerAndLookedUpBySecret(t *testing.T) {
+func TestAppKeysAreReadByIssuer(t *testing.T) {
 	t.Setenv("SPEAK_APP_KEYS", "lalter:aaa, synthiz:bbb")
 
 	keys := Load().AppKeys
-	if got := keys["aaa"]; got != "lalter" {
-		t.Errorf("keys[aaa] = %q, want lalter", got)
+	if got := keys["lalter"]; got != "aaa" {
+		t.Errorf("keys[lalter] = %q, want aaa", got)
 	}
-	if got := keys["bbb"]; got != "synthiz" {
-		t.Errorf("keys[bbb] = %q, want synthiz", got)
+	if got := keys["synthiz"]; got != "bbb" {
+		t.Errorf("keys[synthiz] = %q, want bbb", got)
 	}
 	if len(keys) != 2 {
 		t.Errorf("got %d keys, want 2", len(keys))
@@ -27,7 +27,7 @@ func TestMalformedKeysAreDropped(t *testing.T) {
 	t.Setenv("SPEAK_APP_KEYS", "no-issuer,lalter:aaa,:empty,synthiz:")
 
 	keys := Load().AppKeys
-	if len(keys) != 1 || keys["aaa"] != "lalter" {
+	if len(keys) != 1 || keys["lalter"] != "aaa" {
 		t.Errorf("keys = %v, want only the well-formed pair", keys)
 	}
 }

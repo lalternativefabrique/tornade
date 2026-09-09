@@ -15,8 +15,10 @@ on:
 
 scopes:
   app:
-    - "cmd/**"
-    - "internal/**"
+    - "apps/core/**"
+    - "client/**"
+    - "signed/**"
+    - "go.work"
     - "go.mod"
     - "go.sum"
     - "Dockerfile"

@@ -1,14 +1,14 @@
 FROM golang:1.26-bookworm AS build
 WORKDIR /src
-COPY go.mod go.sum ./
-RUN go mod download
-COPY cmd/ cmd/
-COPY internal/ internal/
-# client/ and signed/ are not internal/: the applications that speak through
-# tornade import them, so they have to be packages they can reach.
+COPY go.work go.work.sum go.mod go.sum ./
+COPY apps/core/go.mod apps/core/go.sum ./apps/core/
+RUN cd apps/core && go mod download
+# client/ and signed/ are the root module: the applications that speak
+# through tornade import them, and the server does too.
 COPY client/ client/
 COPY signed/ signed/
-RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/tornade ./cmd/tornade
+COPY apps/core/ apps/core/
+RUN cd apps/core && CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/tornade .
 
 # Chromium plus the system libraries it needs is the hard part of this image;
 # the Playwright base ships that set already resolved and maintained upstream.
@@ -16,6 +16,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/tornade ./cmd/torn
 FROM mcr.microsoft.com/playwright:v1.62.1-noble
 WORKDIR /app
 COPY --from=build /out/tornade /usr/local/bin/tornade
+COPY --from=build /src/apps/core/migrations /app/migrations
 
 # GStreamer carries CVE-2025-3887 (H265 parsing, remote code execution) with no
 # fixed version published, which fails the publish scan. It is Chromium's video
