@@ -43,6 +43,10 @@ type Deps struct {
 	// AppKeyIssuer names the service holding the key a request presents on
 	// a call of its own. Nil accepts no such call.
 	AppKeyIssuer func(key string) (string, bool)
+	// Unguarded lets the speak routes answer with neither of the above: a
+	// deployment reachable only from inside the cluster, or a laptop. It has
+	// to be said; a tornade that forgot its keys must refuse, not serve.
+	Unguarded bool
 }
 
 func New(d Deps) *http.ServeMux {
@@ -53,7 +57,8 @@ func New(d Deps) *http.ServeMux {
 	mux.Handle("POST /search", handleSearch(d))
 	mux.Handle("POST /fetch", handleFetch(d))
 	mux.Handle("POST /render", handleRender(d))
-	mux.Handle("POST /speak", handleSpeak(d))
+	mux.Handle("OPTIONS /speak", handleSpeakPreflight())
+	mux.Handle("POST /speak", withCORS(handleSpeak(d)))
 	mux.Handle("POST /speak/prime", handlePrime(d))
 	mux.Handle("POST /speak/pregenerate", handlePregenerate(d))
 	mux.Handle("POST /speak/exists", handleExists(d))

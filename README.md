@@ -146,7 +146,8 @@ the whole file to answer yes or no.
 
 | | |
 |---|---|
-| `SPEAK_SIGNING_KEYS` | `issuer:secret` pairs authorising browser calls to `/speak`; unset accepts none |
+| `SPEAK_SIGNING_KEYS` | `issuer:secret` pairs authorising browser calls to `/speak`, an issuer repeatable; the registry supersedes them |
+| `SPEAK_UNGUARDED` | `true` lets the speak routes answer with no key at all: a cluster-internal tornade or a laptop, never one behind a public name. Without it and without keys, `/speak` refuses everyone |
 | `SPEAK_APP_KEYS` | `issuer:secret` pairs services authenticate with on `X-Tornade-Key`; unset accepts none |
 | `SEARXNG_URL` | required by `/search`, else `503` |
 | `BRAVE_API_KEY` | optional; enables the general-category fallback |

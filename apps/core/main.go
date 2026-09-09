@@ -73,6 +73,10 @@ func main() {
 		RenderMaxTimeout: cfg.RenderMaxTimeout,
 		Verifier:         signed.NewLookupVerifier(keys.SigningKeys),
 		AppKeyIssuer:     keys.IssuerOf,
+		Unguarded:        cfg.SpeakUnguarded,
+	}
+	if cfg.SpeakUnguarded {
+		log.Print("tornade: SPEAK_UNGUARDED, the speak routes answer anyone who reaches them")
 	}
 
 	mux := httpapi.New(deps)

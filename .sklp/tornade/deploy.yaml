@@ -41,20 +41,6 @@ services:
       S3_BUCKET: tornade-prod-audio
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
-      # The secrets applications sign browser-bound /speak URLs with, as
-      # "issuer:secret" pairs. A listener's browser fetches its audio here
-      # directly rather than through the application that authorised it: a
-      # reading is tens of seconds of bytes, and relaying it would have that
-      # application stream media for the whole of it.
-      #
-      # Unset, no browser call is accepted and tornade answers only what
-      # reaches it on the node's internal network, as it did before.
-      SPEAK_SIGNING_KEYS: ${SPEAK_SIGNING_KEYS}
-      # Authenticates a service calling /speak on its own behalf — priming an
-      # opening, which no browser is ever handed. Same "issuer:secret" shape
-      # as the signing keys: one format for both, and one application's key
-      # revoked without touching another's.
-      SPEAK_APP_KEYS: ${SPEAK_APP_KEYS}
       # The residential endpoint /fetch reads through. A publisher behind bot
       # management refuses a datacenter address whatever headers the request
       # carries, so without it /fetch is turned away by a growing share of
