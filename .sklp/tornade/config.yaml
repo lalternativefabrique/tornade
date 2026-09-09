@@ -1,0 +1,12 @@
+encryptionsalt: mSUOfJC/gDnivFEXklagrw==
+encryptioniters: 600000
+config: {}
+secrets:
+    BETTER_AUTH_SECRET:
+        secure: oh/MI8JcvdS0hZvdNeTokXRO4pVe4HuTb1Yk4XbBP2LozTFkdXJnwswyHMKsQWSvVPI93439LpfpNBnlwxvpWfcd1j6ZexfJsiI7mz8SmjN2dm3UyQ8UvyqExV8=
+    JWT_SECRET:
+        secure: xS7Z65Kzl3v9O8qS+JSV6oGZYk9vppBi3q7flhmrwDpIunz0WJWp6+tDnVtDn7Ve2w2yGXCbBaB38o2VWZWF5KFWUfw7i+QDCiNfA7YrJoCxiOei8Ux3OaaDDIs=
+    POSTGRES_PASSWORD:
+        secure: lQ8DZHK415x4NFA5M+A5ptFvsKMXV/qfKZpu1CZbaXQc+O1bkm3lSVpY/VaIuHqbWtb20FiLMAcq4ApOCd8SpqJmDFoHyqMBIzKTrNNvao5UwEOVrrMkb1X5j1w=
+    REGISTRY_ENCRYPTION_KEY:
+        secure: m+If9eAK00NPKGMVWrQ0jeLwUmmY13aw0onyVKsrxZtZpFqQc8PffPR6F6x3EMBgftpLWd6uYQ7t9K3kW4NpVg2AmMOcUDRO
