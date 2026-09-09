@@ -235,6 +235,20 @@ per listener, and buffering anywhere along the way would undo what
 `/render` and `/fetch` execute third-party JavaScript against a URL the caller
 picks, which on the open internet is an SSRF offered to anyone.
 
+## Clients
+
+This module ships both halves of that arrangement, so an application does not
+rewrite the contract:
+
+- `client` (Go) is a `tts.Voice` that speaks through tornade. `client.New`
+  takes the `AppKey` for server-to-server calls; `PrimeOpening`,
+  `Pregenerate` and the `*Named` variants map onto the routes above.
+- `signed` (Go) holds the signature scheme. `signed.NewSigner` mints the URL
+  the application hands its browser; tornade verifies with the same package.
+- `sdk-react` (npm, `@lalternative/tornade-sdk-react`) plays a signed reading
+  in the browser: `speakSource` builds the request, `useVoicePlayback`
+  streams and decodes it.
+
 ## Running it
 
 ```bash
