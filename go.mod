@@ -10,7 +10,7 @@ require (
 	github.com/chromedp/cdproto v0.0.0-20260804232424-e85f50dbfd32
 	github.com/chromedp/chromedp v0.16.0
 	github.com/lalternative/packages/go/audioreader v0.2.0
-	github.com/lalternative/packages/go/search v0.1.0
+	github.com/lalternative/packages/go/search v0.3.0
 	github.com/lalternative/packages/go/tts v0.2.0
 )
 
