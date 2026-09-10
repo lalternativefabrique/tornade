@@ -16,11 +16,24 @@ if (!authSecret) {
   throw new Error('BETTER_AUTH_SECRET environment variable is required')
 }
 
+const extraTrustedOrigins = (process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+
+// sklp dev reaches the web at http://web.<space-id>.localhost:<port>, a
+// different origin on every launch, so a fixed value would go stale the moment
+// the space is recreated. Better Auth matches wildcards in trustedOrigins.
+if (process.env.NODE_ENV !== 'production') {
+  extraTrustedOrigins.push('http://*.localhost:*', 'https://*.localhost:*')
+}
+
 export const auth = createPlatformAuth({
   database: pool,
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:5273',
   secret: authSecret,
   appName: 'tornade',
+  trustedOrigins: extraTrustedOrigins.length ? extraTrustedOrigins : undefined,
   // Nobody signs up here: the first admin is minted by /admin/setup, the
   // next ones by an admin. An open sign-up endpoint would only mint accounts
   // that can see nothing, and a closed one is one fewer door.
