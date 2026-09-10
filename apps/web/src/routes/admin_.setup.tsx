@@ -1,5 +1,6 @@
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { AdminSetupForm } from '@lalternative/admin'
+import { AdminScreen } from '@/components/admin-screen'
 
 /**
  * First-admin bootstrap. The `admin_` segment keeps it outside the `/admin`
@@ -30,7 +31,7 @@ function AdminSetupPage() {
   const { token } = Route.useSearch()
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <AdminScreen>
       <AdminSetupForm
         title="Tornade"
         subtitle="Create the first admin account"
@@ -45,6 +46,6 @@ function AdminSetupPage() {
         }}
         onSuccess={() => navigate({ to: '/admin/login' })}
       />
-    </div>
+    </AdminScreen>
   )
 }
