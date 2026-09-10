@@ -3,8 +3,8 @@
 # file records what actually shipped, so a redeploy from Git can
 # reproduce the running version and `git log` answers what was live
 # when. Editing it changes nothing: the next roll overwrites it.
-# last updated: 2026-09-10T06:32:47Z
+# last updated: 2026-09-10T06:33:18Z
 tags:
   tornade-app: "20260910-0626-18c0cdadf814"
   tornade-migrate: "20260910-0626-18c0cdadf814"
-  tornade-web: "20260910-0615-6498436b717c"
+  tornade-web: "20260910-0626-18c0cdadf814"
