@@ -26,11 +26,8 @@ services:
     depends_on: [postgres]
     env:
       LISTEN_ADDR: ":8080"
-      # The registry of applications and the admin's accounts. Both live
-      # here; the speak guard reads the keys from it at request time.
       DATABASE_URL: postgres://tornade:${POSTGRES_PASSWORD}@postgres:5432/tornade?sslmode=disable
       JWT_SECRET: ${JWT_SECRET}
-      # Seals the applications' keys at rest: base64 of 32 random bytes.
       REGISTRY_ENCRYPTION_KEY: ${REGISTRY_ENCRYPTION_KEY}
       SEARXNG_URL: http://searxng.searxng-production.internal
       PIPER_URL: http://piper.piper-production.internal
@@ -41,12 +38,8 @@ services:
       S3_BUCKET: tornade-prod-audio
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
-      # The residential endpoint /fetch reads through. A publisher behind bot
-      # management refuses a datacenter address whatever headers the request
-      # carries, so without it /fetch is turned away by a growing share of
-      # the web it exists to read. Unset, the fetch goes direct and tornade
-      # says so at startup.
       FETCH_PROXY: ${FETCH_PROXY}
+      PARTAGG_MASTER_KEY: ${PARTAGG_MASTER_KEY}
     resources:
       cpu: "1"
       memory: 1536M
@@ -69,10 +62,8 @@ services:
       BETTER_AUTH_URL: https://vvaves.dev
       JWT_SECRET: ${JWT_SECRET}
       CORE_API_URL: http://app:8080
-      # /admin/setup mints the first admin with no session. The token rides
-      # in the URL the operator is handed, ?token=; without it, production
-      # refuses every setup rather than letting whoever comes first in.
       ADMIN_SETUP_TOKEN: ${ADMIN_SETUP_TOKEN}
+
     resources:
       cpu: "0.5"
       memory: 512M
