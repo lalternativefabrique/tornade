@@ -5,8 +5,9 @@ package db
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
+	"io/fs"
+	"log"
+	"path"
 	"sort"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,24 +22,23 @@ func Open(ctx context.Context, url string) (*pgxpool.Pool, error) {
 	return pgxpool.NewWithConfig(ctx, cfg)
 }
 
-// Migrate applies every *.sql file in dir in lexicographic order.
-func Migrate(ctx context.Context, pool *pgxpool.Pool, dir string) error {
-	entries, err := os.ReadDir(dir)
+// Migrate applies every *.sql file under dir of fsys in lexicographic order.
+// A missing directory is an error: silence there is how a database ends up
+// without its tables and nobody notices until a request fails.
+func Migrate(ctx context.Context, pool *pgxpool.Pool, fsys fs.FS, dir string) error {
+	entries, err := fs.ReadDir(fsys, dir)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
+		return fmt.Errorf("migrations: %w", err)
 	}
 	names := make([]string, 0, len(entries))
 	for _, e := range entries {
-		if !e.IsDir() && filepath.Ext(e.Name()) == ".sql" {
+		if !e.IsDir() && path.Ext(e.Name()) == ".sql" {
 			names = append(names, e.Name())
 		}
 	}
 	sort.Strings(names)
 	for _, n := range names {
-		b, err := os.ReadFile(filepath.Join(dir, n))
+		b, err := fs.ReadFile(fsys, path.Join(dir, n))
 		if err != nil {
 			return fmt.Errorf("read %s: %w", n, err)
 		}
@@ -46,5 +46,6 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool, dir string) error {
 			return fmt.Errorf("apply %s: %w", n, err)
 		}
 	}
+	log.Printf("tornade: %d migration(s) applied", len(names))
 	return nil
 }
