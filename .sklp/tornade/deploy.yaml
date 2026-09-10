@@ -2,6 +2,10 @@ version: 1
 kind: deploy
 name: tornade
 
+# The secrets a `sklp deploy` from a laptop expands: the same deploy-readable
+# store the remote roll resolves from, so both paths read one source.
+project_id: ea2681d6-ecad-4c82-8f4b-a3bbbd874882
+
 registries:
   rg.fr-par.scw.cloud:
     username: nologin
@@ -39,7 +43,6 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       FETCH_PROXY: ${FETCH_PROXY}
-      PARTAGG_MASTER_KEY: ${PARTAGG_MASTER_KEY}
     resources:
       cpu: "1"
       memory: 1536M
@@ -63,7 +66,6 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       CORE_API_URL: http://app:8080
       ADMIN_SETUP_TOKEN: ${ADMIN_SETUP_TOKEN}
-
     resources:
       cpu: "0.5"
       memory: 512M
