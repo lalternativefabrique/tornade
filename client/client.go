@@ -27,6 +27,10 @@ type Config struct {
 	// same key signed.NewSigner takes. Empty sends nothing, which an
 	// internal-only tornade accepts.
 	Key string
+	// Authorize attaches a bearer token from the suite's identity provider
+	// to each call, svcauth.ClientCredentials.Authorize typically. Set, it
+	// takes the place of Key: tornade reads the token first.
+	Authorize func(*http.Request) error
 	// Client defaults to one with no global timeout, same as OpenAIVoice: a
 	// long reading can take minutes, and cancellation belongs to the context.
 	Client *http.Client
@@ -220,7 +224,11 @@ func (v *Voice) post(ctx context.Context, path string, payload map[string]any) (
 		return nil, fmt.Errorf("tts: build request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if v.cfg.Key != "" {
+	if v.cfg.Authorize != nil {
+		if err := v.cfg.Authorize(req); err != nil {
+			return nil, fmt.Errorf("tts: authorize: %w", err)
+		}
+	} else if v.cfg.Key != "" {
 		req.Header.Set(HeaderKey, v.cfg.Key)
 	}
 	resp, err := v.cfg.Client.Do(req)
