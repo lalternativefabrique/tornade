@@ -1,14 +1,27 @@
 package httpapi
 
 import (
+	"context"
 	"errors"
 	"net/http"
+
+	"github.com/lalternative/packages/go/svcauth"
 
 	"github.com/lalternativefabrique/tornade/client"
 	"github.com/lalternativefabrique/tornade/signed"
 )
 
 const HeaderKey = client.HeaderKey
+
+// ScopeSpeak is the OAuth2 scope a service's token must carry to have text
+// read: a token meant for another part of the suite must not reach the voice.
+const ScopeSpeak = "tornade:speak"
+
+// BearerVerifier checks a token a service obtained from the suite's identity
+// provider. svcauth.Verifier is the one main wires.
+type BearerVerifier interface {
+	Verify(ctx context.Context, raw string) (svcauth.Claims, error)
+}
 
 // guardSpeak refuses a /speak request that authenticates as neither.
 //
@@ -22,8 +35,18 @@ func (d Deps) guardSpeak(r *http.Request, scope, id, text string) error {
 	if d.Unguarded {
 		return nil
 	}
-	if d.Verifier == nil && d.AppKeyIssuer == nil {
+	if d.Verifier == nil && d.AppKeyIssuer == nil && d.Tokens == nil {
 		return ErrNoGuard
+	}
+	if raw, ok := svcauth.BearerToken(r); ok && d.Tokens != nil {
+		claims, err := d.Tokens.Verify(r.Context(), raw)
+		if err != nil {
+			return ErrBadToken
+		}
+		if !claims.HasScope(ScopeSpeak) {
+			return ErrTokenLacksScope
+		}
+		return nil
 	}
 	if key := r.Header.Get(HeaderKey); key != "" && d.AppKeyIssuer != nil {
 		if _, ok := d.AppKeyIssuer(key); ok {
@@ -52,6 +75,13 @@ var ErrSignatureNotAcceptedHere = errors.New("signed: this endpoint takes an app
 // ErrNoGuard is a speak request on a tornade with no key configured and no
 // leave to run without one.
 var ErrNoGuard = errors.New("speak: no key configured, and not unguarded")
+
+// ErrBadToken is a bearer token the identity provider did not sign for this
+// service, or one that has expired.
+var ErrBadToken = errors.New("speak: bearer token refused")
+
+// ErrTokenLacksScope is a valid token that was not granted the speak scope.
+var ErrTokenLacksScope = errors.New("speak: token lacks the " + ScopeSpeak + " scope")
 
 // writeAuthError answers a failed guard.
 //

@@ -33,6 +33,8 @@ services:
       DATABASE_URL: postgres://tornade:${POSTGRES_PASSWORD}@postgres:5432/tornade?sslmode=disable
       JWT_SECRET: ${JWT_SECRET}
       REGISTRY_ENCRYPTION_KEY: ${REGISTRY_ENCRYPTION_KEY}
+      OIDC_ISSUER_URL: https://id.vvaves.dev
+      OIDC_AUDIENCE: tornade
       SEARXNG_URL: http://searxng.searxng-production.internal
       PIPER_URL: http://piper.piper-production.internal
       TTS_MODEL: fr_FR-siwis-medium

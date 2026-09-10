@@ -52,6 +52,14 @@ type Config struct {
 	// JWTSecret verifies the admin web app's tokens on the admin API. It is
 	// the same value the web app mints with.
 	JWTSecret string
+	// OIDCIssuerURL is the suite's identity provider, read from
+	// OIDC_ISSUER_URL. A service presents a bearer token it obtained there
+	// instead of an app key; the token must name OIDCAudience. Empty accepts
+	// no token.
+	OIDCIssuerURL string
+	// OIDCAudience is the name this tornade answers to in a token's aud,
+	// read from OIDC_AUDIENCE, "tornade" by default.
+	OIDCAudience string
 	// SpeakUnguarded lets the speak routes answer with no key at all, read
 	// from SPEAK_UNGUARDED=true. For a tornade nothing outside the cluster
 	// reaches, and for a laptop; never for one behind a public name.
@@ -107,6 +115,8 @@ func Load() Config {
 		JWTSecret:             os.Getenv("JWT_SECRET"),
 		RegistryEncryptionKey: os.Getenv("REGISTRY_ENCRYPTION_KEY"),
 		SpeakUnguarded:        os.Getenv("SPEAK_UNGUARDED") == "true",
+		OIDCIssuerURL:         os.Getenv("OIDC_ISSUER_URL"),
+		OIDCAudience:          envString("OIDC_AUDIENCE", "tornade"),
 	}
 }
 
@@ -127,6 +137,13 @@ func envPairs(key string) map[string][]string {
 }
 
 func env(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
+func envString(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
 	}
