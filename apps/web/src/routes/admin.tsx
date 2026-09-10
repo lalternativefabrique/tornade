@@ -5,9 +5,9 @@ import { getProfile } from '@/lib/services/auth'
 import { hasAdminFeatures } from '@/lib/hooks/useAdminFeaturesEnabled'
 
 /**
- * Back-office shell. `/admin/login` and `/admin/setup` sit outside it, their
- * files carry a trailing underscore: login must be reachable without a
- * session, and setup mints the very first admin.
+ * Back-office shell. `/admin/login` and `/admin/setup` sit outside it, as
+ * `admin_.login.tsx` and `admin_.setup.tsx`: login must be reachable without
+ * a session, and setup mints the very first admin.
  *
  * The guard lives in the component rather than beforeLoad: that hook cannot
  * reach /api/me during SSR and is not replayed on hydration, so the whole

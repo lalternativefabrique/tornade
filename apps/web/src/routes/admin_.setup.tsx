@@ -2,12 +2,12 @@ import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { AdminSetupForm } from '@lalternative/admin'
 
 /**
- * First-admin bootstrap. Trailing underscore keeps it outside the `/admin`
+ * First-admin bootstrap. The `admin_` segment keeps it outside the `/admin`
  * layout guard: it must be reachable with no session. The setup token rides
  * in the URL the operator was handed, `?token=`, and the server re-checks it
  * along with everything else.
  */
-export const Route = createFileRoute('/admin/setup_')({
+export const Route = createFileRoute('/admin_/setup')({
   validateSearch: (search: Record<string, unknown>) => ({
     token: typeof search.token === 'string' ? search.token : undefined,
   }),
