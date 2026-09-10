@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { AdminLoginForm } from '@lalternative/admin'
 import { authClient } from '@/lib/auth-client'
 import { getProfile } from '@/lib/services/auth'
+import { AdminScreen } from '@/components/admin-screen'
 
 /**
  * Admin sign-in. The underscore is on the `admin_` segment, which excludes
@@ -16,10 +17,12 @@ export const Route = createFileRoute('/admin_/login')({
 function AdminLoginPage() {
   const navigate = useNavigate()
   return (
-    <AdminLoginForm
-      authClient={authClient}
-      getProfile={getProfile}
-      onSuccess={() => navigate({ to: '/admin' })}
-    />
+    <AdminScreen>
+      <AdminLoginForm
+        authClient={authClient}
+        getProfile={getProfile}
+        onSuccess={() => navigate({ to: '/admin' })}
+      />
+    </AdminScreen>
   )
 }
