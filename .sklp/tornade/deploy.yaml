@@ -25,7 +25,7 @@ services:
       timeout: 60s
 
   app:
-    image: rg.fr-par.scw.cloud/lalternative/tornade:20260901-0555-ee5332ac9518
+    image: rg.fr-par.scw.cloud/lalternative/tornade:20260910-0705-4f8c2ff6ba18
     port: 8080
     depends_on: [migrate, postgres]
     env:
@@ -54,7 +54,7 @@ services:
   # speak through tornade. It reaches the app only through its own proxy,
   # minting the JWT the admin API verifies from the Better Auth session.
   web:
-    image: rg.fr-par.scw.cloud/lalternative/tornade-web:20260909-1820-dbcd3d81aeed
+    image: rg.fr-par.scw.cloud/lalternative/tornade-web:20260910-0705-4f8c2ff6ba18
     port: 5273
     depends_on: [postgres, app]
     env:
@@ -75,7 +75,7 @@ services:
 
 jobs:
   migrate:
-    image: rg.fr-par.scw.cloud/lalternative/tornade-migrate:20260910-0557-4c59435bf213
+    image: rg.fr-par.scw.cloud/lalternative/tornade-migrate:20260910-0705-4f8c2ff6ba18
     command:
       [
         "postgres://tornade:${POSTGRES_PASSWORD}@postgres:5432/tornade?sslmode=disable",
