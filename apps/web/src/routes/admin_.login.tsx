@@ -4,12 +4,12 @@ import { authClient } from '@/lib/auth-client'
 import { getProfile } from '@/lib/services/auth'
 
 /**
- * Admin sign-in. Filename has a trailing underscore so it sits outside the
- * `/admin` layout guard — otherwise you'd need to already be an admin to reach
- * the page that logs you in. The form (in @lalternative/admin) refuses
- * non-admins; navigation to /admin on success is wired here.
+ * Admin sign-in. The underscore is on the `admin_` segment, which excludes
+ * this route from the `/admin` layout guard; `admin/login_.tsx` would stay
+ * nested under it, and the guard renders nothing without an admin session,
+ * so the page that logs you in would never appear.
  */
-export const Route = createFileRoute('/admin/login_')({
+export const Route = createFileRoute('/admin_/login')({
   component: AdminLoginPage,
 })
 

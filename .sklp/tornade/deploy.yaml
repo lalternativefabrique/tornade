@@ -87,47 +87,12 @@ spaces:
   tornade-production:
     gateway:
       routes:
-        # Public for the one endpoint a browser has business calling.
-        #
-        # /render and /fetch execute third-party JavaScript against a URL the
-        # caller picks, which on the open internet is an SSRF offered to
-        # anyone: every service on the node, and the metadata endpoint, a
-        # request away. /search would hand out the SearXNG instance and the
-        # Brave quota. Nothing routes what is not listed here, so the
-        # omission is the control.
-        #
-        # The front door matches a path by PREFIX, so this entry also reaches
-        # /speak/prime and /speak/pregenerate. That is why a signature is
-        # accepted on /speak alone (httpapi.guardSpeak): those two start a
-        # synthesis nobody is waiting for, and only a service holding a key
-        # may ask for it.
-        #
-        # `expensive` because a miss occupies the voice, and Piper reads one
-        # utterance at a time: a burst here is a queue in front of whoever
-        # pressed play.
-        #
-        # The host is written here rather than interpolated from a project
-        # secret: it is a public name, in the DNS, the certificate and every
-        # request a browser makes, and keeping it out of the repo only made
-        # the deployment fail for a reason that had nothing to do with a
-        # credential. It is tornade's own name, not one application's: every
-        # app that reads aloud sends its listeners here, and the signature's
-        # issuer is what tells them apart.
         - service: app
           host: vvaves.dev
           path: /speak
           kind: expensive
           security_headers: true
-          # A reading streams for as long as it takes to synthesize, which on
-          # a long reply is minutes. A timeout would cut the audio mid-word
-          # with the 200 already committed, so the response could not even
-          # report why it stopped.
           timeout: "0"
-          # A whole article is a legitimate body here, and the handler already
-          # bounds it at 4MB itself — a cap declared here too would only be a
-          # second number to keep in step.
-        # Everything else on the name is the admin. /speak stays the app's:
-        # the front door matches the longest prefix first.
         - service: web
           host: vvaves.dev
           path: /
