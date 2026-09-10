@@ -16,7 +16,7 @@ import (
 )
 
 // List godoc
-// @Summary  Every registered application, keys withheld
+// @Summary  Every registered application, key withheld
 // @Tags     admin
 // @Produce  json
 // @Success  200  {object}  AppListDTO
@@ -32,7 +32,7 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	out := AppListDTO{Apps: make([]AppDTO, 0, len(res.Apps))}
 	for _, v := range res.Apps {
 		out.Apps = append(out.Apps, AppDTO{
-			Name: v.Name, Active: v.Active, SigningLast4: v.SigningLast4, AppLast4: v.AppLast4, CreatedAt: v.CreatedAt,
+			Name: v.Name, Active: v.Active, Last4: v.Last4, CreatedAt: v.CreatedAt,
 			RotatedAt: v.RotatedAt, RevokedAt: v.RevokedAt, GraceUntil: v.GraceUntil,
 		})
 	}
@@ -40,7 +40,7 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 }
 
 // Register godoc
-// @Summary  Admit an application and hand its keys out once
+// @Summary  Admit an application and hand its key out once
 // @Tags     admin
 // @Accept   json
 // @Produce  json
@@ -62,11 +62,11 @@ func (s *Service) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.keys.Invalidate()
-	writeJSON(w, http.StatusCreated, credentials(res.App, res.Keys))
+	writeJSON(w, http.StatusCreated, credentials(res.App, res.Key))
 }
 
 // Rotate godoc
-// @Summary  Mint an application a new pair; the old one works for a day
+// @Summary  Mint an application a new key; the old one works for a day
 // @Tags     admin
 // @Produce  json
 // @Param    name  path      string  true  "Application name"
@@ -75,7 +75,7 @@ func (s *Service) Register(w http.ResponseWriter, r *http.Request) {
 // @Failure  404   {object}  ErrorDTO
 // @Security BearerAuth
 // @Router   /admin/apps/{name}/rotate [post]
-// @ID       rotateAppKeys
+// @ID       rotateAppKey
 func (s *Service) Rotate(w http.ResponseWriter, r *http.Request) {
 	res, err := cqrs.Execute[rotate_keys.Command, rotate_keys.Result](r.Context(), s.commands, rotate_keys.Command{Name: r.PathValue("name")})
 	if err != nil {
@@ -83,7 +83,7 @@ func (s *Service) Rotate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.keys.Invalidate()
-	writeJSON(w, http.StatusOK, credentials(res.App, res.Keys))
+	writeJSON(w, http.StatusOK, credentials(res.App, res.Key))
 }
 
 // Revoke godoc
@@ -104,8 +104,8 @@ func (s *Service) Revoke(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func credentials(a *domain.App, keys domain.Keys) CredentialsDTO {
-	return CredentialsDTO{Name: a.Name, SigningKey: keys.Signing, AppKey: keys.App, GraceUntil: a.GraceUntil(time.Now().UTC())}
+func credentials(a *domain.App, key string) CredentialsDTO {
+	return CredentialsDTO{Name: a.Name, Key: key, GraceUntil: a.GraceUntil(time.Now().UTC())}
 }
 
 func writeError(w http.ResponseWriter, err error) {

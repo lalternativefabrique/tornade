@@ -4,19 +4,17 @@ definitions:
     properties:
       active:
         type: boolean
-      app_last4:
-        type: string
       created_at:
         type: string
       grace_until:
+        type: string
+      last4:
         type: string
       name:
         type: string
       revoked_at:
         type: string
       rotated_at:
-        type: string
-      signing_last4:
         type: string
     type: object
   registry.AppListDTO:
@@ -28,13 +26,11 @@ definitions:
     type: object
   registry.CredentialsDTO:
     properties:
-      app_key:
-        type: string
       grace_until:
         type: string
-      name:
+      key:
         type: string
-      signing_key:
+      name:
         type: string
     type: object
   registry.ErrorDTO:
@@ -66,7 +62,7 @@ paths:
             $ref: '#/definitions/registry.AppListDTO'
       security:
       - BearerAuth: []
-      summary: Every registered application, keys withheld
+      summary: Every registered application, key withheld
       tags:
       - admin
     post:
@@ -93,7 +89,7 @@ paths:
             $ref: '#/definitions/registry.ErrorDTO'
       security:
       - BearerAuth: []
-      summary: Admit an application and hand its keys out once
+      summary: Admit an application and hand its key out once
       tags:
       - admin
   /admin/apps/{name}:
@@ -119,7 +115,7 @@ paths:
       - admin
   /admin/apps/{name}/rotate:
     post:
-      operationId: rotateAppKeys
+      operationId: rotateAppKey
       parameters:
       - description: Application name
         in: path
@@ -143,7 +139,7 @@ paths:
             $ref: '#/definitions/registry.ErrorDTO'
       security:
       - BearerAuth: []
-      summary: Mint an application a new pair; the old one works for a day
+      summary: Mint an application a new key; the old one works for a day
       tags:
       - admin
 securityDefinitions:

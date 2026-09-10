@@ -1,5 +1,5 @@
 // Package rotate_keys is the write-side use case: mint an application a new
-// pair while its old one keeps working for the grace period.
+// key while its old one keeps working for the grace period.
 package rotate_keys
 
 import (
@@ -20,8 +20,8 @@ type Command struct {
 }
 
 type Result struct {
-	App  *domain.App
-	Keys domain.Keys
+	App *domain.App
+	Key string
 }
 
 type Handler struct {
@@ -42,15 +42,15 @@ func (h *Handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	keys, sealed, err := application.Mint(h.cipher)
+	key, sealed, err := application.Mint(h.cipher)
 	if err != nil {
 		return Result{}, err
 	}
-	if err := a.Rotate(sealed, keys, h.now().UTC()); err != nil {
+	if err := a.Rotate(sealed, key, h.now().UTC()); err != nil {
 		return Result{}, fmt.Errorf("%w: %v", cqrs.ErrValidation, err)
 	}
 	if err := h.repo.Save(ctx, a); err != nil {
 		return Result{}, err
 	}
-	return Result{App: a, Keys: keys}, nil
+	return Result{App: a, Key: key}, nil
 }

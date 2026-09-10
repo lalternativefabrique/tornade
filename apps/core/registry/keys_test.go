@@ -33,33 +33,35 @@ func testCipher(t *testing.T) *infrastructure.Cipher {
 func TestRegistryWinsOverTheEnvironmentAndBothAreServed(t *testing.T) {
 	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
 	cipher := testCipher(t)
-	keys, sealed, _ := application.Mint(cipher)
-	partage, _ := domain.Register("partage", sealed, keys, now)
+	key, sealed, _ := application.Mint(cipher)
+	partage, _ := domain.Register("partage", sealed, key, now)
 	lister := &fakeLister{apps: []*domain.App{partage}}
 	k := NewKeySource(lister, cipher,
-		map[string][]string{"partage": {"old-env-secret"}, "lalter": {"lalter-secret"}},
-		map[string][]string{"lalter": {"lalter-app-key"}})
+		map[string][]string{"partage": {"old-env-secret"}, "lalter": {"lalter-secret"}})
 	k.now = func() time.Time { return now }
 
-	if got := k.SigningKeys("partage"); len(got) != 1 || got[0] != keys.Signing {
+	if got := k.Keys("partage"); len(got) != 1 || got[0] != key {
 		t.Fatalf("partage keys = %v, want the registry's alone", got)
 	}
-	if got := k.SigningKeys("lalter"); len(got) != 1 || got[0] != "lalter-secret" {
+	if got := k.Keys("lalter"); len(got) != 1 || got[0] != "lalter-secret" {
 		t.Fatalf("lalter keys = %v, want the environment's", got)
 	}
-	if name, ok := k.IssuerOf(keys.App); !ok || name != "partage" {
+	if name, ok := k.IssuerOf(key); !ok || name != "partage" {
 		t.Fatalf("IssuerOf(registry key) = %q,%v", name, ok)
 	}
-	if name, ok := k.IssuerOf("lalter-app-key"); !ok || name != "lalter" {
+	if name, ok := k.IssuerOf("lalter-secret"); !ok || name != "lalter" {
 		t.Fatalf("IssuerOf(env key) = %q,%v", name, ok)
+	}
+	if _, ok := k.IssuerOf("old-env-secret"); ok {
+		t.Fatal("an environment key the registry superseded still names an issuer")
 	}
 	if _, ok := k.IssuerOf("nope"); ok {
 		t.Fatal("an unknown key found an issuer")
 	}
 }
 
-// A rotated app answers with both pairs while its grace lasts, and a
-// revoked one with none.
+// A rotated app answers with both keys while its grace lasts, and a revoked
+// one with none.
 func TestRotationAndRevocationReachTheGuard(t *testing.T) {
 	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
 	cipher := testCipher(t)
@@ -71,40 +73,40 @@ func TestRotationAndRevocationReachTheGuard(t *testing.T) {
 	revoked, _ := domain.Register("synthiz", s3, k3, now)
 	revoked.Revoke(now)
 
-	k := NewKeySource(&fakeLister{apps: []*domain.App{rotated, revoked}}, cipher, nil, nil)
+	k := NewKeySource(&fakeLister{apps: []*domain.App{rotated, revoked}}, cipher, nil)
 	k.now = func() time.Time { return now }
-	if got := k.SigningKeys("lalter"); len(got) != 2 || got[0] != k2.Signing || got[1] != k1.Signing {
+	if got := k.Keys("lalter"); len(got) != 2 || got[0] != k2 || got[1] != k1 {
 		t.Fatalf("lalter keys = %v, want current then previous", got)
 	}
-	if _, ok := k.IssuerOf(k1.App); !ok {
-		t.Fatal("the previous app key stopped working inside the grace period")
+	if _, ok := k.IssuerOf(k1); !ok {
+		t.Fatal("the previous key stopped working inside the grace period")
 	}
-	if got := k.SigningKeys("synthiz"); len(got) != 0 {
+	if got := k.Keys("synthiz"); len(got) != 0 {
 		t.Fatalf("synthiz keys = %v, want none once revoked", got)
 	}
-	if _, ok := k.IssuerOf(k3.App); ok {
-		t.Fatal("a revoked app key still names an issuer")
+	if _, ok := k.IssuerOf(k3); ok {
+		t.Fatal("a revoked key still names an issuer")
 	}
 }
 
 func TestKeysAreCachedUntilInvalidatedOrStale(t *testing.T) {
 	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
 	lister := &fakeLister{}
-	k := NewKeySource(lister, testCipher(t), nil, nil)
+	k := NewKeySource(lister, testCipher(t), nil)
 	k.now = func() time.Time { return now }
 
-	k.SigningKeys("x")
-	k.SigningKeys("x")
+	k.Keys("x")
+	k.Keys("x")
 	if lister.calls != 1 {
 		t.Fatalf("calls = %d, want one fetch within the ttl", lister.calls)
 	}
 	k.Invalidate()
-	k.SigningKeys("x")
+	k.Keys("x")
 	if lister.calls != 2 {
 		t.Fatalf("calls = %d, want a refetch after Invalidate", lister.calls)
 	}
 	now = now.Add(time.Minute)
-	k.SigningKeys("x")
+	k.Keys("x")
 	if lister.calls != 3 {
 		t.Fatalf("calls = %d, want a refetch once stale", lister.calls)
 	}

@@ -115,7 +115,7 @@ func TestSpeakReportsAnExpiredSignatureAs401(t *testing.T) {
 func TestSpeakAcceptsAnAppKey(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/speak", strings.NewReader(`{"text":"`+longText+`","scope":"chat","id":"m1"}`))
-	req.Header.Set(httpapi.HeaderAppKey, "an-app-key")
+	req.Header.Set(httpapi.HeaderKey, "an-app-key")
 	httpapi.New(guardedDeps(t)).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusOK {
@@ -126,7 +126,7 @@ func TestSpeakAcceptsAnAppKey(t *testing.T) {
 func TestSpeakRejectsAnUnknownAppKey(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/speak", strings.NewReader(`{"text":"bonjour","scope":"chat","id":"m1"}`))
-	req.Header.Set(httpapi.HeaderAppKey, "not-a-key")
+	req.Header.Set(httpapi.HeaderKey, "not-a-key")
 	httpapi.New(guardedDeps(t)).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusForbidden {
@@ -198,7 +198,7 @@ func TestASignatureDoesNotReachPregenerate(t *testing.T) {
 func TestPrimeStillAcceptsAnAppKey(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodPost, "/speak/prime", strings.NewReader(`{"text":"`+longText+`","scope":"chat","id":"m1"}`))
-	req.Header.Set(httpapi.HeaderAppKey, "an-app-key")
+	req.Header.Set(httpapi.HeaderKey, "an-app-key")
 	httpapi.New(guardedDeps(t)).ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusAccepted {

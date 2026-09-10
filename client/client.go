@@ -22,17 +22,18 @@ type Config struct {
 	// sharing one tornade do not overwrite each other's cache. Empty leaves
 	// the naming to tornade's default.
 	Scope string
-	// AppKey authenticates server-to-server calls on a tornade reachable from
-	// the internet, where a signature only ever buys one listen. Empty sends
-	// nothing, which an internal-only tornade accepts.
-	AppKey string
+	// Key authenticates server-to-server calls on a tornade reachable from
+	// the internet, where a signature only ever buys one listen. It is the
+	// same key signed.NewSigner takes. Empty sends nothing, which an
+	// internal-only tornade accepts.
+	Key string
 	// Client defaults to one with no global timeout, same as OpenAIVoice: a
 	// long reading can take minutes, and cancellation belongs to the context.
 	Client *http.Client
 }
 
-// HeaderAppKey carries AppKey; the server reads the same name.
-const HeaderAppKey = "X-Tornade-Key"
+// HeaderKey carries Key; the server reads the same name.
+const HeaderKey = "X-Tornade-Key"
 
 // Voice reads text through tornade instead of a speech service directly.
 // Tornade owns the synthesis, the cache and the store, so every application
@@ -219,8 +220,8 @@ func (v *Voice) post(ctx context.Context, path string, payload map[string]any) (
 		return nil, fmt.Errorf("tts: build request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if v.cfg.AppKey != "" {
-		req.Header.Set(HeaderAppKey, v.cfg.AppKey)
+	if v.cfg.Key != "" {
+		req.Header.Set(HeaderKey, v.cfg.Key)
 	}
 	resp, err := v.cfg.Client.Do(req)
 	if err != nil {

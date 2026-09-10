@@ -28,7 +28,7 @@ const docTemplate = `{
                 "tags": [
                     "admin"
                 ],
-                "summary": "Every registered application, keys withheld",
+                "summary": "Every registered application, key withheld",
                 "operationId": "listApps",
                 "responses": {
                     "200": {
@@ -54,7 +54,7 @@ const docTemplate = `{
                 "tags": [
                     "admin"
                 ],
-                "summary": "Admit an application and hand its keys out once",
+                "summary": "Admit an application and hand its key out once",
                 "operationId": "registerApp",
                 "parameters": [
                     {
@@ -130,8 +130,8 @@ const docTemplate = `{
                 "tags": [
                     "admin"
                 ],
-                "summary": "Mint an application a new pair; the old one works for a day",
-                "operationId": "rotateAppKeys",
+                "summary": "Mint an application a new key; the old one works for a day",
+                "operationId": "rotateAppKey",
                 "parameters": [
                     {
                         "type": "string",
@@ -171,13 +171,13 @@ const docTemplate = `{
                 "active": {
                     "type": "boolean"
                 },
-                "app_last4": {
-                    "type": "string"
-                },
                 "created_at": {
                     "type": "string"
                 },
                 "grace_until": {
+                    "type": "string"
+                },
+                "last4": {
                     "type": "string"
                 },
                 "name": {
@@ -187,9 +187,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "rotated_at": {
-                    "type": "string"
-                },
-                "signing_last4": {
                     "type": "string"
                 }
             }
@@ -208,16 +205,13 @@ const docTemplate = `{
         "registry.CredentialsDTO": {
             "type": "object",
             "properties": {
-                "app_key": {
-                    "type": "string"
-                },
                 "grace_until": {
                     "type": "string"
                 },
-                "name": {
+                "key": {
                     "type": "string"
                 },
-                "signing_key": {
+                "name": {
                     "type": "string"
                 }
             }

@@ -8,7 +8,7 @@ import (
 	"github.com/lalternativefabrique/tornade/signed"
 )
 
-const HeaderAppKey = client.HeaderAppKey
+const HeaderKey = client.HeaderKey
 
 // guardSpeak refuses a /speak request that authenticates as neither.
 //
@@ -25,7 +25,7 @@ func (d Deps) guardSpeak(r *http.Request, scope, id, text string) error {
 	if d.Verifier == nil && d.AppKeyIssuer == nil {
 		return ErrNoGuard
 	}
-	if key := r.Header.Get(HeaderAppKey); key != "" && d.AppKeyIssuer != nil {
+	if key := r.Header.Get(HeaderKey); key != "" && d.AppKeyIssuer != nil {
 		if _, ok := d.AppKeyIssuer(key); ok {
 			return nil
 		}

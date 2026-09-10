@@ -7,16 +7,15 @@ type RegisterRequest struct {
 	Name string `json:"name"`
 }
 
-// AppDTO names an application without its secrets.
+// AppDTO names an application without its key.
 type AppDTO struct {
-	Name         string     `json:"name"`
-	Active       bool       `json:"active"`
-	SigningLast4 string     `json:"signing_last4"`
-	AppLast4     string     `json:"app_last4"`
-	CreatedAt    time.Time  `json:"created_at"`
-	RotatedAt    *time.Time `json:"rotated_at,omitempty"`
-	RevokedAt    *time.Time `json:"revoked_at,omitempty"`
-	GraceUntil   *time.Time `json:"grace_until,omitempty"`
+	Name       string     `json:"name"`
+	Active     bool       `json:"active"`
+	Last4      string     `json:"last4"`
+	CreatedAt  time.Time  `json:"created_at"`
+	RotatedAt  *time.Time `json:"rotated_at,omitempty"`
+	RevokedAt  *time.Time `json:"revoked_at,omitempty"`
+	GraceUntil *time.Time `json:"grace_until,omitempty"`
 }
 
 // AppListDTO is the GET /admin/apps answer.
@@ -24,12 +23,11 @@ type AppListDTO struct {
 	Apps []AppDTO `json:"apps"`
 }
 
-// CredentialsDTO carries an application's keys. Returned once, on creation
+// CredentialsDTO carries an application's key. Returned once, on creation
 // and on rotation, and never listed again.
 type CredentialsDTO struct {
 	Name       string     `json:"name"`
-	SigningKey string     `json:"signing_key"`
-	AppKey     string     `json:"app_key"`
+	Key        string     `json:"key"`
 	GraceUntil *time.Time `json:"grace_until,omitempty"`
 }
 

@@ -2,13 +2,10 @@ package config
 
 import "testing"
 
-// Both key variables take the same "issuer:secret" shape. Two formats that
-// look alike and are not is how a secret gets pasted into the wrong one and
-// silently authenticates nobody.
-func TestAppKeysAreReadByIssuer(t *testing.T) {
-	t.Setenv("SPEAK_APP_KEYS", "lalter:aaa, synthiz:bbb")
+func TestKeysAreReadByIssuer(t *testing.T) {
+	t.Setenv("SPEAK_KEYS", "lalter:aaa, synthiz:bbb")
 
-	keys := Load().AppKeys
+	keys := Load().Keys
 	if got := keys["lalter"]; len(got) != 1 || got[0] != "aaa" {
 		t.Errorf("keys[lalter] = %q, want aaa", got)
 	}
@@ -24,21 +21,19 @@ func TestAppKeysAreReadByIssuer(t *testing.T) {
 // would authenticate a caller nobody can name, and the operator who wrote it
 // believes the whole line took effect.
 func TestMalformedKeysAreDropped(t *testing.T) {
-	t.Setenv("SPEAK_APP_KEYS", "no-issuer,lalter:aaa,:empty,synthiz:")
+	t.Setenv("SPEAK_KEYS", "no-issuer,lalter:aaa,:empty,synthiz:")
 
-	keys := Load().AppKeys
+	keys := Load().Keys
 	if len(keys) != 1 || len(keys["lalter"]) != 1 || keys["lalter"][0] != "aaa" {
 		t.Errorf("keys = %v, want only the well-formed pair", keys)
 	}
 }
 
 func TestNoKeysConfiguredIsEmpty(t *testing.T) {
-	t.Setenv("SPEAK_APP_KEYS", "")
-	t.Setenv("SPEAK_SIGNING_KEYS", "")
+	t.Setenv("SPEAK_KEYS", "")
 
-	cfg := Load()
-	if len(cfg.AppKeys) != 0 || len(cfg.SigningKeys) != 0 {
-		t.Errorf("keys = %v / %v, want both empty", cfg.AppKeys, cfg.SigningKeys)
+	if keys := Load().Keys; len(keys) != 0 {
+		t.Errorf("keys = %v, want empty", keys)
 	}
 }
 
@@ -59,9 +54,9 @@ func TestFetchProxyDefaultsToDirect(t *testing.T) {
 // An issuer listed twice holds both secrets: a rotation by hand, the old key
 // valid while the application redeploys with the new one.
 func TestAnIssuerMayHoldSeveralSecrets(t *testing.T) {
-	t.Setenv("SPEAK_SIGNING_KEYS", "lalter:new,lalter:old")
+	t.Setenv("SPEAK_KEYS", "lalter:new,lalter:old")
 
-	keys := Load().SigningKeys
+	keys := Load().Keys
 	if got := keys["lalter"]; len(got) != 2 || got[0] != "new" || got[1] != "old" {
 		t.Errorf("keys[lalter] = %q, want both, in order", got)
 	}

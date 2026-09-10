@@ -1,5 +1,5 @@
 // Package register_app is the write-side use case: admit an application and
-// hand its keys out once.
+// hand its key out once.
 package register_app
 
 import (
@@ -20,8 +20,8 @@ type Command struct {
 }
 
 type Result struct {
-	App  *domain.App
-	Keys domain.Keys
+	App *domain.App
+	Key string
 }
 
 type Handler struct {
@@ -40,16 +40,16 @@ func (h *Handler) Handle(ctx context.Context, cmd Command) (Result, error) {
 	} else if !errors.Is(err, infrastructure.ErrNotFound) {
 		return Result{}, err
 	}
-	keys, sealed, err := application.Mint(h.cipher)
+	key, sealed, err := application.Mint(h.cipher)
 	if err != nil {
 		return Result{}, err
 	}
-	a, err := domain.Register(cmd.Name, sealed, keys, h.now().UTC())
+	a, err := domain.Register(cmd.Name, sealed, key, h.now().UTC())
 	if err != nil {
 		return Result{}, fmt.Errorf("%w: %v", cqrs.ErrValidation, err)
 	}
 	if err := h.repo.Save(ctx, a); err != nil {
 		return Result{}, err
 	}
-	return Result{App: a, Keys: keys}, nil
+	return Result{App: a, Key: key}, nil
 }

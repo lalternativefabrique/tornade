@@ -1,4 +1,4 @@
-// Package application holds what the use cases share: minting a pair and
+// Package application holds what the use cases share: minting a key and
 // sealing it.
 package application
 
@@ -7,22 +7,17 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/lalternativefabrique/tornade/core/registry/domain"
 	"github.com/lalternativefabrique/tornade/core/registry/infrastructure"
 )
 
-// Mint returns a fresh pair and its sealed form.
-func Mint(cipher *infrastructure.Cipher) (domain.Keys, domain.Encrypted, error) {
-	keys := domain.Keys{Signing: newKey(), App: newKey()}
-	signing, err := cipher.Encrypt(keys.Signing)
+// Mint returns a fresh key and its sealed form.
+func Mint(cipher *infrastructure.Cipher) (string, []byte, error) {
+	key := newKey()
+	sealed, err := cipher.Encrypt(key)
 	if err != nil {
-		return domain.Keys{}, domain.Encrypted{}, err
+		return "", nil, err
 	}
-	app, err := cipher.Encrypt(keys.App)
-	if err != nil {
-		return domain.Keys{}, domain.Encrypted{}, err
-	}
-	return keys, domain.Encrypted{Signing: signing, App: app}, nil
+	return key, sealed, nil
 }
 
 func newKey() string {

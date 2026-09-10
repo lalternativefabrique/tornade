@@ -21,5 +21,5 @@ function PlayButton({ messageId }: { messageId: string }) {
 ```
 
 The server side is the Go `client` package of this module: `client.New` with
-an `AppKey` for `PrimeOpening`, and `signed.NewSigner` for the URL the
-endpoint above returns.
+the application's `Key` for `PrimeOpening`, and `signed.NewSigner` with the
+same key for the URL the endpoint above returns.

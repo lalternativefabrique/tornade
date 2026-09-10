@@ -44,9 +44,9 @@ function AppsPage() {
       <header>
         <h1 className="text-2xl font-semibold">Applications</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Chaque application signe les URL que ses navigateurs écoutent, et
-          présente sa clé d'app sur ses propres appels. Les clés ne sont
-          montrées qu'une fois.
+          Chaque application a une clé : celle que son serveur présente sur
+          ses propres appels, et avec laquelle il signe les URL que ses
+          navigateurs écoutent. Elle n'est montrée qu'une fois.
         </p>
       </header>
 
@@ -113,22 +113,19 @@ function Credentials({
   onDismiss: () => void
 }) {
   const upper = value.name.toUpperCase().replace(/-/g, '_')
-  const lines = [
-    `${upper}_AUDIO_SIGNING_KEY=${value.signing_key}`,
-    `${upper}_TORNADE_APP_KEY=${value.app_key}`,
-  ].join('\n')
+  const lines = `${upper}_TORNADE_KEY=${value.key}`
   return (
     <section className="rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="font-semibold">Clés de {value.name}</h2>
+          <h2 className="font-semibold">Clé de {value.name}</h2>
           <p className="mt-1 text-muted-foreground">
-            À coller dans la configuration de l'application. Elles ne seront
-            plus affichées.
+            À coller dans la configuration de l'application. Elle ne sera
+            plus affichée.
             {value.grace_until && (
               <>
                 {' '}
-                L'ancienne paire fonctionne jusqu'au{' '}
+                L'ancienne clé fonctionne jusqu'au{' '}
                 {new Date(value.grace_until).toLocaleString('fr-FR')}.
               </>
             )}
@@ -183,7 +180,7 @@ function AppsTable({
           <tr>
             <th className="py-2 pr-4">Nom</th>
             <th className="py-2 pr-4">État</th>
-            <th className="py-2 pr-4">Clés</th>
+            <th className="py-2 pr-4">Clé</th>
             <th className="py-2 pr-4">Créée</th>
             <th className="py-2 pr-4">Dernière rotation</th>
             <th className="py-2 pr-4">Grâce jusqu'au</th>
@@ -198,7 +195,7 @@ function AppsTable({
                 {a.active ? 'active' : `révoquée le ${date(a.revoked_at)}`}
               </td>
               <td className="py-2 pr-4 font-mono text-xs">
-                ····{a.signing_last4} / ····{a.app_last4}
+                ····{a.last4}
               </td>
               <td className="py-2 pr-4">{date(a.created_at)}</td>
               <td className="py-2 pr-4">{date(a.rotated_at)}</td>
@@ -211,7 +208,7 @@ function AppsTable({
                       className="mr-3 underline"
                       onClick={() => onRotate(a.name)}
                     >
-                      Faire tourner les clés
+                      Faire tourner la clé
                     </button>
                     <button
                       type="button"
