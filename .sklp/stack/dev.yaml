@@ -132,7 +132,6 @@ services:
       JWT_SECRET: dev-only-jwt-secret
       CORE_API_URL: http://app:8080
       PORT: "5273"
-      ADMIN_SETUP_TOKEN: jq3UsLSjcDXS2wyuRrYzXdQGO58wLltk/fymo2r2tYj1CF5XdaLeAEZnmMR409J1
     ready:
       http: /admin/login
       timeout: 300s

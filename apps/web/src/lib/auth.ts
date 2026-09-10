@@ -8,8 +8,8 @@ import { pool } from './db'
  * so BETTER_AUTH_SECRET here and JWT_SECRET in the core must be kept in sync
  * per your minting setup.
  *
- * Registration is open by default (`betaMode` off). To gate sign-up behind an
- * invitation (e.g. a waitlist), set `betaMode: true` and pass `isInvited`.
+ * Nobody signs up here with a password: the team signs in through the suite's
+ * identity provider (urbangate), and the admin role comes from its roles claim.
  */
 const authSecret = process.env.BETTER_AUTH_SECRET
 if (!authSecret) {
@@ -21,9 +21,6 @@ export const auth = createPlatformAuth({
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:5273',
   secret: authSecret,
   appName: 'tornade',
-  // Nobody signs up here: the first admin is minted by /admin/setup, the
-  // next ones by an admin. An open sign-up endpoint would only mint accounts
-  // that can see nothing, and a closed one is one fewer door.
   betaMode: true,
   isInvited: async () => false,
   google: process.env.GOOGLE_CLIENT_ID
@@ -32,7 +29,17 @@ export const auth = createPlatformAuth({
         clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       }
     : undefined,
+  sso: process.env.URBANGATE_CLIENT_SECRET
+    ? {
+        issuer: process.env.URBANGATE_ISSUER_URL ?? 'https://id.urbangate.dev',
+        clientId: process.env.URBANGATE_CLIENT_ID ?? 'tornade-admin',
+        clientSecret: process.env.URBANGATE_CLIENT_SECRET,
+        adminRole: 'tornade:admin',
+      }
+    : undefined,
   plugins: [tanstackStartCookies()],
 })
+
+export const ssoEnabled = Boolean(process.env.URBANGATE_CLIENT_SECRET)
 
 export type Auth = typeof auth
