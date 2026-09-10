@@ -19,6 +19,8 @@ scopes:
     - "go.mod"
     - "go.sum"
     - "Dockerfile"
+  migrate:
+    - "apps/migrations/**"
   render:
     - "render/**"
   web:
@@ -36,6 +38,14 @@ steps:
       go build ./... ./apps/core/...
       go vet ./... ./apps/core/...
       go test ./... ./apps/core/...
+
+  - name: migrate-check
+    scope: [migrate]
+    workdir: apps/migrations
+    run: |
+      for up in *.up.sql; do
+        test -f "${up%.up.sql}.down.sql" || { echo "missing down for $up"; exit 1; }
+      done
 
   - name: render-test
     scope: [render]

@@ -34,7 +34,6 @@ import (
 	"github.com/lalternativefabrique/tornade/core/internal/httpapi"
 	"github.com/lalternativefabrique/tornade/core/internal/render"
 	"github.com/lalternativefabrique/tornade/core/middleware"
-	"github.com/lalternativefabrique/tornade/core/migrations"
 	"github.com/lalternativefabrique/tornade/core/pkg/db"
 	"github.com/lalternativefabrique/tornade/core/registry"
 	registryinfra "github.com/lalternativefabrique/tornade/core/registry/infrastructure"
@@ -121,9 +120,6 @@ func buildRegistry(cfg config.Config) (*registry.Service, *registry.KeySource) {
 	pool, err := db.Open(ctx, cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("tornade: DATABASE_URL: %v", err)
-	}
-	if err := db.Migrate(ctx, pool, migrations.FS, "postgres"); err != nil {
-		log.Fatalf("tornade: migrate: %v", err)
 	}
 	apps, err := registry.NewService(pool, cipher, cfg.SigningKeys, cfg.AppKeys)
 	if err != nil {

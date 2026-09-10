@@ -29,6 +29,8 @@ scopes:
     - "pnpm-lock.yaml"
     - "pnpm-workspace.yaml"
     - "Dockerfile.web"
+  migrate:
+    - "apps/migrations/**"
 
 steps:
   - name: app-image
@@ -45,4 +47,13 @@ steps:
     context: .
     dockerfile: Dockerfile.web
     image: rg.fr-par.scw.cloud/lalternative/tornade-web
+    tag: "{{ publish_tag }}"
+
+  - name: migrate-image
+    kind: publish
+    scope: [migrate]
+    scan: false
+    context: apps/migrations
+    dockerfile: apps/migrations/Dockerfile
+    image: rg.fr-par.scw.cloud/lalternative/tornade-migrate
     tag: "{{ publish_tag }}"

@@ -23,7 +23,7 @@ services:
   app:
     image: rg.fr-par.scw.cloud/lalternative/tornade:20260901-0555-ee5332ac9518
     port: 8080
-    depends_on: [postgres]
+    depends_on: [migrate, postgres]
     env:
       LISTEN_ADDR: ":8080"
       DATABASE_URL: postgres://tornade:${POSTGRES_PASSWORD}@postgres:5432/tornade?sslmode=disable
@@ -70,6 +70,16 @@ services:
     ready:
       http: /admin/login
       timeout: 120s
+
+jobs:
+  migrate:
+    image: rg.fr-par.scw.cloud/lalternative/tornade-migrate:20260910-0557-4c59435bf213
+    command:
+      [
+        "postgres://tornade:${POSTGRES_PASSWORD}@postgres:5432/tornade?sslmode=disable",
+        "up",
+      ]
+    depends_on: [postgres]
 
 spaces:
   tornade-production:
