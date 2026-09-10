@@ -111,8 +111,6 @@ services:
       PIPER_URL: http://piper:5000
       TTS_VOICE: fr_FR-siwis-medium
       CHROMIUM_PATH: /usr/bin/chromium
-      # A laptop: nothing outside reaches it, and a key would exist only to
-      # be checked. Never in a deploy file.
       SPEAK_UNGUARDED: "true"
       DATABASE_URL: postgres://tornade:tornade@postgres:5432/tornade?sslmode=disable
       JWT_SECRET: dev-only-jwt-secret
@@ -134,6 +132,7 @@ services:
       JWT_SECRET: dev-only-jwt-secret
       CORE_API_URL: http://app:8080
       PORT: "5273"
+      ADMIN_SETUP_TOKEN: jq3UsLSjcDXS2wyuRrYzXdQGO58wLltk/fymo2r2tYj1CF5XdaLeAEZnmMR409J1
     ready:
       http: /admin/login
       timeout: 300s
