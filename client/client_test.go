@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -287,5 +288,41 @@ func TestExistsAsksByNameAndReadsReady(t *testing.T) {
 	}
 	if got["id"] != "p-1" || got["scope"] != "pensee-note" || got["text"] != "le texte" {
 		t.Fatalf("request body = %v", got)
+	}
+}
+
+func TestAuthorizeReplacesTheAppKey(t *testing.T) {
+	var auth, key string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth = r.Header.Get("Authorization")
+		key = r.Header.Get(HeaderKey)
+		w.Header().Set("Content-Type", "audio/mpeg")
+		w.Write([]byte("audio"))
+	}))
+	defer srv.Close()
+
+	v := New(Config{BaseURL: srv.URL, Key: "an-app-key", Authorize: func(r *http.Request) error {
+		r.Header.Set("Authorization", "Bearer a-token")
+		return nil
+	}})
+	if _, _, err := v.Speak(context.Background(), "bonjour"); err != nil {
+		t.Fatal(err)
+	}
+	if auth != "Bearer a-token" || key != "" {
+		t.Fatalf("Authorization=%q %s=%q, want the token and no key", auth, HeaderKey, key)
+	}
+}
+
+func TestAuthorizeFailureStopsTheCall(t *testing.T) {
+	called := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { called = true }))
+	defer srv.Close()
+
+	v := New(Config{BaseURL: srv.URL, Authorize: func(*http.Request) error { return errors.New("issuer down") }})
+	if _, _, err := v.Speak(context.Background(), "bonjour"); err == nil || !strings.Contains(err.Error(), "issuer down") {
+		t.Fatalf("err = %v", err)
+	}
+	if called {
+		t.Fatal("tornade was called without a credential")
 	}
 }

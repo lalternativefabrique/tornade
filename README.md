@@ -214,7 +214,9 @@ backend that synthesizes in parallel.
 
 A **service** on the cluster's own network sends its key on `X-Tornade-Key`,
 or, with `OIDC_ISSUER_URL` set, a bearer token from the suite's identity
-provider carrying `aud: tornade` and the `tornade:speak` scope.
+provider carrying `aud: tornade` and the `tornade:speak` scope. The Go client
+sends it through `client.Config.Authorize`, typically
+`svcauth.ClientCredentials.Authorize` from `packages/go/svcauth`.
 Each application has one key, so it can be rotated or revoked without
 touching another's, and a log line can name who called.
 A **browser** cannot hold a key, so it carries a signature instead: the
