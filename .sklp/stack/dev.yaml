@@ -88,11 +88,24 @@ services:
       tcp: postgres:5432
       timeout: 30s
 
+  # Applies apps/migrations before the app opens a connection. Production runs
+  # the same files from the migrate image (apps/migrations/Dockerfile); the dev
+  # stack has no image step, so the tool is fetched by `go run`.
+  migrate:
+    workdir: apps/migrations
+    oneshot: true
+    depends_on: [postgres]
+    env:
+      DATABASE_URL: postgres://tornade:tornade@postgres:5432/tornade?sslmode=disable
+    run: >-
+      go run -tags postgres github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1
+      -path . -database "$DATABASE_URL" up
+
   app:
     run: go run .
     workdir: apps/core
     port: 8080
-    depends_on: [searxng, postgres]
+    depends_on: [searxng, postgres, migrate]
     env:
       SEARXNG_URL: http://searxng:8888
       PIPER_URL: http://piper:5000

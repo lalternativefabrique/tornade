@@ -11,3 +11,9 @@ watches:
     image_repo: rg.fr-par.scw.cloud/lalternative/tornade-web
     node: sklet-prod-v2
     registry_user: nologin
+  - name: tornade-migrate
+    service: migrate
+    space: tornade-production
+    image_repo: rg.fr-par.scw.cloud/lalternative/tornade-migrate
+    node: sklet-prod-v2
+    registry_user: nologin
