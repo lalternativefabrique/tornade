@@ -26,6 +26,7 @@ import (
 	"github.com/lalternative/packages/go/search/brave"
 	"github.com/lalternative/packages/go/search/fetch"
 	"github.com/lalternative/packages/go/search/searxng"
+	"github.com/lalternative/packages/go/svcauth"
 	"github.com/lalternative/packages/go/tts"
 
 	"github.com/lalternativefabrique/tornade/core/internal/audio"
@@ -73,6 +74,7 @@ func main() {
 		RenderMaxTimeout: cfg.RenderMaxTimeout,
 		Verifier:         signed.NewLookupVerifier(keys.Keys),
 		AppKeyIssuer:     keys.IssuerOf,
+		Tokens:           buildTokens(cfg),
 		Unguarded:        cfg.SpeakUnguarded,
 	}
 	if cfg.SpeakUnguarded {
@@ -107,6 +109,22 @@ func main() {
 // buildRegistry opens the applications registry when a database is
 // configured. Without one, the environment pairs are all that speaks, which
 // is what a tornade deployed before the registry existed still runs on.
+// buildTokens trusts the suite's identity provider for bearer tokens naming
+// this tornade. Nil when none is configured: the interface stays nil rather
+// than holding a typed nil that would pass the guard's nil check.
+func buildTokens(cfg config.Config) httpapi.BearerVerifier {
+	if cfg.OIDCIssuerURL == "" {
+		log.Print("tornade: no OIDC_ISSUER_URL, bearer tokens are not accepted")
+		return nil
+	}
+	v, err := svcauth.New([]svcauth.Issuer{svcauth.Hydra(cfg.OIDCIssuerURL, cfg.OIDCAudience)})
+	if err != nil {
+		log.Fatalf("tornade: OIDC_ISSUER_URL: %v", err)
+	}
+	log.Printf("tornade: bearer tokens from %s for audience %q", cfg.OIDCIssuerURL, cfg.OIDCAudience)
+	return v
+}
+
 func buildRegistry(cfg config.Config) (*registry.Service, *registry.KeySource) {
 	if cfg.DatabaseURL == "" {
 		log.Print("tornade: no DATABASE_URL, the applications registry is off")
