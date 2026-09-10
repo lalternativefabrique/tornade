@@ -1,5 +1,5 @@
 // Package registry is the bounded context of the applications allowed to
-// speak through tornade: who they are, the keys they sign and call with, and
+// speak through tornade: who they are, the key they sign and call with, and
 // the admin API that admits, rotates and revokes them.
 package registry
 
@@ -28,10 +28,10 @@ type Service struct {
 	keys     *KeySource
 }
 
-// NewService wires the context on pool. cipher seals the keys at rest;
-// envSigning and envApp are the "issuer:secret" pairs read from the
-// environment, still honoured under the registry's own entries.
-func NewService(pool *pgxpool.Pool, cipher *infrastructure.Cipher, envSigning, envApp map[string][]string) (*Service, error) {
+// NewService wires the context on pool. cipher seals the keys at rest; env
+// holds the "issuer:key" pairs read from the environment, still honoured
+// under the registry's own entries.
+func NewService(pool *pgxpool.Pool, cipher *infrastructure.Cipher, env map[string][]string) (*Service, error) {
 	reg := di.New()
 
 	di.Provide[logger.Logger](reg, func(_ *di.Resolver) (logger.Logger, error) {
@@ -60,7 +60,7 @@ func NewService(pool *pgxpool.Pool, cipher *infrastructure.Cipher, envSigning, e
 	return &Service{
 		commands: di.MustResolve[*cqrs.CommandRouter](reg),
 		queries:  di.MustResolve[*cqrs.QueryRouter](reg),
-		keys:     NewKeySource(repo, cipher, envSigning, envApp),
+		keys:     NewKeySource(repo, cipher, env),
 	}, nil
 }
 

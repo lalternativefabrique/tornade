@@ -14,14 +14,13 @@ type Query struct{}
 // View names an application without its secrets: those are shown once, at
 // creation or rotation, and only their last four characters after that.
 type View struct {
-	Name         string
-	Active       bool
-	SigningLast4 string
-	AppLast4     string
-	CreatedAt    time.Time
-	RotatedAt    *time.Time
-	RevokedAt    *time.Time
-	GraceUntil   *time.Time
+	Name       string
+	Active     bool
+	Last4      string
+	CreatedAt  time.Time
+	RotatedAt  *time.Time
+	RevokedAt  *time.Time
+	GraceUntil *time.Time
 }
 
 type Result struct {
@@ -46,7 +45,7 @@ func (h *Handler) Handle(ctx context.Context, _ Query) (Result, error) {
 	out := Result{Apps: make([]View, 0, len(apps))}
 	for _, a := range apps {
 		out.Apps = append(out.Apps, View{
-			Name: a.Name, Active: a.Active(), SigningLast4: a.SigningLast4, AppLast4: a.AppLast4,
+			Name: a.Name, Active: a.Active(), Last4: a.Last4,
 			CreatedAt: a.CreatedAt, RotatedAt: a.RotatedAt, RevokedAt: a.RevokedAt, GraceUntil: a.GraceUntil(now),
 		})
 	}

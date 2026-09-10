@@ -69,8 +69,9 @@ spec:
                 secretKeyRef:
                   name: tornade-audio-creds
                   key: S3_SECRET_KEY
-            # The secrets applications sign browser-bound /speak URLs with,
-            # as "issuer:secret" pairs. A listener's browser calls /speak
+            # The applications' keys as "issuer:key" pairs, each presented on
+            # X-Tornade-Key and signing browser-bound /speak URLs. The
+            # registry supersedes them. A listener's browser calls /speak
             # directly rather than through the application that authorised
             # it — a reading is tens of seconds of bytes, and relaying it
             # would have that application stream media for the whole of it.
@@ -80,11 +81,11 @@ spec:
             # what the sklet deployment serves, on the name the DNS actually
             # points at. Setting it here would only matter if this cluster
             # were given a public name of its own.
-            - name: SPEAK_SIGNING_KEYS
+            - name: SPEAK_KEYS
               valueFrom:
                 secretKeyRef:
                   name: tornade-speak-keys
-                  key: SPEAK_SIGNING_KEYS
+                  key: SPEAK_KEYS
                   optional: true
             # The residential endpoint /fetch reads through. A publisher
             # behind bot management refuses this cluster's address whatever

@@ -146,9 +146,8 @@ the whole file to answer yes or no.
 
 | | |
 |---|---|
-| `SPEAK_SIGNING_KEYS` | `issuer:secret` pairs authorising browser calls to `/speak`, an issuer repeatable; the registry supersedes them |
+| `SPEAK_KEYS` | `issuer:key` pairs, an issuer repeatable: the key a service presents on `X-Tornade-Key` and signs its browser URLs with; the registry supersedes them per issuer |
 | `SPEAK_UNGUARDED` | `true` lets the speak routes answer with no key at all: a cluster-internal tornade or a laptop, never one behind a public name. Without it and without keys, `/speak` refuses everyone |
-| `SPEAK_APP_KEYS` | `issuer:secret` pairs services authenticate with on `X-Tornade-Key`; unset accepts none |
 | `SEARXNG_URL` | required by `/search`, else `503` |
 | `BRAVE_API_KEY` | optional; enables the general-category fallback |
 | `FETCH_PROXY` | residential endpoint `/fetch` and its render fallback read through; unset goes direct, unparseable is fatal |
@@ -214,12 +213,12 @@ backend that synthesizes in parallel.
 `/speak*` answers two callers, and nothing else.
 
 A **service** on the cluster's own network sends its key on `X-Tornade-Key`.
-Both key variables take the same `issuer:secret,issuer:secret` shape, so one
-application's key can be rotated or revoked without touching another's, and a
-log line can name who called.
+Each application has one key, so it can be rotated or revoked without
+touching another's, and a log line can name who called.
 A **browser** cannot hold a key, so it carries a signature instead: the
 application that knows who is listening signs `scope`, `id`, a hash of the
-text and an expiry with its own secret, and hands the listener a URL good for
+text and an expiry with a MAC key derived from that same key, and hands the
+listener a URL good for
 that one reading. Tornade recomputes the MAC and compares. It still knows
 nothing about users — a signature over what was asked for is the whole of its
 notion of identity, the same shape as an S3 presigned URL and for the same
@@ -254,19 +253,22 @@ picks, which on the open internet is an SSRF offered to anyone.
 
 Which applications may speak through tornade is a registry tornade owns, not
 a pair of environment variables. `apps/web` is the back-office: an operator
-signs in, registers an application by its issuer name, and is shown its two
-keys once — the signing key its server signs browser URLs with, the app key
-it presents on its own calls. Rotating mints a new pair and keeps the old one
-working for a day; revoking ends both at once. The speak guard reads the
-registry at request time, so none of it needs a restart.
+signs in, registers an application by its issuer name, and is shown its key
+once. That one key is what the application's server presents on its own
+calls and what it signs browser URLs with; a second one would protect
+nothing, since the key sent on the wire already buys everything a signature
+can (see `docs/adr/0002-one-key-per-application.md`). Rotating mints a new
+key and keeps the old one working for a day; revoking ends both at once. The
+speak guard reads the registry at request time, so none of it needs a
+restart.
 
 The first admin is minted on `/admin/setup?token=…`, behind `ADMIN_SETUP_TOKEN`
 and, optionally, `ADMIN_ALLOWED_EMAILS`; in production an unconfigured gate
 refuses everyone. The registry lives in Postgres beside the admin's own accounts
 (`DATABASE_URL`), the keys sealed with `REGISTRY_ENCRYPTION_KEY` the way the
-platform's other credentials are; the list shows their last four characters. Without one, tornade runs as before on `SPEAK_SIGNING_KEYS`
-and `SPEAK_APP_KEYS`; with one, those pairs still count, under the registry's
-entries. The admin API (`/api/v1/admin/apps`) sits behind the JWT the web app
+platform's other credentials are; the list shows their last four characters.
+Without one, tornade runs as before on `SPEAK_KEYS`; with one, those pairs
+still count for the issuers the registry does not name. The admin API (`/api/v1/admin/apps`) sits behind the JWT the web app
 mints from its Better Auth session with `JWT_SECRET`; the browser only ever
 reaches it through the web app's own proxy.
 
@@ -276,7 +278,7 @@ This module ships both halves of that arrangement, so an application does not
 rewrite the contract:
 
 - `client` (Go) is a `tts.Voice` that speaks through tornade. `client.New`
-  takes the `AppKey` for server-to-server calls; `PrimeOpening`,
+  takes the `Key` for server-to-server calls; `PrimeOpening`,
   `Pregenerate`, `Exists` and the `*Named` variants map onto the routes above.
 - `signed` (Go) holds the signature scheme. `signed.NewSigner` mints the URL
   the application hands its browser; tornade verifies with the same package.
@@ -301,12 +303,11 @@ docker run -p 8080:8080 -e SEARXNG_URL=… -e PIPER_URL=… tornade
 
 ## Deployment
 
-Two paths, and each needs the same three values supplied at deploy time —
-`SPEAK_SIGNING_KEYS` (`<issuer>:<secret>` pairs, one per application allowed to
-hand out browser URLs), `SPEAK_APP_KEYS` (the same shape, for the keys services
-present on `X-Tornade-Key`), and, on the sklp path, `TORNADE_AUDIO_HOST` (the public name
-the speak route answers on). None of them is committed: unset, tornade simply
-accepts nothing it did not already accept on the internal network.
+Two paths, and each needs the same two values supplied at deploy time —
+`SPEAK_KEYS` (`<issuer>:<key>` pairs, one per application not held in the
+registry) and, on the sklp path, `TORNADE_AUDIO_HOST` (the public name the
+speak route answers on). Neither is committed: unset, tornade simply accepts
+nothing it did not already accept on the internal network.
 
 The public name must resolve before the certificate can be issued — the
 challenge is served on that host — so point the DNS at the front door first

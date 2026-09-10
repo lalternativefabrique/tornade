@@ -27,7 +27,8 @@ type SignerConfig struct {
 	// Issuer names this application in the signature, so tornade knows which
 	// secret to check it against.
 	Issuer string
-	// Key is the secret shared with tornade under Issuer.
+	// Key is the application's tornade key, the one it presents on its own
+	// calls too; the signing key is derived from it.
 	Key string
 	// TTL is how long a handed-out URL stays valid: long enough to press play
 	// on a reply that has been sitting on screen, short enough that a link

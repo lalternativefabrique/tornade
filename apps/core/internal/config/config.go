@@ -37,15 +37,13 @@ type Config struct {
 
 	AudioOpeningChars int
 
-	// SigningKeys are the secrets applications sign browser-bound /speak URLs
-	// with, read from SPEAK_SIGNING_KEYS as "issuer:secret" pairs. An issuer
-	// may appear more than once. Empty accepts no browser call, which is
-	// what a deployment reachable only from the cluster wants.
-	SigningKeys map[string][]string
-	// AppKeys authenticate a service calling /speak on its own behalf, read
-	// from SPEAK_APP_KEYS in the same "issuer:secret" shape as SigningKeys —
-	// one format for both rather than two that look alike and are not.
-	AppKeys map[string][]string
+	// Keys are the applications' keys read from SPEAK_KEYS as "issuer:key"
+	// pairs, an issuer repeatable. One key does both jobs: presented on
+	// X-Tornade-Key by the application's server, and the root the signatures
+	// on its browser-bound /speak URLs derive from. Empty admits nobody the
+	// registry does not, which is what a deployment reachable only from the
+	// cluster wants.
+	Keys map[string][]string
 
 	// DatabaseURL opens the registry of applications and the admin's own
 	// accounts. Empty runs without either: the environment pairs above are
@@ -103,8 +101,7 @@ func Load() Config {
 		// cut, reading a word twice or skipping one.
 		AudioOpeningChars: envInt("AUDIO_OPENING_CHARS", 800),
 
-		SigningKeys: envPairs("SPEAK_SIGNING_KEYS"),
-		AppKeys:     envPairs("SPEAK_APP_KEYS"),
+		Keys: envPairs("SPEAK_KEYS"),
 
 		DatabaseURL:           os.Getenv("DATABASE_URL"),
 		JWTSecret:             os.Getenv("JWT_SECRET"),
@@ -113,7 +110,7 @@ func Load() Config {
 	}
 }
 
-// envPairs reads "issuer:secret,issuer:secret" into a map. A malformed entry
+// envPairs reads "issuer:key,issuer:key" into a map. A malformed entry
 // is dropped rather than guessed at: a key read wrong is a key that rejects
 // every signature made with it, and silence about it would look like the
 // application signing incorrectly.

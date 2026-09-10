@@ -71,7 +71,7 @@ func main() {
 		Primer:           primer,
 		SearchDeadline:   cfg.SearchDeadline,
 		RenderMaxTimeout: cfg.RenderMaxTimeout,
-		Verifier:         signed.NewLookupVerifier(keys.SigningKeys),
+		Verifier:         signed.NewLookupVerifier(keys.Keys),
 		AppKeyIssuer:     keys.IssuerOf,
 		Unguarded:        cfg.SpeakUnguarded,
 	}
@@ -110,7 +110,7 @@ func main() {
 func buildRegistry(cfg config.Config) (*registry.Service, *registry.KeySource) {
 	if cfg.DatabaseURL == "" {
 		log.Print("tornade: no DATABASE_URL, the applications registry is off")
-		return nil, registry.NewKeySource(nil, nil, cfg.SigningKeys, cfg.AppKeys)
+		return nil, registry.NewKeySource(nil, nil, cfg.Keys)
 	}
 	cipher, err := registryinfra.NewCipherFromBase64(cfg.RegistryEncryptionKey)
 	if err != nil {
@@ -121,7 +121,7 @@ func buildRegistry(cfg config.Config) (*registry.Service, *registry.KeySource) {
 	if err != nil {
 		log.Fatalf("tornade: DATABASE_URL: %v", err)
 	}
-	apps, err := registry.NewService(pool, cipher, cfg.SigningKeys, cfg.AppKeys)
+	apps, err := registry.NewService(pool, cipher, cfg.Keys)
 	if err != nil {
 		log.Fatalf("tornade: registry: %v", err)
 	}

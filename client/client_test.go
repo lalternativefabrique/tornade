@@ -230,13 +230,13 @@ func TestVoiceSpeakStreamNamedSendsTheID(t *testing.T) {
 func TestAppKeyIsSentOnEveryCall(t *testing.T) {
 	var keys []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		keys = append(keys, r.Header.Get(HeaderAppKey))
+		keys = append(keys, r.Header.Get(HeaderKey))
 		w.Header().Set("Content-Type", "audio/mpeg")
 		w.Write([]byte("audio"))
 	}))
 	defer srv.Close()
 
-	v := New(Config{BaseURL: srv.URL, AppKey: "an-app-key"})
+	v := New(Config{BaseURL: srv.URL, Key: "an-app-key"})
 	if _, _, err := v.Speak(context.Background(), "bonjour"); err != nil {
 		t.Fatal(err)
 	}
@@ -251,7 +251,7 @@ func TestAppKeyIsSentOnEveryCall(t *testing.T) {
 func TestNoAppKeyHeaderWithoutOne(t *testing.T) {
 	var present bool
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, present = r.Header[HeaderAppKey]
+		_, present = r.Header[HeaderKey]
 		w.Header().Set("Content-Type", "audio/mpeg")
 		w.Write([]byte("audio"))
 	}))

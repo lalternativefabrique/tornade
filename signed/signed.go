@@ -59,7 +59,7 @@ func NewVerifier(keys map[string]string) *Verifier {
 		if strings.TrimSpace(issuer) == "" || key == "" {
 			continue
 		}
-		parsed[issuer] = []byte(key)
+		parsed[issuer] = signingKey(key)
 	}
 	if len(parsed) == 0 {
 		return nil
@@ -85,7 +85,7 @@ func NewLookupVerifier(lookup func(issuer string) []string) *Verifier {
 		keys := make([][]byte, 0, len(secrets))
 		for _, s := range secrets {
 			if s != "" {
-				keys = append(keys, []byte(s))
+				keys = append(keys, signingKey(s))
 			}
 		}
 		return keys
@@ -152,7 +152,8 @@ func (v *Verifier) Verify(q url.Values, scope, id, text string) error {
 	return nil
 }
 
-// Sign builds the query parameters authorising one reading until expires.
+// Sign builds the query parameters authorising one reading until expires,
+// with key the application's tornade key.
 //
 // Exported so the applications that hand out these URLs sign them with this
 // code rather than reimplementing the construction — a signature scheme
@@ -161,9 +162,23 @@ func Sign(issuer, key string, p Params) url.Values {
 	q := url.Values{}
 	q.Set(QueryIssuer, issuer)
 	q.Set(QueryExpires, strconv.FormatInt(p.Expires.Unix(), 10))
-	q.Set(QuerySignature, sign([]byte(key), p))
+	q.Set(QuerySignature, sign(signingKey(key), p))
 	return q
 }
+
+// signingKey derives the MAC key from an application's tornade key.
+//
+// One key per application is what an operator configures: the same value it
+// presents on X-Tornade-Key is what its server signs browser URLs with. The
+// bytes presented on the wire are never themselves the MAC key, so a
+// signature exposes nothing about the credential it was derived from.
+func signingKey(key string) []byte {
+	mac := hmac.New(sha256.New, []byte(key))
+	mac.Write([]byte(signingKeyLabel))
+	return mac.Sum(nil)
+}
+
+const signingKeyLabel = "tornade/sign/v1"
 
 // HashText names a text the way the signature covers it.
 func HashText(text string) string {

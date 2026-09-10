@@ -1,19 +1,16 @@
 export interface RegisteredApp {
   name: string
   active: boolean
-  signing_last4: string
-  app_last4: string
+  last4: string
   created_at: string
   rotated_at?: string
   revoked_at?: string
   grace_until?: string
 }
 
-/** An application's keys, handed out once on creation or rotation. */
 export interface AppCredentials {
   name: string
-  signing_key: string
-  app_key: string
+  key: string
   grace_until?: string
 }
 
