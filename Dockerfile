@@ -16,7 +16,6 @@ RUN cd apps/core && CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/to
 FROM mcr.microsoft.com/playwright:v1.62.1-noble
 WORKDIR /app
 COPY --from=build /out/tornade /usr/local/bin/tornade
-COPY --from=build /src/apps/core/migrations /app/migrations
 
 # GStreamer carries CVE-2025-3887 (H265 parsing, remote code execution) with no
 # fixed version published, which fails the publish scan. It is Chromium's video

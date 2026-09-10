@@ -1,5 +1,12 @@
 
 @import "tailwindcss";
+@import "@lalternative/admin/styles.css";
+
+/* Tailwind v4 skips node_modules when scanning for class names, so every
+   class the shared admin and auth screens use would be compiled away and
+   they would render as bare HTML. */
+@source "../node_modules/@lalternative/auth/dist";
+@source "../node_modules/@lalternative/admin/dist";
 
 * {
   box-sizing: border-box;
