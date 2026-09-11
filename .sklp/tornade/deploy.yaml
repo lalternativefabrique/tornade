@@ -24,10 +24,47 @@ services:
       tcp: "5432"
       timeout: 60s
 
+  redis:
+    image: redis:7-alpine
+    port: 6379
+    command: ["redis-server", "--save", "60", "1"]
+    volumes: ["redis-data:/data"]
+    ready:
+      tcp: "6379"
+      timeout: 60s
+
+  searxng:
+    # Pinned by digest: searxng publishes no immutable tags, so a tag would
+    # silently change what runs.
+    image: docker.io/searxng/searxng@sha256:e45d5894bfaa0bf8773b9f283795ae57f1c15ddb29c8cecb70b3665b0ce9ec60
+    port: 8080
+    depends_on: [redis, searxng-config]
+    volumes: ["searxng-config:/etc/searxng"]
+    env:
+      SEARXNG_BASE_URL: http://searxng:8080
+      SEARXNG_REDIS_URL: redis://redis:6379/0
+    ready:
+      # /healthz answers 200 even when the JSON format is denied, which is the
+      # only thing callers use: probe the format they actually ask for.
+      http: /search?q=ping&format=json
+      timeout: 120s
+
+  piper:
+    image: rg.fr-par.scw.cloud/synthiz/piper-server:20260829-1639-33b17b97ecb6
+    port: 5000
+    env:
+      DEFAULT_VOICE: fr_FR-siwis-medium
+    resources:
+      cpu: "1"
+      memory: 1G
+    ready:
+      http: /docs
+      timeout: 120s
+
   app:
     image: rg.fr-par.scw.cloud/lalternative/tornade:20260910-0746-abcc1230f1bc
     port: 8080
-    depends_on: [migrate, postgres]
+    depends_on: [migrate, postgres, searxng, piper]
     env:
       LISTEN_ADDR: ":8080"
       DATABASE_URL: postgres://tornade:${POSTGRES_PASSWORD}@postgres:5432/tornade?sslmode=disable
@@ -35,8 +72,8 @@ services:
       REGISTRY_ENCRYPTION_KEY: ${REGISTRY_ENCRYPTION_KEY}
       OIDC_ISSUER_URL: https://id.urbangate.dev
       OIDC_AUDIENCE: tornade
-      SEARXNG_URL: http://searxng.searxng-production.internal
-      PIPER_URL: http://piper.piper-production.internal
+      SEARXNG_URL: http://searxng:8080
+      PIPER_URL: http://piper:5000
       TTS_MODEL: fr_FR-siwis-medium
       TTS_VOICE: fr_FR-siwis-medium
       S3_ENDPOINT: https://s3.gra.io.cloud.ovh.net
@@ -84,6 +121,106 @@ jobs:
         "up",
       ]
     depends_on: [postgres]
+
+  # The stock image only serves HTML; the search client asks for JSON, which
+  # SearXNG refuses (403) unless the format is enabled in settings.yml. The
+  # image has no env override for it, so the file is written into the config
+  # volume before searxng starts.
+  searxng-config:
+    image: alpine:3.21
+    volumes: ["searxng-config:/etc/searxng"]
+    command:
+      - sh
+      - -c
+      - |
+        set -eu
+        # settings_defaults.py declares secret_key with no default and raises on
+        # a non-str, so searxng refuses to boot without one. The volume already
+        # holds the key this space has been running on: carry it over rather
+        # than mint a new one, and fall back to a fresh key on a blank volume.
+        key=$(sed -n 's/^ *secret_key: *"\(.*\)"$/\1/p' /etc/searxng/settings.yml 2>/dev/null | head -1)
+        if [ -z "$key" ]; then
+          key=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | head -c 32)
+        fi
+        cat > /etc/searxng/settings.yml <<YAML
+        use_default_settings: true
+        general:
+          instance_name: "Synthiz Search"
+        server:
+          secret_key: "$key"
+          limiter: false
+        search:
+          safe_search: 0
+          autocomplete: ""
+          # Per-request "language" wins; this only covers callers that send none.
+          default_lang: "fr"
+          formats:
+            - html
+            - json
+        outgoing:
+          # A search waits for its slowest engine, so this timeout IS the floor of
+          # the response time whenever one of them is down: a blocked engine costs
+          # the full budget on every single query. Measured healthy engines answer
+          # in 0.4-2.9s, so 3.0 keeps them all and stops paying 5s for the dead.
+          request_timeout: 3.0
+          max_request_timeout: 10.0
+          pool_connections: 100
+          pool_maxsize: 20
+          enable_http2: true
+        engines:
+          - name: youtube
+            disabled: false
+          - name: bing
+            disabled: false
+          - name: wikipedia
+            disabled: false
+          - name: wikidata
+            disabled: false
+          - name: google cse
+            disabled: false
+          # duckduckgo_web targets duckduckgo.com instead of the CAPTCHA-gated
+          # html.duckduckgo.com; upstream ships it disabled and it ignores the
+          # language parameter (searxng PR #6192).
+          - name: duckduckgo web
+            disabled: false
+          - name: openalex
+            disabled: false
+          - name: crossref
+            disabled: false
+          # Blocked or broken on every measured query, yet still queried on an
+          # explicit category request, where each one costs the full
+          # request_timeout before the search can return: google scholar answers
+          # "Suspended: access denied", semantic scholar "parsing error", and
+          # pubmed (a biomedical index) returns nothing on humanities queries.
+          - name: google scholar
+            inactive: true
+          - name: semantic scholar
+            inactive: true
+          - name: pubmed
+            inactive: true
+          # openlibrary times out on every general query and only indexes books;
+          # it belongs to the books category, not to source discovery.
+          - name: openlibrary
+            inactive: true
+          # Permanently blocked from a datacenter IP: /sorry/ redirect (google),
+          # Anubis proof-of-work (brave), CAPTCHA (startpage, html.duckduckgo).
+          # A residential proxy does not defeat any of them: verified 2026-08-17.
+          - name: google
+            disabled: true
+          - name: duckduckgo
+            disabled: true
+          - name: brave
+            disabled: true
+          - name: startpage
+            disabled: true
+          # arxiv is a physics/CS preprint server: on humanities queries it matches
+          # on stray keywords and floods the ranking with unrelated papers ("Fast
+          # Graph-based Higher-Order Clustering" scoring 1.0 on a Gramsci query).
+          # "disabled" only drops it from the default set — an explicit category
+          # request still reaches it, so it takes "inactive" to remove it entirely.
+          - name: arxiv
+            inactive: true
+        YAML
 
 spaces:
   tornade-production:
