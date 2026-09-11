@@ -42,7 +42,7 @@ static ELLIPSIS_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\.{3,}").
 ///
 /// # Example
 /// ```
-/// use pocket_tts::pause::parse_explicit_pauses;
+/// use tts_engine::pause::parse_explicit_pauses;
 ///
 /// let pauses = parse_explicit_pauses("Hello [pause:500ms] world [pause:1s] done");
 /// assert_eq!(pauses.len(), 2);

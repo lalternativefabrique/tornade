@@ -16,13 +16,17 @@ const ROWS_PER_TASK: usize = 16;
 fn f32_data<'a>(t: &'a Tensor, guard: &'a Storage) -> Result<&'a [f32]> {
     let layout = t.layout();
     if !layout.is_contiguous() {
-        return Err(candle_core::Error::Msg("smallm: expected a contiguous tensor".into()));
+        return Err(candle_core::Error::Msg(
+            "smallm: expected a contiguous tensor".into(),
+        ));
     }
     match guard {
         Storage::Cpu(CpuStorage::F32(data)) => {
             Ok(&data[layout.start_offset()..layout.start_offset() + t.elem_count()])
         }
-        _ => Err(candle_core::Error::Msg("smallm: expected an f32 CPU tensor".into())),
+        _ => Err(candle_core::Error::Msg(
+            "smallm: expected an f32 CPU tensor".into(),
+        )),
     }
 }
 
@@ -36,7 +40,12 @@ fn dot(a: &[f32], b: &[f32]) -> f32 {
             acc[i] += xa[i] * xb[i];
         }
     }
-    let tail: f32 = ca.remainder().iter().zip(cb.remainder()).map(|(x, y)| x * y).sum();
+    let tail: f32 = ca
+        .remainder()
+        .iter()
+        .zip(cb.remainder())
+        .map(|(x, y)| x * y)
+        .sum();
     acc.iter().sum::<f32>() + tail
 }
 
@@ -45,7 +54,9 @@ pub fn linear_rows(x: &Tensor, w: &Tensor, bias: Option<&Tensor>) -> Result<Tens
     let (m, k) = x.dims2()?;
     let (n, kw) = w.dims2()?;
     if k != kw {
-        return Err(candle_core::Error::Msg(format!("smallm: x has {k} columns, w has {kw}")));
+        return Err(candle_core::Error::Msg(format!(
+            "smallm: x has {k} columns, w has {kw}"
+        )));
     }
     let x = x.contiguous()?;
     let (xs, _) = x.storage_and_layout();
@@ -71,7 +82,9 @@ pub fn linear_rows(x: &Tensor, w: &Tensor, bias: Option<&Tensor>) -> Result<Tens
                 }
             }
         });
-    Tensor::from_vec(out_t, (n, m), x.device())?.t()?.contiguous()
+    Tensor::from_vec(out_t, (n, m), x.device())?
+        .t()?
+        .contiguous()
 }
 
 struct Q8Weights {
@@ -85,7 +98,9 @@ impl Q8Weights {
     fn from_linear(layer: &Linear) -> Result<Self> {
         let (n, k) = layer.weight().dims2()?;
         if k % QK8_0 != 0 {
-            return Err(candle_core::Error::Msg(format!("smallm: {k} columns is not a multiple of {QK8_0}")));
+            return Err(candle_core::Error::Msg(format!(
+                "smallm: {k} columns is not a multiple of {QK8_0}"
+            )));
         }
         let w = layer.weight().contiguous()?;
         let (ws, _) = w.storage_and_layout();
@@ -104,7 +119,10 @@ impl Q8Weights {
     fn rows(&self, x: &Tensor) -> Result<Tensor> {
         let (m, k) = x.dims2()?;
         if k != self.k {
-            return Err(candle_core::Error::Msg(format!("smallm: x has {k} columns, w has {}", self.k)));
+            return Err(candle_core::Error::Msg(format!(
+                "smallm: x has {k} columns, w has {}",
+                self.k
+            )));
         }
         let x = x.contiguous()?;
         let (xs, _) = x.storage_and_layout();
@@ -129,7 +147,9 @@ impl Q8Weights {
                     }
                 }
             });
-        Tensor::from_vec(out_t, (n, m), x.device())?.t()?.contiguous()
+        Tensor::from_vec(out_t, (n, m), x.device())?
+            .t()?
+            .contiguous()
     }
 }
 
@@ -177,7 +197,9 @@ impl Proj {
                 let n = out.dim(1)?;
                 out.reshape((b, t, n))
             }
-            r => Err(candle_core::Error::Msg(format!("smallm: unsupported rank {r}"))),
+            r => Err(candle_core::Error::Msg(format!(
+                "smallm: unsupported rank {r}"
+            ))),
         }
     }
 }
@@ -203,7 +225,11 @@ mod tests {
         let want = layer.forward(&x)?;
         let mut proj = Proj::new(layer);
         let got = proj.rows(&x)?;
-        let diff = (&want - got)?.abs()?.max_all()?.to_dtype(DType::F32)?.to_scalar::<f32>()?;
+        let diff = (&want - got)?
+            .abs()?
+            .max_all()?
+            .to_dtype(DType::F32)?
+            .to_scalar::<f32>()?;
         assert!(diff < 1e-4, "max diff {diff}");
 
         let w = Tensor::randn(0f32, 1.0, (40, 64), &dev)?;

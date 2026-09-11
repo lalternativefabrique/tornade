@@ -56,7 +56,10 @@ fn main() -> anyhow::Result<()> {
     }
     let wall = t0.elapsed().as_secs_f64();
     let audio_total: f64 = samples.iter().map(|&s| s as f64 / sample_rate).sum();
-    let audio_min = samples.iter().map(|&s| s as f64 / sample_rate).fold(f64::MAX, f64::min);
+    let audio_min = samples
+        .iter()
+        .map(|&s| s as f64 / sample_rate)
+        .fold(f64::MAX, f64::min);
     step_ms.sort_by(|a, b| a.partial_cmp(b).unwrap());
     let p50 = step_ms[step_ms.len() / 2];
     let p95 = step_ms[step_ms.len() * 95 / 100];

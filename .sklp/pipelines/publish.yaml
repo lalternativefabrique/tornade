@@ -31,6 +31,9 @@ scopes:
     - "Dockerfile.web"
   migrate:
     - "apps/migrations/**"
+  tts:
+    - "apps/tts/**"
+    - "Dockerfile.tts"
 
 steps:
   - name: app-image
@@ -56,4 +59,12 @@ steps:
     context: apps/migrations
     dockerfile: apps/migrations/Dockerfile
     image: rg.fr-par.scw.cloud/lalternative/tornade-migrate
+    tag: "{{ publish_tag }}"
+
+  - name: tts-image
+    kind: publish
+    scope: [tts]
+    context: .
+    dockerfile: Dockerfile.tts
+    image: rg.fr-par.scw.cloud/lalternative/tornade-tts
     tag: "{{ publish_tag }}"

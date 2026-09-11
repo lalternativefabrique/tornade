@@ -158,7 +158,11 @@ impl ResBlock {
         let in_ln = LayerNorm::new(channels, 1e-6, true, vb.pp("in_ln"))?;
         let mlp_lin1 = Proj::new(candle_nn::linear(channels, channels, vb.pp("mlp.0"))?);
         let mlp_lin2 = Proj::new(candle_nn::linear(channels, channels, vb.pp("mlp.2"))?);
-        let ada_ln_lin = Proj::new(candle_nn::linear(channels, 3 * channels, vb.pp("adaLN_modulation.1"))?);
+        let ada_ln_lin = Proj::new(candle_nn::linear(
+            channels,
+            3 * channels,
+            vb.pp("adaLN_modulation.1"),
+        )?);
         Ok(Self {
             in_ln,
             mlp_lin1,
@@ -197,7 +201,11 @@ pub struct FinalLayer {
 impl FinalLayer {
     pub fn new(model_channels: usize, out_channels: usize, vb: VarBuilder) -> Result<Self> {
         let norm_final = LayerNorm::new(model_channels, 1e-6, false, vb.pp("norm_final"))?;
-        let linear = Proj::new(candle_nn::linear(model_channels, out_channels, vb.pp("linear"))?);
+        let linear = Proj::new(candle_nn::linear(
+            model_channels,
+            out_channels,
+            vb.pp("linear"),
+        )?);
         let ada_ln_lin = Proj::new(candle_nn::linear(
             model_channels,
             2 * model_channels,
@@ -257,8 +265,16 @@ impl SimpleMLPAdaLN {
             )?);
         }
 
-        let cond_embed = Proj::new(candle_nn::linear(cond_channels, model_channels, vb.pp("cond_embed"))?);
-        let input_proj = Proj::new(candle_nn::linear(in_channels, model_channels, vb.pp("input_proj"))?);
+        let cond_embed = Proj::new(candle_nn::linear(
+            cond_channels,
+            model_channels,
+            vb.pp("cond_embed"),
+        )?);
+        let input_proj = Proj::new(candle_nn::linear(
+            in_channels,
+            model_channels,
+            vb.pp("input_proj"),
+        )?);
 
         let mut res_blocks = Vec::new();
         for i in 0..num_res_blocks {

@@ -10,7 +10,6 @@ pub mod tts_model;
 pub mod voice_state;
 pub mod weights;
 
-
 pub use pause::{ParsedText, PauseMarker, parse_text_with_pauses};
 pub use quantize::{QuantizeConfig, QuantizedTensor};
 pub use tts_model::TTSModel;

@@ -42,8 +42,16 @@ impl StreamingTransformerLayer {
         )?;
         let norm1 = LayerNorm::new(d_model, 1e-5, true, vb.pp("norm1"))?;
         let norm2 = LayerNorm::new(d_model, 1e-5, true, vb.pp("norm2"))?;
-        let linear1 = Proj::new(candle_nn::linear_no_bias(d_model, dim_feedforward, vb.pp("linear1"))?);
-        let linear2 = Proj::new(candle_nn::linear_no_bias(dim_feedforward, d_model, vb.pp("linear2"))?);
+        let linear1 = Proj::new(candle_nn::linear_no_bias(
+            d_model,
+            dim_feedforward,
+            vb.pp("linear1"),
+        )?);
+        let linear2 = Proj::new(candle_nn::linear_no_bias(
+            dim_feedforward,
+            d_model,
+            vb.pp("linear2"),
+        )?);
 
         let (layer_scale_1, layer_scale_2) = if let Some(init) = layer_scale {
             (

@@ -84,7 +84,10 @@ impl Batcher {
     /// until it is done.
     pub fn add(&mut self, text: &str, voice_state: &ModelState) -> Result<StreamId> {
         let prepared = prepare_text_prompt(text);
-        let tokens = self.model.conditioner.prepare(&prepared, &self.model.device)?;
+        let tokens = self
+            .model
+            .conditioner
+            .prepare(&prepared, &self.model.device)?;
         let text_embeddings = self.model.conditioner.forward(&tokens)?;
         let mut state = voice_state.clone();
         let transformer = &self.model.flow_lm.transformer;
@@ -100,7 +103,8 @@ impl Batcher {
             let v = module[ATTN_V_BUF_KEY].narrow(2, 0, cursor.len)?;
             if self.caches.len() <= i {
                 let (_, h, _, d) = k.dims4()?;
-                self.caches.push(StackedKv::empty(h, d, &self.model.device)?);
+                self.caches
+                    .push(StackedKv::empty(h, d, &self.model.device)?);
             }
             self.caches[i].add_row(&k, &v, cursor.pos)?;
         }
@@ -183,7 +187,11 @@ impl Batcher {
                 let done = past_eos || stream.step + 1 >= stream.max_gen_len;
                 stream.backbone_input = latent.unsqueeze(1)?;
                 stream.step += 1;
-                Ok(Frame { id: stream.id, audio, done })
+                Ok(Frame {
+                    id: stream.id,
+                    audio,
+                    done,
+                })
             })
             .collect();
         let frames = frames.into_iter().collect::<Result<Vec<_>>>()?;

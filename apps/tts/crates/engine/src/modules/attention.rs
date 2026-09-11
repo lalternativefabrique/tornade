@@ -58,8 +58,16 @@ impl StreamingMultiheadAttention {
         // num_kv = num_heads
         // kv_dim = (embed_dim // num_heads) * num_kv -> so embed_dim
         // out_dim += 2 * kv_dim -> so 3 * embed_dim
-        let in_proj = Proj::new(candle_nn::linear_no_bias(embed_dim, 3 * embed_dim, vb.pp("in_proj"))?);
-        let out_proj = Proj::new(candle_nn::linear_no_bias(embed_dim, embed_dim, vb.pp("out_proj"))?);
+        let in_proj = Proj::new(candle_nn::linear_no_bias(
+            embed_dim,
+            3 * embed_dim,
+            vb.pp("in_proj"),
+        )?);
+        let out_proj = Proj::new(candle_nn::linear_no_bias(
+            embed_dim,
+            embed_dim,
+            vb.pp("out_proj"),
+        )?);
 
         Ok(Self {
             embed_dim,
@@ -313,7 +321,11 @@ impl StreamingMultiheadAttention {
         let (q, k) = self.rope.forward_rows(&q, &k, &cache.pos)?;
         let q = q.transpose(1, 2)?.contiguous()?; // [B, H, 1, D]
         let k = k.transpose(1, 2)?.contiguous()?;
-        let v = packed.narrow(2, 2, 1)?.squeeze(2)?.transpose(1, 2)?.contiguous()?;
+        let v = packed
+            .narrow(2, 2, 1)?
+            .squeeze(2)?
+            .transpose(1, 2)?
+            .contiguous()?;
 
         cache.push(&k, &v)?;
         let x = cache.attend(&q)?; // [B, H, 1, D]
@@ -322,13 +334,12 @@ impl StreamingMultiheadAttention {
     }
 }
 
-fn f32_data<'a>(
-    t: &'a Tensor,
-    guard: &'a candle_core::Storage,
-) -> Result<&'a [f32]> {
+fn f32_data<'a>(t: &'a Tensor, guard: &'a candle_core::Storage) -> Result<&'a [f32]> {
     let layout = t.layout();
     if !layout.is_contiguous() {
-        return Err(candle_core::Error::Msg("expected a contiguous tensor".into()));
+        return Err(candle_core::Error::Msg(
+            "expected a contiguous tensor".into(),
+        ));
     }
     match guard {
         candle_core::Storage::Cpu(candle_core::CpuStorage::F32(data)) => {
@@ -338,13 +349,12 @@ fn f32_data<'a>(
     }
 }
 
-fn f16_data<'a>(
-    t: &'a Tensor,
-    guard: &'a candle_core::Storage,
-) -> Result<&'a [half::f16]> {
+fn f16_data<'a>(t: &'a Tensor, guard: &'a candle_core::Storage) -> Result<&'a [half::f16]> {
     let layout = t.layout();
     if !layout.is_contiguous() {
-        return Err(candle_core::Error::Msg("expected a contiguous tensor".into()));
+        return Err(candle_core::Error::Msg(
+            "expected a contiguous tensor".into(),
+        ));
     }
     match guard {
         candle_core::Storage::Cpu(candle_core::CpuStorage::F16(data)) => {
@@ -474,7 +484,9 @@ impl StackedKv {
     }
 
     pub fn remove_row(&mut self, i: usize) -> Result<()> {
-        let keep: Vec<u32> = (0..self.rows() as u32).filter(|&r| r as usize != i).collect();
+        let keep: Vec<u32> = (0..self.rows() as u32)
+            .filter(|&r| r as usize != i)
+            .collect();
         let idx = Tensor::new(keep, self.k.device())?;
         self.k = self.k.index_select(&idx, 0)?.contiguous()?;
         self.v = self.v.index_select(&idx, 0)?.contiguous()?;
@@ -491,8 +503,10 @@ impl StackedKv {
             self.k = Tensor::cat(&[&self.k, &zeros], 2)?.contiguous()?;
             self.v = Tensor::cat(&[&self.v, &zeros], 2)?.contiguous()?;
         }
-        self.k.slice_set(&k.to_dtype(DType::F16)?.contiguous()?, 2, self.cur)?;
-        self.v.slice_set(&v.to_dtype(DType::F16)?.contiguous()?, 2, self.cur)?;
+        self.k
+            .slice_set(&k.to_dtype(DType::F16)?.contiguous()?, 2, self.cur)?;
+        self.v
+            .slice_set(&v.to_dtype(DType::F16)?.contiguous()?, 2, self.cur)?;
         self.cur += 1;
         for i in 0..b {
             self.len[i] += 1;

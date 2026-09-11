@@ -61,13 +61,20 @@ impl RotaryEmbedding {
 
     /// Single-step rotation of `q`/`k` [B, 1, H, D] where row `i` sits at
     /// `positions[i]`; one set of tensor ops for every row.
-    pub fn forward_rows(&self, q: &Tensor, k: &Tensor, positions: &[usize]) -> Result<(Tensor, Tensor)> {
+    pub fn forward_rows(
+        &self,
+        q: &Tensor,
+        k: &Tensor,
+        positions: &[usize],
+    ) -> Result<(Tensor, Tensor)> {
         let (b, t, h, d_full) = q.dims4()?;
         let hk = k.dim(2)?;
         let d = d_full / 2;
         let dev = q.device();
         if t != 1 || positions.len() != b {
-            return Err(candle_core::Error::Msg("forward_rows expects one step per row".into()));
+            return Err(candle_core::Error::Msg(
+                "forward_rows expects one step per row".into(),
+            ));
         }
         let ts: Vec<f32> = positions.iter().map(|&p| p as f32).collect();
         let ts = Tensor::from_vec(ts, (b, 1, 1, 1), dev)?;

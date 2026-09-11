@@ -2,7 +2,7 @@
 
 The HTTP facade over this platform's search, page extraction, JavaScript
 rendering and speech backends. One service, one image: SearXNG, Brave and
-Piper sit behind it, and callers only ever address tornade.
+the speech server sit behind it, and callers only ever address tornade.
 
 ```
 POST /search   {"q": "gramsci"}                     -> ranked results
@@ -75,7 +75,12 @@ never settles answers `502` — routine on the open web, and callers treat it as
 {"text": "…", "scope": "chat", "id": "msg-42", "stream": false}
 ```
 
-Reads text through Piper over the OpenAI `/v1/audio/speech` protocol.
+Reads text through the speech server in `apps/tts` over the OpenAI
+`/v1/audio/speech` protocol. That server runs Kyutai's Pocket TTS on CPU and
+advances every listener's reading by one frame per step, so a new listener
+hears their first seconds at once instead of waiting for someone else's
+three minutes to finish; when its slots are full it answers `503` with a
+`Retry-After` rather than queueing.
 
 `scope` and `id` name where the reading is kept. Both are optional: with an
 `id` a caller can have a reading made before anyone asks for it, since reading

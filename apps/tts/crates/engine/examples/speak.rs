@@ -30,7 +30,11 @@ fn main() -> anyhow::Result<()> {
     let gen_s = t0.elapsed().as_secs_f64();
     let last = chunks[0].rank() - 1;
     let audio = Tensor::cat(&chunks, last)?;
-    let audio = if audio.rank() == 3 { audio.squeeze(0)? } else { audio };
+    let audio = if audio.rank() == 3 {
+        audio.squeeze(0)?
+    } else {
+        audio
+    };
     let audio_s = audio.dim(1)? as f64 / model.sample_rate as f64;
     tts_engine::audio::write_wav(out, &audio, model.sample_rate as u32)?;
     println!(

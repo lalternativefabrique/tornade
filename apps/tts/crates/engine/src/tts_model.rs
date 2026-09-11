@@ -410,7 +410,10 @@ impl TTSModel {
             vb.pp("mimi"),
         )?;
 
-        let mimi_out_dim = config.mimi.inner_dim.unwrap_or(config.mimi.seanet.dimension);
+        let mimi_out_dim = config
+            .mimi
+            .inner_dim
+            .unwrap_or(config.mimi.seanet.dimension);
         let speaker_proj_weight = if vb.contains_tensor("flow_lm.speaker_proj_weight") {
             Some(vb.get((dim, mimi_out_dim), "flow_lm.speaker_proj_weight")?)
         } else {
@@ -512,16 +515,31 @@ impl TTSModel {
                 .max(0) as usize;
             let (two, _b, t, _h, _d) = cache.dims5()?;
             if two != 2 {
-                anyhow::bail!("{key}: expected a [2, B, T, H, D] cache, got {:?}", cache.dims());
+                anyhow::bail!(
+                    "{key}: expected a [2, B, T, H, D] cache, got {:?}",
+                    cache.dims()
+                );
             }
-            let k = cache.get(0)?.transpose(1, 2)?.contiguous()?.to_dtype(DType::F32)?;
-            let v = cache.get(1)?.transpose(1, 2)?.contiguous()?.to_dtype(DType::F32)?;
+            let k = cache
+                .get(0)?
+                .transpose(1, 2)?
+                .contiguous()?
+                .to_dtype(DType::F32)?;
+            let v = cache
+                .get(1)?
+                .transpose(1, 2)?
+                .contiguous()?
+                .to_dtype(DType::F32)?;
             let mut module_state = std::collections::HashMap::new();
             module_state.insert(ATTN_K_BUF_KEY.to_string(), k);
             module_state.insert(ATTN_V_BUF_KEY.to_string(), v);
             write_attention_cursor(
                 &mut module_state,
-                AttentionCursor { pos: offset, len: t.min(offset), head: 0 },
+                AttentionCursor {
+                    pos: offset,
+                    len: t.min(offset),
+                    head: 0,
+                },
                 &self.device,
             )?;
             state.insert(format!("flow_lm.{module}"), module_state);
@@ -1219,6 +1237,13 @@ enum Segment {
 /// Find the config file path for a variant
 fn find_config_path(variant: &str) -> Result<std::path::PathBuf> {
     let filename = format!("{}.yaml", variant);
+
+    if let Ok(dir) = std::env::var("TTS_CONFIG_DIR") {
+        let path = std::path::PathBuf::from(dir).join(&filename);
+        if path.exists() {
+            return Ok(path);
+        }
+    }
 
     // 1. Try relative to Rust crate (crates/pocket-tts/config)
     let crate_path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
