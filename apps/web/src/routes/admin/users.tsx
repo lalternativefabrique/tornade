@@ -12,7 +12,9 @@ export const Route = createFileRoute('/admin/users')({
           credentials: 'include',
         })
         if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string }
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string
+          }
           throw new Error(body.error ?? 'Failed to delete user')
         }
       }}

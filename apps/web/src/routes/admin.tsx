@@ -1,4 +1,9 @@
-import { createFileRoute, Link, Outlet, useNavigate } from '@tanstack/react-router'
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  useNavigate,
+} from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { AdminLayout } from '@lalternative/admin'
 import { getProfile } from '@/lib/services/auth'
@@ -39,13 +44,26 @@ function AdminShell() {
     <AdminLayout
       nav={
         <>
-          <Link to="/admin" activeOptions={{ exact: true }} className={linkClass} activeProps={{ className: activeClass }}>
+          <Link
+            to="/admin"
+            activeOptions={{ exact: true }}
+            className={linkClass}
+            activeProps={{ className: activeClass }}
+          >
             Tableau de bord
           </Link>
-          <Link to="/admin/apps" className={linkClass} activeProps={{ className: activeClass }}>
+          <Link
+            to="/admin/apps"
+            className={linkClass}
+            activeProps={{ className: activeClass }}
+          >
             Applications
           </Link>
-          <Link to="/admin/users" className={linkClass} activeProps={{ className: activeClass }}>
+          <Link
+            to="/admin/users"
+            className={linkClass}
+            activeProps={{ className: activeClass }}
+          >
             Utilisateurs
           </Link>
         </>

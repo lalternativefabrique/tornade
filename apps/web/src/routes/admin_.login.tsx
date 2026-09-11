@@ -30,7 +30,10 @@ function AdminLoginPage() {
           ? {
               only: true,
               signIn: async () => {
-                await authClient.signIn.oauth2({ providerId: sso.providerId, callbackURL: '/admin' })
+                await authClient.signIn.social({
+                  provider: sso.providerId,
+                  callbackURL: '/admin',
+                })
               },
             }
           : undefined

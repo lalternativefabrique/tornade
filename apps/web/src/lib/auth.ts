@@ -1,6 +1,7 @@
 import { createPlatformAuth } from '@lalternative/auth/server'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { pool } from './db'
+import { ssoFromEnv } from './sso-config'
 
 /**
  * Better Auth for the web app. The Go core does not sign tokens — it only
@@ -29,17 +30,10 @@ export const auth = createPlatformAuth({
         clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       }
     : undefined,
-  sso: process.env.URBANGATE_CLIENT_SECRET
-    ? {
-        issuer: process.env.URBANGATE_ISSUER_URL ?? 'https://id.urbangate.dev',
-        clientId: process.env.URBANGATE_CLIENT_ID ?? 'tornade-admin',
-        clientSecret: process.env.URBANGATE_CLIENT_SECRET,
-        adminRole: 'tornade:admin',
-      }
-    : undefined,
+  sso: ssoFromEnv(process.env),
   plugins: [tanstackStartCookies()],
 })
 
-export const ssoEnabled = Boolean(process.env.URBANGATE_CLIENT_SECRET)
+export const ssoEnabled = ssoFromEnv(process.env) !== undefined
 
 export type Auth = typeof auth

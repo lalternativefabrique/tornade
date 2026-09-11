@@ -42,7 +42,9 @@ export const Route = createFileRoute('/api/admin/users/$userId')({
         }
         if (session.user.id === params.userId) {
           return new Response(
-            JSON.stringify({ error: 'You cannot delete your own account here.' }),
+            JSON.stringify({
+              error: 'You cannot delete your own account here.',
+            }),
             { status: 400, headers: { 'Content-Type': 'application/json' } },
           )
         }
@@ -52,11 +54,14 @@ export const Route = createFileRoute('/api/admin/users/$userId')({
         // Better Auth re-checks the admin role itself.
         const authOrigin = new URL(request.url).origin
         const cookie = request.headers.get('cookie') ?? ''
-        const removed = await fetch(`${authOrigin}/api/auth/admin/remove-user`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', cookie },
-          body: JSON.stringify({ userId: params.userId }),
-        })
+        const removed = await fetch(
+          `${authOrigin}/api/auth/admin/remove-user`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', cookie },
+            body: JSON.stringify({ userId: params.userId }),
+          },
+        )
         if (!removed.ok) {
           return new Response(
             JSON.stringify({ error: 'Failed to delete the account.' }),
