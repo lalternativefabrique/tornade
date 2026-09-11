@@ -5,7 +5,3 @@ node: sklet-prod-v2
 deployments:
   - space: tornade-production
     path: .sklp/tornade/deploy.yaml
-  - space: piper-production
-    path: .sklp/piper/deploy.yaml
-  - space: searxng-production
-    path: .sklp/searxng/deploy.yaml
