@@ -1,0 +1,22 @@
+[package]
+name = "tornade-tts"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Speech server: fair scheduling of many listeners over Pocket TTS"
+
+[[bin]]
+name = "tornade-tts"
+path = "src/main.rs"
+
+[dependencies]
+tts-engine = { path = "../engine" }
+anyhow.workspace = true
+tokio.workspace = true
+axum.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+clap.workspace = true
