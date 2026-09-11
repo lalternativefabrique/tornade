@@ -471,6 +471,13 @@ impl TTSModel {
         self.get_voice_state_from_tensor(&audio)
     }
 
+    /// Quantizes the flow LM's weights to int8 for the batched per-frame
+    /// path; prompting keeps the float weights.
+    pub fn quantize_batch_path(&mut self) -> Result<()> {
+        self.flow_lm.quantize()?;
+        Ok(())
+    }
+
     /// Load a voice state exported by the Python implementation: one
     /// `<module>/cache` tensor of shape [2, B, T, H, D] (keys, then values)
     /// and one `<module>/offset` per attention layer, module names relative to

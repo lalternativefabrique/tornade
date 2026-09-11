@@ -15,7 +15,10 @@ fn main() -> anyhow::Result<()> {
     }
     let (variant, voice, n) = (&args[1], &args[2], args[3].parse::<usize>()?);
 
-    let model = TTSModel::load(variant)?;
+    let mut model = TTSModel::load(variant)?;
+    if std::env::var("TTS_Q8").is_ok() {
+        model.quantize_batch_path()?;
+    }
     let sample_rate = model.sample_rate as f64;
     let state = model.get_voice_state_from_kv_file(download_if_necessary(voice)?)?;
     let mut batcher = Batcher::new(model)?;

@@ -5,7 +5,9 @@ use crate::voice_state::{
     read_attention_cursor, write_attention_cursor,
 };
 use candle_core::{DType, Result, Tensor};
-use candle_nn::{Linear, Module, VarBuilder};
+use candle_nn::{Module, VarBuilder};
+
+use crate::modules::smallm::Proj;
 use std::collections::HashMap;
 
 fn ring_chunks(buf: &Tensor, head: usize, len: usize) -> Result<Vec<Tensor>> {
@@ -35,8 +37,8 @@ pub struct StreamingMultiheadAttention {
     embed_dim: usize,
     num_heads: usize,
     rope: RotaryEmbedding,
-    in_proj: Linear,
-    out_proj: Linear,
+    in_proj: Proj,
+    out_proj: Proj,
     context: Option<usize>,
     name: String,
 }
@@ -56,8 +58,8 @@ impl StreamingMultiheadAttention {
         // num_kv = num_heads
         // kv_dim = (embed_dim // num_heads) * num_kv -> so embed_dim
         // out_dim += 2 * kv_dim -> so 3 * embed_dim
-        let in_proj = candle_nn::linear_no_bias(embed_dim, 3 * embed_dim, vb.pp("in_proj"))?;
-        let out_proj = candle_nn::linear_no_bias(embed_dim, embed_dim, vb.pp("out_proj"))?;
+        let in_proj = Proj::new(candle_nn::linear_no_bias(embed_dim, 3 * embed_dim, vb.pp("in_proj"))?);
+        let out_proj = Proj::new(candle_nn::linear_no_bias(embed_dim, embed_dim, vb.pp("out_proj"))?);
 
         Ok(Self {
             embed_dim,
@@ -68,6 +70,11 @@ impl StreamingMultiheadAttention {
             context,
             name: name.to_string(),
         })
+    }
+
+    pub fn quantize(&mut self) -> Result<()> {
+        self.in_proj.quantize()?;
+        self.out_proj.quantize()
     }
 
     pub fn init_state(
@@ -300,7 +307,7 @@ impl StreamingMultiheadAttention {
         }
         let h = self.num_heads;
         let d = self.embed_dim / h;
-        let packed = crate::modules::smallm::linear(&self.in_proj, query)?.reshape((b, t, 3, h, d))?;
+        let packed = self.in_proj.rows(query)?.reshape((b, t, 3, h, d))?;
         let q = packed.narrow(2, 0, 1)?.squeeze(2)?;
         let k = packed.narrow(2, 1, 1)?.squeeze(2)?;
         let (q, k) = self.rope.forward_rows(&q, &k, &cache.pos)?;
@@ -311,7 +318,7 @@ impl StreamingMultiheadAttention {
         cache.push(&k, &v)?;
         let x = cache.attend(&q)?; // [B, H, 1, D]
         let x = x.transpose(1, 2)?.reshape((b, t, self.embed_dim))?;
-        crate::modules::smallm::linear(&self.out_proj, &x)
+        self.out_proj.rows(&x)
     }
 }
 
@@ -331,17 +338,34 @@ fn f32_data<'a>(
     }
 }
 
+fn f16_data<'a>(
+    t: &'a Tensor,
+    guard: &'a candle_core::Storage,
+) -> Result<&'a [half::f16]> {
+    let layout = t.layout();
+    if !layout.is_contiguous() {
+        return Err(candle_core::Error::Msg("expected a contiguous tensor".into()));
+    }
+    match guard {
+        candle_core::Storage::Cpu(candle_core::CpuStorage::F16(data)) => {
+            Ok(&data[layout.start_offset()..layout.start_offset() + t.elem_count()])
+        }
+        _ => Err(candle_core::Error::Msg("expected an f16 CPU tensor".into())),
+    }
+}
+
 /// Softmax attention of one query per (row, head) over that row's valid
 /// window of the cache. One matmul per (row, head) would pay a kernel launch
 /// each; this reads the window once and vectorises the head dimension.
 fn stacked_attention(
     q: &[f32],
-    k: &[f32],
-    v: &[f32],
+    k: &[half::f16],
+    v: &[half::f16],
     (b, h, cap, d): (usize, usize, usize, usize),
     cur: usize,
     len: &[usize],
 ) -> Vec<f32> {
+    use half::slice::HalfFloatSliceExt;
     use rayon::prelude::*;
     let scale = 1.0 / (d as f32).sqrt();
     let mut out = vec![0f32; b * h * d];
@@ -351,10 +375,11 @@ fn stacked_attention(
         let q = &q[bh * d..(bh + 1) * d];
         let kb = &k[bh * cap * d..(bh + 1) * cap * d];
         let vb = &v[bh * cap * d..(bh + 1) * cap * d];
+        let mut buf = vec![0f32; d];
         let mut scores: Vec<f32> = (start..cur)
             .map(|j| {
-                let kj = &kb[j * d..(j + 1) * d];
-                q.iter().zip(kj).map(|(a, b)| a * b).sum::<f32>() * scale
+                kb[j * d..(j + 1) * d].convert_to_f32_slice(&mut buf);
+                q.iter().zip(&buf).map(|(a, b)| a * b).sum::<f32>() * scale
             })
             .collect();
         let max = scores.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
@@ -366,8 +391,8 @@ fn stacked_attention(
         let inv = 1.0 / sum;
         for (w, j) in scores.iter().zip(start..cur) {
             let w = w * inv;
-            let vj = &vb[j * d..(j + 1) * d];
-            for (o, x) in o.iter_mut().zip(vj) {
+            vb[j * d..(j + 1) * d].convert_to_f32_slice(&mut buf);
+            for (o, x) in o.iter_mut().zip(&buf) {
                 *o += w * x;
             }
         }
@@ -391,8 +416,8 @@ pub struct StackedKv {
 impl StackedKv {
     pub fn empty(num_heads: usize, head_dim: usize, device: &candle_core::Device) -> Result<Self> {
         Ok(Self {
-            k: Tensor::zeros((0, num_heads, 0, head_dim), DType::F32, device)?,
-            v: Tensor::zeros((0, num_heads, 0, head_dim), DType::F32, device)?,
+            k: Tensor::zeros((0, num_heads, 0, head_dim), DType::F16, device)?,
+            v: Tensor::zeros((0, num_heads, 0, head_dim), DType::F16, device)?,
             cur: 0,
             len: Vec::new(),
             pos: Vec::new(),
@@ -410,6 +435,8 @@ impl StackedKv {
     /// Appends one row whose cache is `k`/`v` of shape [1, H, len, D] with
     /// RoPE already applied, continuing at position `pos`.
     pub fn add_row(&mut self, k: &Tensor, v: &Tensor, pos: usize) -> Result<()> {
+        let k = &k.to_dtype(DType::F16)?;
+        let v = &v.to_dtype(DType::F16)?;
         let (_, h, len, d) = k.dims4()?;
         let device = k.device();
         let new_cur = self.cur.max(len);
@@ -420,11 +447,11 @@ impl StackedKv {
             let n = t.dim(0)?;
             let mut parts = Vec::with_capacity(3);
             if left > 0 {
-                parts.push(Tensor::zeros((n, h, left, d), DType::F32, device)?);
+                parts.push(Tensor::zeros((n, h, left, d), DType::F16, device)?);
             }
             parts.push(t.clone());
             if right > 0 {
-                parts.push(Tensor::zeros((n, h, right, d), DType::F32, device)?);
+                parts.push(Tensor::zeros((n, h, right, d), DType::F16, device)?);
             }
             Tensor::cat(&parts, 2)
         };
@@ -460,12 +487,12 @@ impl StackedKv {
         let (b, h, _, d) = k.dims4()?;
         if self.cur >= self.cap()? {
             let extra = self.cap()?.max(64);
-            let zeros = Tensor::zeros((b, h, extra, d), DType::F32, k.device())?;
+            let zeros = Tensor::zeros((b, h, extra, d), DType::F16, k.device())?;
             self.k = Tensor::cat(&[&self.k, &zeros], 2)?.contiguous()?;
             self.v = Tensor::cat(&[&self.v, &zeros], 2)?.contiguous()?;
         }
-        self.k.slice_set(&k.contiguous()?, 2, self.cur)?;
-        self.v.slice_set(&v.contiguous()?, 2, self.cur)?;
+        self.k.slice_set(&k.to_dtype(DType::F16)?.contiguous()?, 2, self.cur)?;
+        self.v.slice_set(&v.to_dtype(DType::F16)?.contiguous()?, 2, self.cur)?;
         self.cur += 1;
         for i in 0..b {
             self.len[i] += 1;
@@ -483,8 +510,8 @@ impl StackedKv {
         let (vs, _) = self.v.storage_and_layout();
         let out = stacked_attention(
             f32_data(&q, &qs)?,
-            f32_data(&self.k, &ks)?,
-            f32_data(&self.v, &vs)?,
+            f16_data(&self.k, &ks)?,
+            f16_data(&self.v, &vs)?,
             (b, h, cap, d),
             self.cur,
             &self.len,

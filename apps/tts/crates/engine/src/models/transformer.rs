@@ -6,13 +6,15 @@ use crate::voice_state::get_attention_cursor;
 use candle_core::{Result, Tensor};
 use candle_nn::{Linear, Module, VarBuilder};
 
+use crate::modules::smallm::Proj;
+
 #[derive(Clone)]
 pub struct StreamingTransformerLayer {
     self_attn: StreamingMultiheadAttention,
     norm1: LayerNorm,
     norm2: LayerNorm,
-    linear1: Linear,
-    linear2: Linear,
+    linear1: Proj,
+    linear2: Proj,
     layer_scale_1: Option<LayerScale>,
     layer_scale_2: Option<LayerScale>,
 }
@@ -40,8 +42,8 @@ impl StreamingTransformerLayer {
         )?;
         let norm1 = LayerNorm::new(d_model, 1e-5, true, vb.pp("norm1"))?;
         let norm2 = LayerNorm::new(d_model, 1e-5, true, vb.pp("norm2"))?;
-        let linear1 = candle_nn::linear_no_bias(d_model, dim_feedforward, vb.pp("linear1"))?;
-        let linear2 = candle_nn::linear_no_bias(dim_feedforward, d_model, vb.pp("linear2"))?;
+        let linear1 = Proj::new(candle_nn::linear_no_bias(d_model, dim_feedforward, vb.pp("linear1"))?);
+        let linear2 = Proj::new(candle_nn::linear_no_bias(dim_feedforward, d_model, vb.pp("linear2"))?);
 
         let (layer_scale_1, layer_scale_2) = if let Some(init) = layer_scale {
             (
@@ -89,6 +91,12 @@ impl StreamingTransformerLayer {
         x_orig + update
     }
 
+    pub fn quantize(&mut self) -> Result<()> {
+        self.self_attn.quantize()?;
+        self.linear1.quantize()?;
+        self.linear2.quantize()
+    }
+
     pub fn forward_stacked(&self, x: &Tensor, cache: &mut StackedKv) -> Result<Tensor> {
         let h = self.norm1.forward(x)?;
         let mut update = self.self_attn.forward_stacked(&h, cache)?;
@@ -98,8 +106,8 @@ impl StreamingTransformerLayer {
         let x = (x + update)?;
 
         let h = self.norm2.forward(&x)?;
-        let hidden = crate::modules::smallm::linear(&self.linear1, &h)?.gelu()?;
-        let mut update = crate::modules::smallm::linear(&self.linear2, &hidden)?;
+        let hidden = self.linear1.rows(&h)?.gelu()?;
+        let mut update = self.linear2.rows(&hidden)?;
         if let Some(ls) = &self.layer_scale_2 {
             update = ls.forward(&update)?;
         }
@@ -176,6 +184,10 @@ impl StreamingTransformer {
             x = layer.forward_stacked(&x, cache)?;
         }
         Ok(x)
+    }
+
+    pub fn quantize(&mut self) -> Result<()> {
+        self.layers.iter_mut().try_for_each(|l| l.quantize())
     }
 
     pub fn num_layers(&self) -> usize {

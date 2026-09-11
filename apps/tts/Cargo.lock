@@ -2866,6 +2866,7 @@ dependencies = [
  "candle-core",
  "candle-nn",
  "candle-transformers",
+ "half",
  "hf-hub",
  "hound",
  "lenient_semver",

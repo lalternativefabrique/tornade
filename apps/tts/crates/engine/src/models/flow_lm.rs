@@ -4,6 +4,8 @@ use crate::modules::mlp::{LayerNorm, ModulationParams, SimpleMLPAdaLN};
 use candle_core::{Result, Tensor};
 use candle_nn::{Linear, Module, VarBuilder};
 
+use crate::modules::smallm::Proj;
+
 pub fn lsd_decode(
     flow_net: &SimpleMLPAdaLN,
     modulations: &[Vec<ModulationParams>],
@@ -25,7 +27,7 @@ pub fn lsd_decode(
 pub struct FlowLMModel {
     pub flow_net: SimpleMLPAdaLN,
     pub transformer: StreamingTransformer,
-    pub input_linear: Linear,
+    pub input_linear: Proj,
     pub out_norm: LayerNorm,
     pub out_eos: Linear,
     pub bos_emb: Tensor,
@@ -79,7 +81,7 @@ impl FlowLMModel {
         } else {
             None
         };
-        let input_linear = candle_nn::linear_no_bias(ldim, dim, vb.pp("input_linear"))?;
+        let input_linear = Proj::new(candle_nn::linear_no_bias(ldim, dim, vb.pp("input_linear"))?);
         let out_norm = LayerNorm::new(dim, 1e-5, true, vb.pp("out_norm"))?;
         let out_eos = candle_nn::linear(dim, 1, vb.pp("out_eos"))?;
         let bos_emb = vb.get(ldim, "bos_emb")?;
@@ -171,6 +173,13 @@ impl FlowLMModel {
         Ok((next_latent, is_eos))
     }
 
+    /// Switches the per-frame path to int8 weights.
+    pub fn quantize(&mut self) -> Result<()> {
+        self.input_linear.quantize()?;
+        self.transformer.quantize()?;
+        self.flow_net.quantize()
+    }
+
     /// One frame for several streams at once. `sequence` is [B, 1, ldim],
     /// row `i` continues row `i` of the caches; the text prompt of every
     /// stream must already sit there. Returns the next latents [B, ldim] and each
@@ -183,7 +192,7 @@ impl FlowLMModel {
         temp: f32,
         eos_threshold: f32,
     ) -> Result<(Tensor, Vec<bool>)> {
-        let x = crate::modules::smallm::linear(&self.input_linear, sequence)?;
+        let x = self.input_linear.rows(sequence)?;
         let out = self.transformer.forward_stacked(&x, caches)?;
         let out = self.out_norm.forward(&out)?;
         let last_frame = out.narrow(1, out.dims()[1] - 1, 1)?.squeeze(1)?; // [B, dim]

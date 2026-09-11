@@ -1,6 +1,8 @@
 use candle_core::{DType, Result, Tensor};
 use candle_nn::{Linear, Module, VarBuilder};
 
+use crate::modules::smallm::Proj;
+
 pub type StepFn = Box<dyn Fn(&Tensor) -> Result<Tensor> + Send + Sync>;
 
 #[derive(Clone)]
@@ -146,17 +148,17 @@ pub struct ModulationParams {
 #[derive(Clone)]
 pub struct ResBlock {
     in_ln: LayerNorm,
-    mlp_lin1: Linear,
-    mlp_lin2: Linear,
-    ada_ln_lin: Linear,
+    mlp_lin1: Proj,
+    mlp_lin2: Proj,
+    ada_ln_lin: Proj,
 }
 
 impl ResBlock {
     pub fn new(channels: usize, vb: VarBuilder) -> Result<Self> {
         let in_ln = LayerNorm::new(channels, 1e-6, true, vb.pp("in_ln"))?;
-        let mlp_lin1 = candle_nn::linear(channels, channels, vb.pp("mlp.0"))?;
-        let mlp_lin2 = candle_nn::linear(channels, channels, vb.pp("mlp.2"))?;
-        let ada_ln_lin = candle_nn::linear(channels, 3 * channels, vb.pp("adaLN_modulation.1"))?;
+        let mlp_lin1 = Proj::new(candle_nn::linear(channels, channels, vb.pp("mlp.0"))?);
+        let mlp_lin2 = Proj::new(candle_nn::linear(channels, channels, vb.pp("mlp.2"))?);
+        let ada_ln_lin = Proj::new(candle_nn::linear(channels, 3 * channels, vb.pp("adaLN_modulation.1"))?);
         Ok(Self {
             in_ln,
             mlp_lin1,
@@ -165,11 +167,17 @@ impl ResBlock {
         })
     }
 
+    pub fn quantize(&mut self) -> Result<()> {
+        self.mlp_lin1.quantize()?;
+        self.mlp_lin2.quantize()?;
+        self.ada_ln_lin.quantize()
+    }
+
     pub fn forward(&self, x: &Tensor, modulation: &ModulationParams) -> Result<Tensor> {
         let mut h = self.in_ln.forward(x)?;
         h = modulate(&h, &modulation.shift, &modulation.scale)?;
-        h = crate::modules::smallm::linear(&self.mlp_lin1, &h)?.silu()?;
-        h = crate::modules::smallm::linear(&self.mlp_lin2, &h)?;
+        h = self.mlp_lin1.rows(&h)?.silu()?;
+        h = self.mlp_lin2.rows(&h)?;
 
         if let Some(gate) = &modulation.gate {
             x + h.broadcast_mul(gate)
@@ -182,24 +190,29 @@ impl ResBlock {
 #[derive(Clone)]
 pub struct FinalLayer {
     norm_final: LayerNorm,
-    linear: Linear,
-    ada_ln_lin: Linear,
+    linear: Proj,
+    ada_ln_lin: Proj,
 }
 
 impl FinalLayer {
     pub fn new(model_channels: usize, out_channels: usize, vb: VarBuilder) -> Result<Self> {
         let norm_final = LayerNorm::new(model_channels, 1e-6, false, vb.pp("norm_final"))?;
-        let linear = candle_nn::linear(model_channels, out_channels, vb.pp("linear"))?;
-        let ada_ln_lin = candle_nn::linear(
+        let linear = Proj::new(candle_nn::linear(model_channels, out_channels, vb.pp("linear"))?);
+        let ada_ln_lin = Proj::new(candle_nn::linear(
             model_channels,
             2 * model_channels,
             vb.pp("adaLN_modulation.1"),
-        )?;
+        )?);
         Ok(Self {
             norm_final,
             linear,
             ada_ln_lin,
         })
+    }
+
+    pub fn quantize(&mut self) -> Result<()> {
+        self.linear.quantize()?;
+        self.ada_ln_lin.quantize()
     }
 
     pub fn forward(&self, x: &Tensor, modulation: &ModulationParams) -> Result<Tensor> {
@@ -208,15 +221,15 @@ impl FinalLayer {
             &modulation.shift,
             &modulation.scale,
         )?;
-        crate::modules::smallm::linear(&self.linear, &h)
+        self.linear.rows(&h)
     }
 }
 
 #[derive(Clone)]
 pub struct SimpleMLPAdaLN {
     time_embeds: Vec<TimestepEmbedder>,
-    cond_embed: Linear,
-    input_proj: Linear,
+    cond_embed: Proj,
+    input_proj: Proj,
     res_blocks: Vec<ResBlock>,
     final_layer: FinalLayer,
     num_time_conds: usize,
@@ -244,8 +257,8 @@ impl SimpleMLPAdaLN {
             )?);
         }
 
-        let cond_embed = candle_nn::linear(cond_channels, model_channels, vb.pp("cond_embed"))?;
-        let input_proj = candle_nn::linear(in_channels, model_channels, vb.pp("input_proj"))?;
+        let cond_embed = Proj::new(candle_nn::linear(cond_channels, model_channels, vb.pp("cond_embed"))?);
+        let input_proj = Proj::new(candle_nn::linear(in_channels, model_channels, vb.pp("input_proj"))?);
 
         let mut res_blocks = Vec::new();
         for i in 0..num_res_blocks {
@@ -272,8 +285,15 @@ impl SimpleMLPAdaLN {
         self.forward_step(x, &c_emb, s, t)
     }
 
+    pub fn quantize(&mut self) -> Result<()> {
+        self.cond_embed.quantize()?;
+        self.input_proj.quantize()?;
+        self.res_blocks.iter_mut().try_for_each(|b| b.quantize())?;
+        self.final_layer.quantize()
+    }
+
     pub fn embed_condition(&self, c: &Tensor) -> Result<Tensor> {
-        crate::modules::smallm::linear(&self.cond_embed, c)
+        self.cond_embed.rows(c)
     }
 
     pub fn forward_step(
@@ -345,7 +365,7 @@ impl SimpleMLPAdaLN {
 
         // ResBlocks
         for block in &self.res_blocks {
-            let mod_batch = crate::modules::smallm::linear(&block.ada_ln_lin, &y_silu)?; // [B*S, 1536]
+            let mod_batch = block.ada_ln_lin.rows(&y_silu)?; // [B*S, 1536]
             let dim = mod_batch.dim(candle_core::D::Minus1)? / 3;
 
             for s in 0..num_steps {
@@ -362,7 +382,7 @@ impl SimpleMLPAdaLN {
         }
 
         // Final layer
-        let mod_batch = crate::modules::smallm::linear(&self.final_layer.ada_ln_lin, &y_silu)?; // [B*S, 1024]
+        let mod_batch = self.final_layer.ada_ln_lin.rows(&y_silu)?; // [B*S, 1024]
         let dim = mod_batch.dim(candle_core::D::Minus1)? / 2;
         for s in 0..num_steps {
             let modulation = per_step(mod_batch.clone(), s)?; // [B, 1024]
@@ -383,7 +403,7 @@ impl SimpleMLPAdaLN {
         x: &Tensor,
         modulations: &[ModulationParams],
     ) -> Result<Tensor> {
-        let mut x = crate::modules::smallm::linear(&self.input_proj, x)?;
+        let mut x = self.input_proj.rows(x)?;
 
         for (i, block) in self.res_blocks.iter().enumerate() {
             x = block.forward(&x, &modulations[i])?;
