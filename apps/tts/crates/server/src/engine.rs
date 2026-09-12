@@ -79,6 +79,7 @@ pub fn spawn(
     model: TTSModel,
     live_slots: usize,
     background_slots: usize,
+    gain: f32,
     metrics: Arc<Metrics>,
 ) -> Result<EngineHandle> {
     let sample_rate = model.sample_rate as u32;
@@ -93,7 +94,7 @@ pub fn spawn(
     let batcher = Batcher::new(model)?;
     std::thread::Builder::new()
         .name("tts-engine".into())
-        .spawn(move || run(batcher, rx, live_slots, background_slots, metrics))?;
+        .spawn(move || run(batcher, rx, live_slots, background_slots, gain, metrics))?;
     Ok(handle)
 }
 
@@ -102,6 +103,7 @@ fn run(
     jobs: Receiver<Job>,
     live_slots: usize,
     background_slots: usize,
+    gain: f32,
     metrics: Arc<Metrics>,
 ) {
     let mut live: VecDeque<Job> = VecDeque::new();
@@ -197,7 +199,7 @@ fn run(
                     .first_audio_ms
                     .observe(a.job.submitted.elapsed().as_secs_f64() * 1000.0);
             }
-            if a.job.frames.send(to_i16(&samples)).is_err() {
+            if a.job.frames.send(to_i16(&samples, gain)).is_err() {
                 if !frame.done {
                     let _ = batcher.remove(frame.id);
                 }

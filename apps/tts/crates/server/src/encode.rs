@@ -27,11 +27,17 @@ impl Format {
     }
 }
 
-pub fn to_i16(samples: &[f32]) -> Vec<i16> {
+/// The model speaks around -21 LUFS with peaks near -6 dBFS, quieter than
+/// the -16 LUFS listeners expect from spoken audio; `gain` lifts it.
+pub fn to_i16(samples: &[f32], gain: f32) -> Vec<i16> {
     samples
         .iter()
-        .map(|s| (s.clamp(-1.0, 1.0) * 32767.0) as i16)
+        .map(|s| ((s * gain).clamp(-1.0, 1.0) * 32767.0) as i16)
         .collect()
+}
+
+pub fn db_to_gain(db: f32) -> f32 {
+    10f32.powf(db / 20.0)
 }
 
 pub fn encode(format: Format, pcm: &[i16], sample_rate: u32) -> Result<Vec<u8>> {

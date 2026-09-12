@@ -46,6 +46,9 @@ struct Args {
     background_slots: usize,
     #[arg(long, env = "TTS_Q8", default_value_t = true, action = clap::ArgAction::Set)]
     q8: bool,
+    /// Output gain in dB applied to every reading.
+    #[arg(long, env = "TTS_GAIN_DB", default_value_t = 5.0)]
+    gain_db: f32,
 }
 
 struct AppState {
@@ -106,6 +109,7 @@ async fn main() -> anyhow::Result<()> {
         (*model).clone(),
         args.live_slots,
         args.background_slots,
+        encode::db_to_gain(args.gain_db),
         metrics,
     )?;
     let state = Arc::new(AppState {
