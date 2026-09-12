@@ -1,10 +1,11 @@
 # Tags rolled onto the node by Skalpai's image watches — WRITTEN BY THE
 # ROLL, not by hand. image-watches.yaml declares what to watch; this
-# file records what actually shipped, so a redeploy from Git can
-# reproduce the running version and `git log` answers what was live
-# when. Editing it changes nothing: the next roll overwrites it.
-# last updated: 2026-09-10T07:17:18Z
+# file is a journal of what actually shipped, so `git log` answers what
+# was live when. No deploy reads it: the node keeps a rolled image on
+# its own until deploy.yaml changes that service's tag. Editing this
+# file changes nothing: the next roll overwrites it.
+# last updated: 2026-09-12T15:30:35Z
 tags:
-  tornade-app: "20260910-0705-4f8c2ff6ba18"
+  tornade-app: "20260912-1523-2be35885908a"
   tornade-migrate: "20260910-0705-4f8c2ff6ba18"
   tornade-web: "20260910-0705-4f8c2ff6ba18"
