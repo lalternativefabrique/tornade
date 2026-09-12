@@ -6,6 +6,7 @@ tools:
   go: "1.26.0"
   node: "24.16.0"
   pnpm: "10.27.0"
+  rust: "1.93.0"
 
 on:
   branches: ['**', '!main']
@@ -29,6 +30,9 @@ scopes:
     - "package.json"
     - "pnpm-lock.yaml"
     - "pnpm-workspace.yaml"
+  tts:
+    - "apps/tts/**"
+    - "Dockerfile.tts"
 
 steps:
   - name: facade-test
@@ -63,3 +67,11 @@ steps:
       pnpm --filter @tornade/web lint
       pnpm --filter @tornade/web typecheck
       pnpm --filter @tornade/web test
+
+  - name: tts-test
+    scope: [tts]
+    tools: [rust]
+    run: |
+      cd apps/tts
+      cargo build --release --workspace
+      cargo test --release --workspace

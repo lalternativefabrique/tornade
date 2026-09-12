@@ -1,0 +1,31 @@
+version: 1
+kind: deploy
+name: tts
+
+registries:
+  rg.fr-par.scw.cloud:
+    username: nologin
+    password: ${SCW_SECRET_KEY}
+
+services:
+  tts:
+    # Set to the tag of the first publish of tornade-tts before this
+    # deployment joins .sklp/deploy-root.yaml.
+    image: rg.fr-par.scw.cloud/lalternative/tornade-tts:FIRST_PUBLISH_TAG
+    port: 5000
+    env:
+      LISTEN_ADDR: 0.0.0.0:5000
+      TTS_MODEL: french_24l
+      TTS_LIVE_SLOTS: "8"
+      TTS_BACKGROUND_SLOTS: "2"
+      RAYON_NUM_THREADS: "4"
+    volumes: ["tts-hf-cache:/home/tts/.cache/huggingface"]
+    resources:
+      cpu: "3"
+      memory: 2G
+    ready:
+      http: /healthz
+      timeout: 600s
+
+spaces:
+  tts-production: {}
