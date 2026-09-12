@@ -181,6 +181,9 @@ impl Proj {
     }
 
     fn rows_2d(&self, x: &Tensor) -> Result<Tensor> {
+        if std::env::var_os("TTS_NO_SMALLM").is_some() {
+            return self.inner.forward(x);
+        }
         match &self.q8 {
             Some(q) => q.rows(x),
             None => linear_rows(x, self.inner.weight(), self.inner.bias()),

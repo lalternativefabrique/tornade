@@ -16,7 +16,9 @@ fn main() -> anyhow::Result<()> {
     for step in 0..t {
         let frame = latents.narrow(1, step, 1)?; // [1, 1, C]
         let quantized = model.mimi.quantize(&frame.transpose(1, 2)?)?;
-        let audio = model.mimi.decode_from_latent(&quantized, &mut state, step)?;
+        let audio = model
+            .mimi
+            .decode_from_latent(&quantized, &mut state, step)?;
         frames.push(audio.squeeze(0)?);
     }
     let audio = Tensor::cat(&frames, 1)?;

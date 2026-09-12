@@ -8,7 +8,8 @@ use tts_engine::batch::Batcher;
 use tts_engine::voice_state::ModelState;
 use tts_engine::weights::download_if_necessary;
 
-const A: &str = "Bonjour, ceci est une lecture faite par le nouveau serveur de parole, en français.";
+const A: &str =
+    "Bonjour, ceci est une lecture faite par le nouveau serveur de parole, en français.";
 const B: &str = "Antonio Gramsci, né en Sardaigne en 1891, fut l'un des fondateurs du Parti communiste italien.";
 const C: &str = "Il pleut.";
 
@@ -25,7 +26,10 @@ fn batched(model: &TTSModel, voice: &ModelState, texts: &[&str]) -> anyhow::Resu
             chunks[i].push(f.audio);
         }
     }
-    chunks.into_iter().map(|c| Ok(Tensor::cat(&c, 1)?)).collect()
+    chunks
+        .into_iter()
+        .map(|c| Ok(Tensor::cat(&c, 1)?))
+        .collect()
 }
 
 fn reference(model: &TTSModel, voice: &ModelState, text: &str) -> anyhow::Result<Tensor> {
@@ -34,19 +38,39 @@ fn reference(model: &TTSModel, voice: &ModelState, text: &str) -> anyhow::Result
         .collect::<Result<_, _>>()?;
     let last = chunks[0].rank() - 1;
     let audio = Tensor::cat(&chunks, last)?;
-    Ok(if audio.rank() == 3 { audio.squeeze(0)? } else { audio })
+    Ok(if audio.rank() == 3 {
+        audio.squeeze(0)?
+    } else {
+        audio
+    })
 }
 
 fn compare(name: &str, x: &Tensor, y: &Tensor) -> anyhow::Result<()> {
     let n = x.dim(1)?.min(y.dim(1)?);
     let xs = x.narrow(1, 0, n)?.flatten_all()?.to_vec1::<f32>()?;
     let ys = y.narrow(1, 0, n)?.flatten_all()?.to_vec1::<f32>()?;
-    let max = xs.iter().zip(&ys).map(|(a, b)| (a - b).abs()).fold(0f32, f32::max);
+    let max = xs
+        .iter()
+        .zip(&ys)
+        .map(|(a, b)| (a - b).abs())
+        .fold(0f32, f32::max);
     println!(
         "{name}: samples {} vs {}, max abs diff {max:.5}",
         x.dim(1)?,
         y.dim(1)?
     );
+    let frame = 1920;
+    let per: Vec<String> = (0..(n / frame).min(24))
+        .map(|f| {
+            let m = xs[f * frame..(f + 1) * frame]
+                .iter()
+                .zip(&ys[f * frame..(f + 1) * frame])
+                .map(|(a, b)| (a - b).abs())
+                .fold(0f32, f32::max);
+            format!("{m:.1e}")
+        })
+        .collect();
+    println!("  per-frame max diff: {}", per.join(" "));
     Ok(())
 }
 
@@ -61,7 +85,11 @@ fn main() -> anyhow::Result<()> {
     let state = model.get_voice_state_from_kv_file(download_if_necessary(voice)?)?;
 
     let reference_a = reference(&model, &state, A)?;
+    let reference_a2 = reference(&model, &state, A)?;
+    compare("reference vs reference", &reference_a, &reference_a2)?;
     let alone = batched(&model, &state, &[A])?;
+    let alone2 = batched(&model, &state, &[A])?;
+    compare("batcher alone vs batcher alone", &alone[0], &alone2[0])?;
     let with_b = batched(&model, &state, &[A, B])?;
     let with_bc = batched(&model, &state, &[C, A, B])?;
 
@@ -70,8 +98,16 @@ fn main() -> anyhow::Result<()> {
     compare("batched with C and B vs alone", &with_bc[1], &alone[0])?;
     let out = args.get(3).cloned().unwrap_or_default();
     if !out.is_empty() {
-        tts_engine::audio::write_wav(format!("{out}_alone.wav"), &alone[0], model.sample_rate as u32)?;
-        tts_engine::audio::write_wav(format!("{out}_with_b.wav"), &with_b[0], model.sample_rate as u32)?;
+        tts_engine::audio::write_wav(
+            format!("{out}_alone.wav"),
+            &alone[0],
+            model.sample_rate as u32,
+        )?;
+        tts_engine::audio::write_wav(
+            format!("{out}_with_b.wav"),
+            &with_b[0],
+            model.sample_rate as u32,
+        )?;
     }
     Ok(())
 }

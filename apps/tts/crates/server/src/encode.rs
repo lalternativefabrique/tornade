@@ -83,3 +83,22 @@ fn wav(pcm: &[i16], sample_rate: u32) -> Vec<u8> {
 fn mp3(pcm: &[i16], sample_rate: u32) -> Result<Vec<u8>> {
     crate::lame::encode_mono(pcm, sample_rate, 64, 5)
 }
+
+const LEAD_KEEP_S: f32 = 0.25;
+const LEAD_SILENCE_DB: f32 = -40.0;
+
+/// The model opens with a variable stretch of near-silence; a quarter second
+/// of it is kept so the voice does not start abruptly.
+pub fn trim_leading_silence(pcm: Vec<i16>, sample_rate: u32) -> Vec<i16> {
+    let hop = (sample_rate / 100) as usize;
+    let threshold = 32767.0 * 10f32.powf(LEAD_SILENCE_DB / 20.0);
+    let first_loud = pcm.chunks(hop).position(|c| {
+        let energy = c.iter().map(|&s| (s as f32) * (s as f32)).sum::<f32>();
+        (energy / c.len() as f32).sqrt() > threshold
+    });
+    let keep = (LEAD_KEEP_S * sample_rate as f32) as usize;
+    match first_loud.map(|i| i * hop) {
+        Some(start) if start > keep => pcm[start - keep..].to_vec(),
+        _ => pcm,
+    }
+}
