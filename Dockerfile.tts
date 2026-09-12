@@ -6,7 +6,10 @@ COPY apps/tts/ apps/tts/
 RUN cd apps/tts && cargo build --release -p tornade-tts && cp target/release/tornade-tts /out-tornade-tts
 
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libmp3lame0 \
+# The upgrade takes the base's libpcre2 past CVE-2026-86145 and CVE-2026-89161,
+# which the publish scan refuses.
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends ca-certificates libmp3lame0 \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd -r tts && useradd -r -g tts -d /home/tts -m tts
 COPY --from=build /out-tornade-tts /usr/local/bin/tornade-tts
