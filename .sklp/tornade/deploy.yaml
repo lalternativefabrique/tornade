@@ -49,22 +49,32 @@ services:
       http: /search?q=ping&format=json
       timeout: 120s
 
-  piper:
-    image: rg.fr-par.scw.cloud/synthiz/piper-server:20260829-1639-33b17b97ecb6
+  # Speech: apps/tts, Kyutai Pocket TTS on CPU, every listener advanced one
+  # frame per step. Two of the node's four vCPUs: the model weights are read
+  # once per step whatever the number of listeners, so cores buy concurrency
+  # here more than anywhere else on this node. The first start downloads the
+  # weights from Hugging Face into the volume, hence the long readiness.
+  tts:
+    image: rg.fr-par.scw.cloud/lalternative/tornade-tts:20260912-1602-3dfab832b09e
     port: 5000
     env:
-      DEFAULT_VOICE: fr_FR-siwis-medium
+      LISTEN_ADDR: 0.0.0.0:5000
+      TTS_MODEL: french_24l
+      TTS_LIVE_SLOTS: "8"
+      TTS_BACKGROUND_SLOTS: "2"
+      RAYON_NUM_THREADS: "2"
+    volumes: ["tts-hf-cache:/home/tts/.cache/huggingface"]
     resources:
-      cpu: "1"
-      memory: 1G
+      cpu: "2"
+      memory: 1536M
     ready:
-      http: /docs
-      timeout: 120s
+      http: /healthz
+      timeout: 600s
 
   app:
     image: rg.fr-par.scw.cloud/lalternative/tornade:20260910-0746-abcc1230f1bc
     port: 8080
-    depends_on: [migrate, postgres, searxng, piper]
+    depends_on: [migrate, postgres, searxng, tts]
     env:
       LISTEN_ADDR: ":8080"
       DATABASE_URL: postgres://tornade:${POSTGRES_PASSWORD}@postgres:5432/tornade?sslmode=disable
@@ -73,9 +83,13 @@ services:
       OIDC_ISSUER_URL: https://id.urbangate.dev
       OIDC_AUDIENCE: tornade
       SEARXNG_URL: http://searxng:8080
-      PIPER_URL: http://piper:5000
-      TTS_MODEL: fr_FR-siwis-medium
-      TTS_VOICE: fr_FR-siwis-medium
+      PIPER_URL: http://tts:5000
+      TTS_MODEL: french_24l
+      TTS_VOICE: estelle
+      # The speech server segments a text itself and reads every listener in
+      # one batch, so pieces this large cost nothing and the reading keeps its
+      # prosody across sentences.
+      TTS_MAX_CHARS: "600"
       S3_ENDPOINT: https://s3.gra.io.cloud.ovh.net
       S3_REGION: gra
       S3_BUCKET: tornade-prod-audio
