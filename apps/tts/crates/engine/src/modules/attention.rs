@@ -450,8 +450,10 @@ impl StackedKv {
         let (_, h, len, d) = k.dims4()?;
         let device = k.device();
         let new_cur = self.cur.max(len);
-        let new_cap = (new_cur + 1).max(self.cap()?).next_power_of_two();
+        let shift = new_cur - self.cur;
         let rows = self.rows();
+        let old_cap = if rows > 0 { self.cap()? } else { 0 };
+        let new_cap = (new_cur + 1).max(old_cap + shift).next_power_of_two();
 
         let place = |t: &Tensor, left: usize, right: usize| -> Result<Tensor> {
             let n = t.dim(0)?;
@@ -465,11 +467,9 @@ impl StackedKv {
             }
             Tensor::cat(&parts, 2)
         };
-        let shift = new_cur - self.cur;
         let mut ks = Vec::with_capacity(2);
         let mut vs = Vec::with_capacity(2);
         if rows > 0 {
-            let old_cap = self.cap()?;
             ks.push(place(&self.k, shift, new_cap - old_cap - shift)?);
             vs.push(place(&self.v, shift, new_cap - old_cap - shift)?);
         }
