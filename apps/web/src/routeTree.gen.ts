@@ -15,10 +15,9 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAppsRouteImport } from './routes/admin/apps'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminLoginRouteImport } from './routes/admin_.login'
-import { Route as AdminSetupRouteImport } from './routes/admin_.setup'
 import { Route as ApiMeRouteImport } from './routes/api/me'
-import { Route as ApiAdminSetupRouteImport } from './routes/api/admin/setup'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
+import { Route as ApiAuthSsoRouteImport } from './routes/api/auth/sso'
 import { Route as ApiV1SplatRouteImport } from './routes/api/v1/$'
 import { Route as ApiAdminUsersUserIdRouteImport } from './routes/api/admin/users.$userId'
 
@@ -52,24 +51,19 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
   path: '/admin/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminSetupRoute = AdminSetupRouteImport.update({
-  id: '/admin_/setup',
-  path: '/admin/setup',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiMeRoute = ApiMeRouteImport.update({
   id: '/api/me',
   path: '/api/me',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAdminSetupRoute = ApiAdminSetupRouteImport.update({
-  id: '/api/admin/setup',
-  path: '/api/admin/setup',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSsoRoute = ApiAuthSsoRouteImport.update({
+  id: '/api/auth/sso',
+  path: '/api/auth/sso',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiV1SplatRoute = ApiV1SplatRouteImport.update({
@@ -89,11 +83,10 @@ export interface FileRoutesByFullPath {
   '/admin/apps': typeof AdminAppsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/login': typeof AdminLoginRoute
-  '/admin/setup': typeof AdminSetupRoute
   '/api/me': typeof ApiMeRoute
   '/admin/': typeof AdminIndexRoute
-  '/api/admin/setup': typeof ApiAdminSetupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/auth/sso': typeof ApiAuthSsoRoute
   '/api/v1/$': typeof ApiV1SplatRoute
   '/api/admin/users/$userId': typeof ApiAdminUsersUserIdRoute
 }
@@ -102,11 +95,10 @@ export interface FileRoutesByTo {
   '/admin/apps': typeof AdminAppsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/login': typeof AdminLoginRoute
-  '/admin/setup': typeof AdminSetupRoute
   '/api/me': typeof ApiMeRoute
   '/admin': typeof AdminIndexRoute
-  '/api/admin/setup': typeof ApiAdminSetupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/auth/sso': typeof ApiAuthSsoRoute
   '/api/v1/$': typeof ApiV1SplatRoute
   '/api/admin/users/$userId': typeof ApiAdminUsersUserIdRoute
 }
@@ -117,11 +109,10 @@ export interface FileRoutesById {
   '/admin/apps': typeof AdminAppsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin_/login': typeof AdminLoginRoute
-  '/admin_/setup': typeof AdminSetupRoute
   '/api/me': typeof ApiMeRoute
   '/admin/': typeof AdminIndexRoute
-  '/api/admin/setup': typeof ApiAdminSetupRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/auth/sso': typeof ApiAuthSsoRoute
   '/api/v1/$': typeof ApiV1SplatRoute
   '/api/admin/users/$userId': typeof ApiAdminUsersUserIdRoute
 }
@@ -133,11 +124,10 @@ export interface FileRouteTypes {
     | '/admin/apps'
     | '/admin/users'
     | '/admin/login'
-    | '/admin/setup'
     | '/api/me'
     | '/admin/'
-    | '/api/admin/setup'
     | '/api/auth/$'
+    | '/api/auth/sso'
     | '/api/v1/$'
     | '/api/admin/users/$userId'
   fileRoutesByTo: FileRoutesByTo
@@ -146,11 +136,10 @@ export interface FileRouteTypes {
     | '/admin/apps'
     | '/admin/users'
     | '/admin/login'
-    | '/admin/setup'
     | '/api/me'
     | '/admin'
-    | '/api/admin/setup'
     | '/api/auth/$'
+    | '/api/auth/sso'
     | '/api/v1/$'
     | '/api/admin/users/$userId'
   id:
@@ -160,11 +149,10 @@ export interface FileRouteTypes {
     | '/admin/apps'
     | '/admin/users'
     | '/admin_/login'
-    | '/admin_/setup'
     | '/api/me'
     | '/admin/'
-    | '/api/admin/setup'
     | '/api/auth/$'
+    | '/api/auth/sso'
     | '/api/v1/$'
     | '/api/admin/users/$userId'
   fileRoutesById: FileRoutesById
@@ -173,10 +161,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AdminLoginRoute: typeof AdminLoginRoute
-  AdminSetupRoute: typeof AdminSetupRoute
   ApiMeRoute: typeof ApiMeRoute
-  ApiAdminSetupRoute: typeof ApiAdminSetupRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiAuthSsoRoute: typeof ApiAuthSsoRoute
   ApiV1SplatRoute: typeof ApiV1SplatRoute
   ApiAdminUsersUserIdRoute: typeof ApiAdminUsersUserIdRoute
 }
@@ -225,13 +212,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin_/setup': {
-      id: '/admin_/setup'
-      path: '/admin/setup'
-      fullPath: '/admin/setup'
-      preLoaderRoute: typeof AdminSetupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/me': {
       id: '/api/me'
       path: '/api/me'
@@ -239,18 +219,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/admin/setup': {
-      id: '/api/admin/setup'
-      path: '/api/admin/setup'
-      fullPath: '/api/admin/setup'
-      preLoaderRoute: typeof ApiAdminSetupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/sso': {
+      id: '/api/auth/sso'
+      path: '/api/auth/sso'
+      fullPath: '/api/auth/sso'
+      preLoaderRoute: typeof ApiAuthSsoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/v1/$': {
@@ -288,10 +268,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AdminLoginRoute: AdminLoginRoute,
-  AdminSetupRoute: AdminSetupRoute,
   ApiMeRoute: ApiMeRoute,
-  ApiAdminSetupRoute: ApiAdminSetupRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiAuthSsoRoute: ApiAuthSsoRoute,
   ApiV1SplatRoute: ApiV1SplatRoute,
   ApiAdminUsersUserIdRoute: ApiAdminUsersUserIdRoute,
 }

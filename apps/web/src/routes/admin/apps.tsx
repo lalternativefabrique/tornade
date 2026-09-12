@@ -44,9 +44,9 @@ function AppsPage() {
       <header>
         <h1 className="text-2xl font-semibold">Applications</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Chaque application a une clé : celle que son serveur présente sur
-          ses propres appels, et avec laquelle il signe les URL que ses
-          navigateurs écoutent. Elle n'est montrée qu'une fois.
+          Chaque application a une clé : celle que son serveur présente sur ses
+          propres appels, et avec laquelle il signe les URL que ses navigateurs
+          écoutent. Elle n'est montrée qu'une fois.
         </p>
       </header>
 
@@ -120,8 +120,8 @@ function Credentials({
         <div>
           <h2 className="font-semibold">Clé de {value.name}</h2>
           <p className="mt-1 text-muted-foreground">
-            À coller dans la configuration de l'application. Elle ne sera
-            plus affichée.
+            À coller dans la configuration de l'application. Elle ne sera plus
+            affichée.
             {value.grace_until && (
               <>
                 {' '}
@@ -194,9 +194,7 @@ function AppsTable({
               <td className="py-2 pr-4">
                 {a.active ? 'active' : `révoquée le ${date(a.revoked_at)}`}
               </td>
-              <td className="py-2 pr-4 font-mono text-xs">
-                ····{a.last4}
-              </td>
+              <td className="py-2 pr-4 font-mono text-xs">····{a.last4}</td>
               <td className="py-2 pr-4">{date(a.created_at)}</td>
               <td className="py-2 pr-4">{date(a.rotated_at)}</td>
               <td className="py-2 pr-4">{date(a.grace_until)}</td>

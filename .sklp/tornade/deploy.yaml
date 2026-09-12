@@ -104,7 +104,9 @@ services:
       BETTER_AUTH_URL: https://vvaves.dev
       JWT_SECRET: ${JWT_SECRET}
       CORE_API_URL: http://app:8080
-      ADMIN_SETUP_TOKEN: ${ADMIN_SETUP_TOKEN}
+      URBANGATE_ISSUER_URL: https://id.urbangate.dev
+      URBANGATE_CLIENT_ID: tornade-admin
+      URBANGATE_CLIENT_SECRET: ${URBANGATE_CLIENT_SECRET}
     resources:
       cpu: "0.5"
       memory: 512M

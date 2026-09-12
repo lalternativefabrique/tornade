@@ -10,16 +10,34 @@ import { getProfile } from '@/lib/services/auth'
  * so the page that logs you in would never appear.
  */
 export const Route = createFileRoute('/admin_/login')({
+  loader: async () => {
+    const res = await fetch('/api/auth/sso')
+    return (await res.json()) as { enabled: boolean; providerId: string }
+  },
   component: AdminLoginPage,
 })
 
 function AdminLoginPage() {
   const navigate = useNavigate()
+  const sso = Route.useLoaderData()
   return (
     <AdminLoginForm
       authClient={authClient}
       getProfile={getProfile}
       onSuccess={() => navigate({ to: '/admin' })}
+      sso={
+        sso.enabled
+          ? {
+              only: true,
+              signIn: async () => {
+                await authClient.signIn.social({
+                  provider: sso.providerId,
+                  callbackURL: '/admin',
+                })
+              },
+            }
+          : undefined
+      }
     />
   )
 }

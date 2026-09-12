@@ -266,9 +266,10 @@ key and keeps the old one working for a day; revoking ends both at once. The
 speak guard reads the registry at request time, so none of it needs a
 restart.
 
-The first admin is minted on `/admin/setup?token=…`, behind `ADMIN_SETUP_TOKEN`
-and, optionally, `ADMIN_ALLOWED_EMAILS`; in production an unconfigured gate
-refuses everyone. The registry lives in Postgres beside the admin's own accounts
+The team signs in through the suite's identity provider, urbangate
+(`URBANGATE_ISSUER_URL`, `URBANGATE_CLIENT_ID`, `URBANGATE_CLIENT_SECRET`): a
+person whose roles claim carries `tornade:admin` is admin here, nobody else is,
+and there is no first-admin setup any more. The registry lives in Postgres beside the admin's own accounts
 (`DATABASE_URL`), the keys sealed with `REGISTRY_ENCRYPTION_KEY` the way the
 platform's other credentials are; the list shows their last four characters.
 Without one, tornade runs as before on `SPEAK_KEYS`; with one, those pairs

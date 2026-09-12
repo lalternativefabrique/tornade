@@ -17,8 +17,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@lalternative/admin": "^0.9.0",
-    "@lalternative/auth": "^0.12.0",
+    "@lalternative/admin": "^0.10.0",
+    "@lalternative/auth": "^0.13.0",
     "@types/pg": "^8.16.0",
     "better-auth": "^1.6.11",
     "pg": "^8.18.0",
