@@ -14,7 +14,7 @@ candle-nn = "0.9.1"
 candle-transformers = "0.9.1"
 half = "2"
 safetensors = "0.5.2"
-hf-hub = "0.4.3"
+hf-hub = { version = "0.4.3", default-features = false, features = ["ureq", "rustls-tls"] }
 anyhow = "1.0"
 thiserror = "2.0"
 hound = "3.5"

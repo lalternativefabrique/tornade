@@ -36,6 +36,3 @@ rayon.workspace = true
 half.workspace = true
 tracing.workspace = true
 
-[dev-dependencies]
-libc = "0.2"
-ureq = "2"
