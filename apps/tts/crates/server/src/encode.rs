@@ -1,5 +1,4 @@
-use anyhow::{Context, Result};
-use mp3lame_encoder::{Bitrate, Builder, FlushNoGap, MonoPcm, Quality};
+use anyhow::Result;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Format {
@@ -82,32 +81,5 @@ fn wav(pcm: &[i16], sample_rate: u32) -> Vec<u8> {
 }
 
 fn mp3(pcm: &[i16], sample_rate: u32) -> Result<Vec<u8>> {
-    let mut builder = Builder::new().context("lame: init")?;
-    builder
-        .set_num_channels(1)
-        .map_err(|e| anyhow::anyhow!("lame: channels: {e}"))?;
-    builder
-        .set_sample_rate(sample_rate)
-        .map_err(|e| anyhow::anyhow!("lame: sample rate: {e}"))?;
-    builder
-        .set_brate(Bitrate::Kbps64)
-        .map_err(|e| anyhow::anyhow!("lame: bitrate: {e}"))?;
-    builder
-        .set_quality(Quality::Good)
-        .map_err(|e| anyhow::anyhow!("lame: quality: {e}"))?;
-    let mut encoder = builder
-        .build()
-        .map_err(|e| anyhow::anyhow!("lame: build: {e}"))?;
-
-    let mut out = Vec::with_capacity(mp3lame_encoder::max_required_buffer_size(pcm.len()));
-    let written = encoder
-        .encode(MonoPcm(pcm), out.spare_capacity_mut())
-        .map_err(|e| anyhow::anyhow!("lame: encode: {e}"))?;
-    unsafe { out.set_len(out.len() + written) };
-    out.reserve(mp3lame_encoder::max_required_buffer_size(0) + 7200);
-    let written = encoder
-        .flush::<FlushNoGap>(out.spare_capacity_mut())
-        .map_err(|e| anyhow::anyhow!("lame: flush: {e}"))?;
-    unsafe { out.set_len(out.len() + written) };
-    Ok(out)
+    crate::lame::encode_mono(pcm, sample_rate, 64, 5)
 }

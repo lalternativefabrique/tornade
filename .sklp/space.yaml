@@ -14,6 +14,7 @@ runner:
     # /render drives a browser: chromedp only needs the binary, the flags it
     # passes (no-sandbox, no /dev/shm) already fit a container.
     - chromium
-    # apps/tts: rustc links its build scripts with cc, and the mp3 encoder
-    # compiles LAME from source.
+    # apps/tts: rustc links through cc, and the server encodes mp3 with the
+    # system LAME.
     - build-essential
+    - libmp3lame-dev

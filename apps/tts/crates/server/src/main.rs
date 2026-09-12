@@ -1,5 +1,6 @@
 mod encode;
 mod engine;
+mod lame;
 mod metrics;
 
 use std::collections::HashMap;

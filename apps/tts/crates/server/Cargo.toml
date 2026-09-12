@@ -21,4 +21,3 @@ serde_json.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 clap.workspace = true
-mp3lame-encoder = "0.2"
