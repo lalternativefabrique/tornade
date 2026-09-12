@@ -50,10 +50,12 @@ services:
       timeout: 120s
 
   # Speech: apps/tts, Kyutai Pocket TTS on CPU, every listener advanced one
-  # frame per step. Two of the node's four vCPUs: the model weights are read
-  # once per step whatever the number of listeners, so cores buy concurrency
-  # here more than anywhere else on this node. The first start downloads the
-  # weights from Hugging Face into the volume, hence the long readiness.
+  # frame per step. The caps are ceilings, not reservations: three of the
+  # node's four vCPUs only get used at peak, when a step for every listener
+  # has to fit in 80 ms, and the node idles otherwise. Memory holds the float
+  # weights (670 MB), their int8 copy and one cache per listener. The first
+  # start downloads the weights from Hugging Face into the volume, hence the
+  # long readiness.
   tts:
     image: rg.fr-par.scw.cloud/lalternative/tornade-tts:20260912-1602-3dfab832b09e
     port: 5000
@@ -62,11 +64,11 @@ services:
       TTS_MODEL: french_24l
       TTS_LIVE_SLOTS: "8"
       TTS_BACKGROUND_SLOTS: "2"
-      RAYON_NUM_THREADS: "2"
+      RAYON_NUM_THREADS: "3"
     volumes: ["tts-hf-cache:/home/tts/.cache/huggingface"]
     resources:
-      cpu: "2"
-      memory: 1536M
+      cpu: "3"
+      memory: 2G
     ready:
       http: /healthz
       timeout: 600s
