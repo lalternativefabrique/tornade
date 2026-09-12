@@ -8,3 +8,4 @@ node_modules/
 .tanstack/
 .nitro/
 .pnpm-store/
+apps/tts/target/
