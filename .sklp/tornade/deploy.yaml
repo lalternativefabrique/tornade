@@ -93,7 +93,7 @@ services:
   # speak through tornade. It reaches the app only through its own proxy,
   # minting the JWT the admin API verifies from the Better Auth session.
   web:
-    image: rg.fr-par.scw.cloud/lalternative/tornade-web:20260910-0746-abcc1230f1bc
+    image: rg.fr-par.scw.cloud/lalternative/tornade-web:20260912-1618-15a6300b5091
     port: 5273
     depends_on: [postgres, app]
     env:
