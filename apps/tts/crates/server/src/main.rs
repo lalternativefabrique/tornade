@@ -47,7 +47,7 @@ struct Args {
     #[arg(long, env = "TTS_Q8", default_value_t = true, action = clap::ArgAction::Set)]
     q8: bool,
     /// Output gain in dB applied to every reading.
-    #[arg(long, env = "TTS_GAIN_DB", default_value_t = 5.0)]
+    #[arg(long, env = "TTS_GAIN_DB", default_value_t = 10.0)]
     gain_db: f32,
 }
 

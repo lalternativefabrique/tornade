@@ -27,12 +27,24 @@ impl Format {
     }
 }
 
+const KNEE: f32 = 0.7;
+
 /// The model speaks around -21 LUFS with peaks near -6 dBFS, quieter than
-/// the -16 LUFS listeners expect from spoken audio; `gain` lifts it.
+/// spoken audio is mastered to; `gain` lifts it and a soft knee above 0.7
+/// keeps the loudest peaks from clipping.
 pub fn to_i16(samples: &[f32], gain: f32) -> Vec<i16> {
     samples
         .iter()
-        .map(|s| ((s * gain).clamp(-1.0, 1.0) * 32767.0) as i16)
+        .map(|s| {
+            let x = s * gain;
+            let mag = x.abs();
+            let limited = if mag > KNEE {
+                KNEE + (1.0 - KNEE) * ((mag - KNEE) / (1.0 - KNEE)).tanh()
+            } else {
+                mag
+            };
+            (limited.copysign(x) * 32767.0) as i16
+        })
         .collect()
 }
 
