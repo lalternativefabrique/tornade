@@ -68,7 +68,7 @@ services:
     volumes: ["tts-hf-cache:/home/tts/.cache/huggingface"]
     resources:
       cpu: "3"
-      memory: 2G
+      memory: 2560M
     ready:
       http: /healthz
       timeout: 600s
