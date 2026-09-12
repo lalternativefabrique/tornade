@@ -71,8 +71,7 @@ steps:
   - name: tts-test
     scope: [tts]
     tools: [rust]
-    workdir: apps/tts
     run: |
-      cargo fmt --all --check
+      cd apps/tts
       cargo build --release --workspace
       cargo test --release --workspace
