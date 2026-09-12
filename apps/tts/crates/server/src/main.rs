@@ -50,6 +50,12 @@ struct Args {
     /// Output gain in dB applied to every reading.
     #[arg(long, env = "TTS_GAIN_DB", default_value_t = 10.0)]
     gain_db: f32,
+    /// Sampling temperature; the model's own default when unset.
+    #[arg(long, env = "TTS_TEMP")]
+    temp: Option<f32>,
+    /// Truncates the sampling noise at this many standard deviations.
+    #[arg(long, env = "TTS_NOISE_CLAMP")]
+    noise_clamp: Option<f32>,
 }
 
 struct AppState {
@@ -81,6 +87,13 @@ async fn main() -> anyhow::Result<()> {
 
     let t0 = Instant::now();
     let mut model = TTSModel::load(&args.model)?;
+    if let Some(temp) = args.temp {
+        model.temp = temp;
+    }
+    if args.noise_clamp.is_some() {
+        model.noise_clamp = args.noise_clamp;
+        model.flow_lm.noise_clamp = args.noise_clamp;
+    }
     if args.q8 {
         model.quantize_batch_path()?;
     }
@@ -99,6 +112,8 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!(
         model = %args.model,
         q8 = args.q8,
+        temp = model.temp,
+        noise_clamp = ?model.noise_clamp,
         voices = ?voices.keys().collect::<Vec<_>>(),
         load_s = t0.elapsed().as_secs_f64(),
         "model ready"
@@ -199,6 +214,7 @@ async fn speech(
     while let Some(frame) = rx.recv().await {
         pcm.extend_from_slice(&frame);
     }
+    let pcm = encode::trim_leading_silence(pcm, state.engine.sample_rate);
     if pcm.is_empty() {
         return error(
             StatusCode::INTERNAL_SERVER_ERROR,

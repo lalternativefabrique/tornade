@@ -1295,7 +1295,7 @@ fn find_config_path(variant: &str) -> Result<std::path::PathBuf> {
 }
 
 /// Prepare text for generation, stripping pause markers for TTS processing
-pub(crate) fn prepare_text_prompt(text: &str) -> String {
+pub fn prepare_text_prompt(text: &str) -> String {
     // First strip any explicit pause markers
     let text = crate::pause::strip_pause_markers(text);
 

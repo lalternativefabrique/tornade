@@ -34,10 +34,46 @@ pub struct Job {
     pub submitted: Instant,
 }
 
+/// A reading whose first frames stay under this level is a false start:
+/// the model sometimes hesitates for seconds or never speaks, and a fresh
+/// draw of the sampling noise is the cure.
+const FALSE_START_FRAMES: usize = 20;
+const FALSE_START_DB: f32 = -30.0;
+const MAX_ATTEMPTS: usize = 4;
+
 struct Active {
     job: Job,
     segment: usize,
     first_frame_at: Option<Instant>,
+    attempt: usize,
+    frames_seen: usize,
+    peak_db: f32,
+    pending: Vec<Vec<i16>>,
+}
+
+impl Active {
+    fn new(job: Job) -> Self {
+        Self {
+            job,
+            segment: 0,
+            first_frame_at: None,
+            attempt: 1,
+            frames_seen: 0,
+            peak_db: f32::NEG_INFINITY,
+            pending: Vec::new(),
+        }
+    }
+
+    fn reset_segment(&mut self) {
+        self.frames_seen = 0;
+        self.peak_db = f32::NEG_INFINITY;
+        self.pending.clear();
+    }
+}
+
+fn rms_db(samples: &[f32]) -> f32 {
+    let rms = (samples.iter().map(|s| s * s).sum::<f32>() / samples.len().max(1) as f32).sqrt();
+    20.0 * (rms + 1e-9).log10()
 }
 
 #[derive(Clone)]
@@ -193,17 +229,53 @@ fn run(
                 }
             };
             produced += samples.len() as f64 / sample_rate;
-            if a.first_frame_at.is_none() {
-                a.first_frame_at = Some(Instant::now());
-                metrics
-                    .first_audio_ms
-                    .observe(a.job.submitted.elapsed().as_secs_f64() * 1000.0);
-            }
-            if a.job.frames.send(to_i16(&samples, gain)).is_err() {
+            a.frames_seen += 1;
+            a.peak_db = a.peak_db.max(rms_db(&samples));
+            let silent_start = a.frames_seen >= FALSE_START_FRAMES && a.peak_db < FALSE_START_DB;
+            let silent_end = frame.done && a.peak_db < FALSE_START_DB;
+            if (silent_start || silent_end) && a.attempt < MAX_ATTEMPTS {
+                tracing::warn!(
+                    attempt = a.attempt,
+                    peak_db = a.peak_db,
+                    frames = a.frames_seen,
+                    "false start, reading the segment again"
+                );
                 if !frame.done {
                     let _ = batcher.remove(frame.id);
                 }
+                a.attempt += 1;
+                a.reset_segment();
+                let text = a.job.segments[a.segment].clone();
+                match batcher.add(&text, &a.job.voice) {
+                    Ok(id) => {
+                        active.insert(id, a);
+                    }
+                    Err(e) => tracing::error!(error = %e, "could not restart the segment"),
+                }
                 continue;
+            }
+            a.pending.push(to_i16(&samples, gain));
+            let speaking = a.peak_db >= FALSE_START_DB;
+            if speaking || a.frames_seen >= FALSE_START_FRAMES || frame.done {
+                if a.first_frame_at.is_none() {
+                    a.first_frame_at = Some(Instant::now());
+                    metrics
+                        .first_audio_ms
+                        .observe(a.job.submitted.elapsed().as_secs_f64() * 1000.0);
+                }
+                let mut delivered = true;
+                for chunk in a.pending.drain(..) {
+                    if a.job.frames.send(chunk).is_err() {
+                        delivered = false;
+                        break;
+                    }
+                }
+                if !delivered {
+                    if !frame.done {
+                        let _ = batcher.remove(frame.id);
+                    }
+                    continue;
+                }
             }
             if !frame.done {
                 active.insert(frame.id, a);
@@ -211,6 +283,8 @@ fn run(
             }
             a.segment += 1;
             if a.segment < a.job.segments.len() {
+                a.attempt = 1;
+                a.reset_segment();
                 let text = a.job.segments[a.segment].clone();
                 match batcher.add(&text, &a.job.voice) {
                     Ok(id) => {
@@ -238,14 +312,7 @@ fn start(batcher: &mut Batcher, active: &mut HashMap<StreamId, Active>, job: Job
     };
     match batcher.add(text, &job.voice) {
         Ok(id) => {
-            active.insert(
-                id,
-                Active {
-                    job,
-                    segment: 0,
-                    first_frame_at: None,
-                },
-            );
+            active.insert(id, Active::new(job));
             true
         }
         Err(e) => {
