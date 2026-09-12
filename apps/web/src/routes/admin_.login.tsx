@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createServerFn } from '@tanstack/react-start'
 import { AdminLoginForm } from '@lalternative/admin'
 import { authClient } from '@/lib/auth-client'
 import { getProfile } from '@/lib/services/auth'
@@ -9,11 +10,16 @@ import { getProfile } from '@/lib/services/auth'
  * nested under it, and the guard renders nothing without an admin session,
  * so the page that logs you in would never appear.
  */
-export const Route = createFileRoute('/admin_/login')({
-  loader: async () => {
-    const res = await fetch('/api/auth/sso')
-    return (await res.json()) as { enabled: boolean; providerId: string }
+const ssoStatus = createServerFn({ method: 'GET' }).handler(
+  async (): Promise<{ enabled: boolean; providerId: string }> => {
+    const { ssoEnabled } = await import('@/lib/auth')
+    const { SSO_PROVIDER_ID } = await import('@/lib/sso-config')
+    return { enabled: ssoEnabled, providerId: SSO_PROVIDER_ID }
   },
+)
+
+export const Route = createFileRoute('/admin_/login')({
+  loader: () => ssoStatus(),
   component: AdminLoginPage,
 })
 
