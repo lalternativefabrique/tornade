@@ -1,7 +1,7 @@
 {
-  "name": "@lalternative/tornade-sdk-react",
-  "version": "0.1.2",
-  "description": "React hook that plays a tornade reading in the browser, straight from tornade on a URL the application signed",
+  "name": "@lalternative/vvaves-sdk-react",
+  "version": "0.2.0",
+  "description": "React hook that plays a vvaves reading in the browser, straight from vvaves on a URL the application signed",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -32,7 +32,7 @@
     "typescript": "^5.7.0"
   },
   "keywords": [
-    "tornade",
+    "vvaves",
     "tts",
     "audio",
     "react"

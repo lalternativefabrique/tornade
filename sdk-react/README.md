@@ -1,4 +1,4 @@
-# @lalternative/tornade-sdk-react
+# @lalternative/vvaves-sdk-react
 
 Plays a vvaves reading in the browser, straight from vvaves, on a URL the
 application's server signed. The server never relays audio: it primes the
@@ -6,7 +6,7 @@ opening when the text is produced, signs one URL per press, and the bytes go
 from vvaves to the listener.
 
 ```tsx
-import { speakSource, useVoicePlayback } from '@lalternative/tornade-sdk-react'
+import { speakSource, useVoicePlayback } from '@lalternative/vvaves-sdk-react'
 
 function PlayButton({ messageId }: { messageId: string }) {
   const resolve = useCallback(async () => {

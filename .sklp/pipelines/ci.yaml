@@ -64,9 +64,9 @@ steps:
     tools: [node, pnpm]
     run: |
       pnpm install --frozen-lockfile
-      pnpm --filter @tornade/web lint
-      pnpm --filter @tornade/web typecheck
-      pnpm --filter @tornade/web test
+      pnpm --filter @vvaves/web lint
+      pnpm --filter @vvaves/web typecheck
+      pnpm --filter @vvaves/web test
 
   - name: tts-test
     scope: [tts]

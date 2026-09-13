@@ -5,7 +5,7 @@
 // api/generated.schemas. Regenerate with `sklp run generate`.
 //
 // Import per-tag hooks from the subpath export, e.g.
-//   import { useListProjects } from "@tornade/front/api/projects/projects";
-//   import type { ProjectProjectDTO } from "@tornade/front/api/generated.schemas";
+//   import { useListProjects } from "@vvaves/front/api/projects/projects";
+//   import type { ProjectProjectDTO } from "@vvaves/front/api/generated.schemas";
 export { coreFetcher } from "./orval-fetcher";
 export * from "./api/generated.schemas";
