@@ -12,6 +12,10 @@ export type VoicePlaybackState = 'idle' | 'loading' | 'playing' | 'unavailable'
  * inconsistent across desktop browsers, and MediaSource is unavailable on
  * iOS Safari and in a Tauri webview, while decodeAudioData works everywhere.
  *
+ * iOS hands back a context that is suspended until a gesture resumes it, and
+ * only a gesture does: resuming after the first await is already too late,
+ * and the reading then plays to nobody with nothing reported.
+ *
  * resolve is called on each press rather than once: the URL it returns is
  * signed and expires, so one resolved when the text was rendered would have
  * gone stale by the time someone presses play.
@@ -35,8 +39,19 @@ export function useVoicePlayback(resolve: () => Promise<VoiceSource>) {
     const controller = new AbortController()
     abortRef.current = controller
 
-    const audioContext = new AudioContext()
+    const Ctor: typeof AudioContext | undefined =
+      typeof AudioContext !== 'undefined'
+        ? AudioContext
+        : (globalThis as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!Ctor) {
+      setState('unavailable')
+      return
+    }
+    const audioContext = new Ctor()
     contextRef.current = audioContext
+    // Still inside the gesture that called play(): a resume() issued after
+    // the first await is refused on iOS, and every source then plays silent.
+    const resumed = audioContext.resume().catch(() => {})
 
     let cancelled = false
     let nextStartAt = 0
@@ -57,6 +72,7 @@ export function useVoicePlayback(resolve: () => Promise<VoiceSource>) {
 
     ;(async () => {
       try {
+        await resumed
         const reading = await resolve()
         // No credentials: the audio comes from another origin, and what
         // authorises the request is the signature already in the URL.
@@ -84,7 +100,7 @@ export function useVoicePlayback(resolve: () => Promise<VoiceSource>) {
           const source = audioContext.createBufferSource()
           source.buffer = buffer
           source.connect(audioContext.destination)
-          source.start(audioContext.currentTime)
+          source.start()
           source.onended = () => {
             sourcesDone += 1
             finishIfDone()
