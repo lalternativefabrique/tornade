@@ -96,7 +96,11 @@ services:
       # so pieces stay short; the server batches concurrent pieces, so three
       # in flight cost little more than one.
       TTS_MAX_CHARS: "100"
-      TTS_CONCURRENCY: "2"
+      # One piece in flight per reading, so a reading holds one of the
+      # server's slots rather than two: three slots then serve three
+      # listeners instead of one and a half, and a second listener is no
+      # longer refused while the first still has pieces to read.
+      TTS_CONCURRENCY: "1"
       S3_ENDPOINT: https://s3.gra.io.cloud.ovh.net
       S3_REGION: gra
       S3_BUCKET: tornade-prod-audio
