@@ -66,8 +66,32 @@ export function useVoicePlayback(resolve: () => Promise<VoiceSource>) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(reading.body),
         })
-        if (!res.ok || !res.body || res.headers.get('Content-Type') !== FRAMES_CONTENT_TYPE) {
+        if (!res.ok || !res.body) {
           throw new Error(`unexpected response (${res.status})`)
+        }
+        const contentType = res.headers.get('Content-Type') ?? ''
+        if (contentType !== FRAMES_CONTENT_TYPE) {
+          // A reading tornade already keeps comes back whole, as one audio
+          // file with a Content-Length, whatever the request asked for.
+          if (!contentType.startsWith('audio/')) {
+            throw new Error(`unexpected response (${res.status}, ${contentType})`)
+          }
+          const whole = await res.arrayBuffer()
+          if (cancelled) return
+          scheduled = 1
+          const buffer = await audioContext.decodeAudioData(whole)
+          if (cancelled) return
+          const source = audioContext.createBufferSource()
+          source.buffer = buffer
+          source.connect(audioContext.destination)
+          source.start(audioContext.currentTime)
+          source.onended = () => {
+            sourcesDone += 1
+            finishIfDone()
+          }
+          streamDone = true
+          setState('playing')
+          return
         }
 
         await readFrames(
