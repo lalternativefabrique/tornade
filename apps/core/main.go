@@ -65,17 +65,21 @@ func main() {
 	apps, keys := buildRegistry(cfg)
 
 	deps := httpapi.Deps{
-		Providers:        buildProviders(cfg),
-		Renderer:         browser,
-		Cache:            challenge.GuardCache(fetch.NewMemoryCache(cfg.FetchCacheTTL)),
-		Reader:           reader,
-		Primer:           primer,
-		SearchDeadline:   cfg.SearchDeadline,
-		RenderMaxTimeout: cfg.RenderMaxTimeout,
-		Verifier:         signed.NewLookupVerifier(keys.Keys),
-		AppKeyIssuer:     keys.IssuerOf,
-		Tokens:           buildTokens(cfg),
-		Unguarded:        cfg.SpeakUnguarded,
+		Providers:         buildProviders(cfg),
+		Renderer:          browser,
+		Cache:             challenge.GuardCache(fetch.NewMemoryCache(cfg.FetchCacheTTL)),
+		Reader:            reader,
+		Primer:            primer,
+		SearchDeadline:    cfg.SearchDeadline,
+		RenderMaxTimeout:  cfg.RenderMaxTimeout,
+		Verifier:          signed.NewLookupVerifier(keys.Keys),
+		AppKeyIssuer:      keys.IssuerOf,
+		Tokens:            buildTokens(cfg),
+		Unguarded:         cfg.SpeakUnguarded,
+		AllowPrivateFetch: cfg.FetchAllowPrivate,
+	}
+	if cfg.FetchAllowPrivate {
+		log.Print("vvaves: FETCH_ALLOW_PRIVATE, /fetch and /render may reach private addresses")
 	}
 	if cfg.SpeakUnguarded {
 		log.Print("vvaves: SPEAK_UNGUARDED, the speak routes answer anyone who reaches them")

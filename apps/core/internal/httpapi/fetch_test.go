@@ -52,6 +52,8 @@ func TestFetchRefusesAChallengeServedAsThePage(t *testing.T) {
 
 	d := baseDeps()
 	d.Unguarded = true
+	// The fixture is served from 127.0.0.1, which the fetch guard refuses.
+	d.AllowPrivateFetch = true
 	d.Renderer = &stubRenderer{html: cloudflareChallengeHTML}
 	d.Cache = challenge.GuardCache(fetch.NewMemoryCache(time.Minute))
 	h := httpapi.New(d)
@@ -79,8 +81,60 @@ func TestFetchServesAnOrdinaryArticle(t *testing.T) {
 
 	d := baseDeps()
 	d.Unguarded = true
+	// The fixture is served from 127.0.0.1, which the fetch guard refuses.
+	d.AllowPrivateFetch = true
 	rec := post(t, httpapi.New(d), "/fetch", `{"url":"`+origin.URL+`"}`)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200; body %s", rec.Code, rec.Body)
+	}
+}
+
+// /fetch and /render take a URL from their caller and report what came back,
+// so without an address check they read the internal network one request at
+// a time. The reason is never named to the caller: answering "is this
+// address reachable from inside" for any address asked about is the scan the
+// check exists to prevent.
+func TestFetchRefusesAnInternalAddress(t *testing.T) {
+	d := baseDeps()
+	d.Unguarded = true
+	h := httpapi.New(d)
+
+	for name, target := range map[string]string{
+		"loopback":       "http://127.0.0.1:8080/",
+		"private range":  "http://10.0.0.1/",
+		"cloud metadata": "http://169.254.169.254/latest/meta-data/",
+	} {
+		rec := post(t, h, "/fetch", `{"url":"`+target+`"}`)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("%s: status = %d, want 400", name, rec.Code)
+			continue
+		}
+		var body map[string]string
+		json.Unmarshal(rec.Body.Bytes(), &body)
+		if strings.Contains(body["error"], "resolve") || strings.Contains(body["error"], "address") {
+			t.Errorf("%s: error %q tells the caller why, which is the scan itself", name, body["error"])
+		}
+	}
+}
+
+func TestRenderRefusesAnInternalAddress(t *testing.T) {
+	d := baseDeps()
+	d.Unguarded = true
+	d.Renderer = &stubRenderer{html: "<html></html>", finalURL: "https://example.com/"}
+	rec := post(t, httpapi.New(d), "/render", `{"url":"http://169.254.169.254/latest/meta-data/"}`)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", rec.Code)
+	}
+}
+
+// Allowing a private address says nothing about allowing file://, which
+// reads the local disk rather than the network.
+func TestAllowPrivateFetchStillRefusesANonHTTPScheme(t *testing.T) {
+	d := baseDeps()
+	d.Unguarded = true
+	d.AllowPrivateFetch = true
+	d.Renderer = &stubRenderer{}
+	if rec := post(t, httpapi.New(d), "/render", `{"url":"file:///etc/passwd"}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", rec.Code)
 	}
 }

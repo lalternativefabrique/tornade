@@ -153,6 +153,7 @@ the whole file to answer yes or no.
 |---|---|
 | `SPEAK_KEYS` | `issuer:key` pairs, an issuer repeatable: the key a service presents on `X-Tornade-Key` and signs its browser URLs with; the registry supersedes them per issuer |
 | `SPEAK_UNGUARDED` | `true` lets the speak routes answer with no key at all: a cluster-internal vvaves or a laptop, never one behind a public name. Without it and without keys, `/speak` refuses everyone |
+| `FETCH_ALLOW_PRIVATE` | `true` lets `/fetch` and `/render` reach an address this deployment holds privately. Unset refuses them: these routes report what came back from a URL their caller picked, so without the check they read the internal network one request at a time |
 | `SEARXNG_URL` | required by `/search`, else `503` |
 | `BRAVE_API_KEY` | optional; enables the general-category fallback |
 | `FETCH_PROXY` | residential endpoint `/fetch` and its render fallback read through; unset goes direct, unparseable is fatal |

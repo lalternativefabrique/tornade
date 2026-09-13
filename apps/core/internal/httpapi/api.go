@@ -50,6 +50,15 @@ type Deps struct {
 	// deployment reachable only from inside the cluster, or a laptop. It has
 	// to be said; a vvaves that forgot its keys must refuse, not serve.
 	Unguarded bool
+	// AllowPrivateFetch lets /fetch and /render reach an address this
+	// deployment holds privately. Nil — the ordinary case — refuses them, so
+	// a caller cannot spend these routes reading the internal network.
+	//
+	// It exists because a test serves its fixture from 127.0.0.1, and because
+	// a deployment whose whole reachable network is its own may legitimately
+	// want it. Both have to say so: the refusal is the default, not the
+	// setting.
+	AllowPrivateFetch bool
 }
 
 func New(d Deps) *http.ServeMux {

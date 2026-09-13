@@ -64,6 +64,13 @@ type Config struct {
 	// from SPEAK_UNGUARDED=true. For a vvaves nothing outside the cluster
 	// reaches, and for a laptop; never for one behind a public name.
 	SpeakUnguarded bool
+	// FetchAllowPrivate lets /fetch and /render reach an address this
+	// deployment holds privately, read from FETCH_ALLOW_PRIVATE=true. Unset
+	// refuses them: these routes take a URL from their caller and report what
+	// came back, so without the check they read the internal network one
+	// request at a time. A laptop, or a deployment whose whole reachable
+	// network is its own, says so.
+	FetchAllowPrivate bool
 	// RegistryEncryptionKey seals the applications' keys at rest, a base64
 	// 32-byte key. Required with a database: a registry that stores secrets
 	// in the clear is one that must not start.
@@ -115,6 +122,7 @@ func Load() Config {
 		JWTSecret:             os.Getenv("JWT_SECRET"),
 		RegistryEncryptionKey: os.Getenv("REGISTRY_ENCRYPTION_KEY"),
 		SpeakUnguarded:        os.Getenv("SPEAK_UNGUARDED") == "true",
+		FetchAllowPrivate:     os.Getenv("FETCH_ALLOW_PRIVATE") == "true",
 		OIDCIssuerURL:         os.Getenv("OIDC_ISSUER_URL"),
 		OIDCAudience:          envString("OIDC_AUDIENCE", "tornade"),
 	}

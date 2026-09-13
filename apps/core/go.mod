@@ -13,7 +13,9 @@ require (
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/lalternative/packages/go/audioreader v0.2.1
 	github.com/lalternative/packages/go/eda v0.8.0
+	github.com/lalternative/packages/go/fileguard v0.1.0
 	github.com/lalternative/packages/go/search v0.3.0
+	github.com/lalternative/packages/go/svcauth v0.1.0
 	github.com/lalternative/packages/go/tts v0.4.0
 	github.com/lalternativefabrique/vvaves v0.0.0
 	github.com/swaggo/swag v1.16.6
@@ -56,7 +58,6 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
-	github.com/lalternative/packages/go/svcauth v0.1.0 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/rogpeppe/go-internal v1.16.0 // indirect
 	golang.org/x/mod v0.37.0 // indirect

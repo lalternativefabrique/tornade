@@ -105,6 +105,8 @@ github.com/lalternative/packages/go/audioreader v0.2.1 h1:J7kjvRjcer0o27hQl97Ths
 github.com/lalternative/packages/go/audioreader v0.2.1/go.mod h1:h/WIzfZgpNH9/6MX/usw1Z9IDXJneZBdNB8064ITeNg=
 github.com/lalternative/packages/go/eda v0.8.0 h1:+VXQ5ogbzwcV1yiXxBIMsLi0PzPU2fWFjFoxMxS/GeY=
 github.com/lalternative/packages/go/eda v0.8.0/go.mod h1:rEJZsWrl6SwIEPSAk+2wGzxL10N4Z+NNx6SHVKSUkE0=
+github.com/lalternative/packages/go/fileguard v0.1.0 h1:+LtQ7GO4WqMTKEJxzV1dOmOGw2YQn6rlkmm5VgZ/1Fk=
+github.com/lalternative/packages/go/fileguard v0.1.0/go.mod h1:YwKcUcyncOGZxlEMZCIdbNFnUiRlMIVa8bwMdkkwpsc=
 github.com/lalternative/packages/go/search v0.3.0 h1:0W9+pWd+OEaSZLHHNpT8tjBclSRLy69/4Z/cMMho5K8=
 github.com/lalternative/packages/go/search v0.3.0/go.mod h1:G7ohkjwpS/n9HCByGUqihnzPL+2hAQ1wsAGK7EEcDUw=
 github.com/lalternative/packages/go/svcauth v0.1.0 h1:dT1PbE+/zNbOielEEcV+YbotdpFx8+ahW1zB+IvS+SA=
