@@ -16,10 +16,10 @@ services:
     image: postgres:16-alpine
     port: 5432
     env:
-      POSTGRES_USER: tornade
+      POSTGRES_USER: vvaves
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: tornade
-    volumes: ["tornade-pg-data:/var/lib/postgresql/data"]
+      POSTGRES_DB: vvaves
+    volumes: ["vvaves-pg-data:/var/lib/postgresql/data"]
     ready:
       tcp: "5432"
       timeout: 60s
@@ -83,7 +83,7 @@ services:
     depends_on: [migrate, postgres, searxng, tts]
     env:
       LISTEN_ADDR: ":8080"
-      DATABASE_URL: postgres://tornade:${POSTGRES_PASSWORD}@postgres:5432/tornade?sslmode=disable
+      DATABASE_URL: postgres://vvaves:${POSTGRES_PASSWORD}@postgres:5432/vvaves?sslmode=disable
       JWT_SECRET: ${JWT_SECRET}
       REGISTRY_ENCRYPTION_KEY: ${REGISTRY_ENCRYPTION_KEY}
       OIDC_ISSUER_URL: https://id.urbangate.dev
@@ -103,7 +103,7 @@ services:
       TTS_CONCURRENCY: "1"
       S3_ENDPOINT: https://s3.gra.io.cloud.ovh.net
       S3_REGION: gra
-      S3_BUCKET: tornade-prod-audio
+      S3_BUCKET: vvaves-prod-audio
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       FETCH_PROXY: ${FETCH_PROXY}
@@ -124,7 +124,7 @@ services:
     env:
       PORT: "5273"
       NODE_ENV: production
-      DATABASE_URL: postgres://tornade:${POSTGRES_PASSWORD}@postgres:5432/tornade?sslmode=disable
+      DATABASE_URL: postgres://vvaves:${POSTGRES_PASSWORD}@postgres:5432/vvaves?sslmode=disable
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
       BETTER_AUTH_URL: https://vvaves.dev
       JWT_SECRET: ${JWT_SECRET}
@@ -144,7 +144,7 @@ jobs:
     image: rg.fr-par.scw.cloud/vvaves/migrate:20260913-0831-6d7b87a20f08
     command:
       [
-        "postgres://tornade:${POSTGRES_PASSWORD}@postgres:5432/tornade?sslmode=disable",
+        "postgres://vvaves:${POSTGRES_PASSWORD}@postgres:5432/vvaves?sslmode=disable",
         "up",
       ]
     depends_on: [postgres]

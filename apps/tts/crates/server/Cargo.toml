@@ -1,5 +1,5 @@
 [package]
-name = "tornade-tts"
+name = "vvaves-tts"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -7,7 +7,7 @@ publish.workspace = true
 description = "Speech server: fair scheduling of many listeners over Pocket TTS"
 
 [[bin]]
-name = "tornade-tts"
+name = "vvaves-tts"
 path = "src/main.rs"
 
 [dependencies]
