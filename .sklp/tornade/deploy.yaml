@@ -62,8 +62,11 @@ services:
     env:
       LISTEN_ADDR: 0.0.0.0:5000
       TTS_MODEL: french_24l
-      TTS_LIVE_SLOTS: "12"
-      TTS_BACKGROUND_SLOTS: "3"
+      # Six live readings peak around 2.3 GiB of caches on top of the
+      # weights; twelve overran the cap and the kernel killed the server
+      # mid-reading, which reaches the listener as a 502.
+      TTS_LIVE_SLOTS: "6"
+      TTS_BACKGROUND_SLOTS: "2"
       RAYON_NUM_THREADS: "3"
     volumes: ["tts-hf-cache:/home/tts/.cache/huggingface"]
     resources:
