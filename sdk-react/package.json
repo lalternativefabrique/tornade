@@ -1,6 +1,6 @@
 {
   "name": "@lalternative/tornade-sdk-react",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "React hook that plays a tornade reading in the browser, straight from tornade on a URL the application signed",
   "type": "module",
   "main": "./dist/index.js",
