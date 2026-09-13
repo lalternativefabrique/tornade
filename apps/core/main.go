@@ -1,8 +1,8 @@
-// Command tornade is the HTTP facade over this platform's search, page
+// Command vvaves is the HTTP facade over this platform's search, page
 // extraction, JavaScript rendering and speech backends, and the registry of
 // the applications allowed to speak through it.
 //
-// @title           Tornade
+// @title           Vvaves
 // @version         0.3.0
 // @description     Search, fetch, render and speak for every product, plus the admin API of the applications registry.
 // @BasePath        /api/v1
@@ -50,13 +50,13 @@ func main() {
 	// warning: the value is a deployment's decision, and a typo in it must
 	// not look like a working service.
 	if err := fetch.UseProxy(cfg.FetchProxy); err != nil {
-		log.Fatalf("tornade: FETCH_PROXY: %v", err)
+		log.Fatalf("vvaves: FETCH_PROXY: %v", err)
 	}
-	log.Printf("tornade: page fetch proxy %s", fetch.ProxyState())
+	log.Printf("vvaves: page fetch proxy %s", fetch.ProxyState())
 
 	browser, err := render.New(cfg.ChromiumPath, cfg.FetchProxy)
 	if err != nil {
-		log.Fatalf("tornade: FETCH_PROXY: %v", err)
+		log.Fatalf("vvaves: FETCH_PROXY: %v", err)
 	}
 	defer browser.Close()
 
@@ -78,7 +78,7 @@ func main() {
 		Unguarded:        cfg.SpeakUnguarded,
 	}
 	if cfg.SpeakUnguarded {
-		log.Print("tornade: SPEAK_UNGUARDED, the speak routes answer anyone who reaches them")
+		log.Print("vvaves: SPEAK_UNGUARDED, the speak routes answer anyone who reaches them")
 	}
 
 	mux := httpapi.New(deps)
@@ -89,9 +89,9 @@ func main() {
 	srv := &http.Server{Addr: cfg.Addr, Handler: mux}
 
 	go func() {
-		log.Printf("tornade: listening on %s", cfg.Addr)
+		log.Printf("vvaves: listening on %s", cfg.Addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("tornade: %v", err)
+			log.Fatalf("vvaves: %v", err)
 		}
 	}()
 
@@ -102,46 +102,46 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Printf("tornade: shutdown: %v", err)
+		log.Printf("vvaves: shutdown: %v", err)
 	}
 }
 
 // buildRegistry opens the applications registry when a database is
 // configured. Without one, the environment pairs are all that speaks, which
-// is what a tornade deployed before the registry existed still runs on.
+// is what a vvaves deployed before the registry existed still runs on.
 // buildTokens trusts the suite's identity provider for bearer tokens naming
-// this tornade. Nil when none is configured: the interface stays nil rather
+// this vvaves. Nil when none is configured: the interface stays nil rather
 // than holding a typed nil that would pass the guard's nil check.
 func buildTokens(cfg config.Config) httpapi.BearerVerifier {
 	if cfg.OIDCIssuerURL == "" {
-		log.Print("tornade: no OIDC_ISSUER_URL, bearer tokens are not accepted")
+		log.Print("vvaves: no OIDC_ISSUER_URL, bearer tokens are not accepted")
 		return nil
 	}
 	v, err := svcauth.New([]svcauth.Issuer{svcauth.Hydra(cfg.OIDCIssuerURL, cfg.OIDCAudience)})
 	if err != nil {
-		log.Fatalf("tornade: OIDC_ISSUER_URL: %v", err)
+		log.Fatalf("vvaves: OIDC_ISSUER_URL: %v", err)
 	}
-	log.Printf("tornade: bearer tokens from %s for audience %q", cfg.OIDCIssuerURL, cfg.OIDCAudience)
+	log.Printf("vvaves: bearer tokens from %s for audience %q", cfg.OIDCIssuerURL, cfg.OIDCAudience)
 	return v
 }
 
 func buildRegistry(cfg config.Config) (*registry.Service, *registry.KeySource) {
 	if cfg.DatabaseURL == "" {
-		log.Print("tornade: no DATABASE_URL, the applications registry is off")
+		log.Print("vvaves: no DATABASE_URL, the applications registry is off")
 		return nil, registry.NewKeySource(nil, nil, cfg.Keys)
 	}
 	cipher, err := registryinfra.NewCipherFromBase64(cfg.RegistryEncryptionKey)
 	if err != nil {
-		log.Fatalf("tornade: REGISTRY_ENCRYPTION_KEY: %v", err)
+		log.Fatalf("vvaves: REGISTRY_ENCRYPTION_KEY: %v", err)
 	}
 	ctx := context.Background()
 	pool, err := db.Open(ctx, cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("tornade: DATABASE_URL: %v", err)
+		log.Fatalf("vvaves: DATABASE_URL: %v", err)
 	}
 	apps, err := registry.NewService(pool, cipher, cfg.Keys)
 	if err != nil {
-		log.Fatalf("tornade: registry: %v", err)
+		log.Fatalf("vvaves: registry: %v", err)
 	}
 	return apps, apps.Keys()
 }
@@ -170,7 +170,7 @@ func buildProviders(cfg config.Config) map[search.Category]search.Provider {
 // Three shapes, and each degrades into the one below it. With a voice and a
 // bucket, a reading is kept and its opening can be made before anyone asks.
 // With a voice alone, every listen pays for its own reading — worse, but it
-// works, and it is what a tornade with no S3 configured has always done.
+// works, and it is what a vvaves with no S3 configured has always done.
 // With no voice, both are nil and the speak endpoints report themselves
 // unconfigured rather than failing at the first byte.
 //
@@ -185,10 +185,10 @@ func buildAudio(cfg config.Config) (*audioreader.Reader, *audioreader.Primer) {
 
 	store, err := audio.NewStoreFromEnv()
 	if err != nil {
-		log.Fatalf("tornade: %v", err)
+		log.Fatalf("vvaves: %v", err)
 	}
 	if store == nil {
-		log.Print("tornade: no S3 bucket configured, every reading will be paid for")
+		log.Print("vvaves: no S3 bucket configured, every reading will be paid for")
 		return audioreader.NewReader(provider, nil, cfg.AudioOpeningChars, nil), nil
 	}
 

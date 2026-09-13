@@ -10,9 +10,9 @@ import (
 // provider adapts tts.Voice's Speak/SpeakStream names to the
 // Synthesize/SynthesizeStream shape audioreader.Provider expects.
 //
-// The billTo argument is dropped: tornade has no notion of a user. A caller
+// The billTo argument is dropped: vvaves has no notion of a user. A caller
 // that meters its own readings counts the characters it sends, which it knows
-// before tornade answers — putting an identity here would mean tornade
+// before vvaves answers — putting an identity here would mean vvaves
 // holding one, and it holds none.
 type provider struct {
 	voice tts.Voice

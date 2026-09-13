@@ -5,7 +5,7 @@ import type { VoiceSource } from './speak'
 export type VoicePlaybackState = 'idle' | 'loading' | 'playing' | 'unavailable'
 
 /**
- * Plays a reading aloud piece by piece as tornade streams it, so listening
+ * Plays a reading aloud piece by piece as vvaves streams it, so listening
  * starts on the first piece instead of after the whole synthesis.
  *
  * Decoded with Web Audio rather than MediaSource: mp3 in a SourceBuffer is
@@ -71,7 +71,7 @@ export function useVoicePlayback(resolve: () => Promise<VoiceSource>) {
         }
         const contentType = res.headers.get('Content-Type') ?? ''
         if (contentType !== FRAMES_CONTENT_TYPE) {
-          // A reading tornade already keeps comes back whole, as one audio
+          // A reading vvaves already keeps comes back whole, as one audio
           // file with a Content-Length, whatever the request asked for.
           if (!contentType.startsWith('audio/')) {
             throw new Error(`unexpected response (${res.status}, ${contentType})`)

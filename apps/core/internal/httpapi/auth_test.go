@@ -39,7 +39,7 @@ func signedQuery(path, scope, id, text string, expires time.Time) string {
 	return path + "?" + q.Encode()
 }
 
-// A tornade with no key configured refuses: an internet-facing one that
+// A vvaves with no key configured refuses: an internet-facing one that
 // forgot its keys would otherwise serve anyone a paid reading, and a bogus
 // signature would not even be looked at.
 func TestSpeakWithoutAnyAuthConfiguredRefuses(t *testing.T) {

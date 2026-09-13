@@ -1,4 +1,4 @@
-// Package config reads tornade's settings from the environment.
+// Package config reads vvaves's settings from the environment.
 package config
 
 import (
@@ -57,11 +57,11 @@ type Config struct {
 	// instead of an app key; the token must name OIDCAudience. Empty accepts
 	// no token.
 	OIDCIssuerURL string
-	// OIDCAudience is the name this tornade answers to in a token's aud,
+	// OIDCAudience is the name this vvaves answers to in a token's aud,
 	// read from OIDC_AUDIENCE, "tornade" by default.
 	OIDCAudience string
 	// SpeakUnguarded lets the speak routes answer with no key at all, read
-	// from SPEAK_UNGUARDED=true. For a tornade nothing outside the cluster
+	// from SPEAK_UNGUARDED=true. For a vvaves nothing outside the cluster
 	// reaches, and for a laptop; never for one behind a public name.
 	SpeakUnguarded bool
 	// RegistryEncryptionKey seals the applications' keys at rest, a base64

@@ -28,7 +28,7 @@ type BearerVerifier interface {
 // Unguarded answers everyone whatever keys exist: main wires a key lookup
 // even when no key is configured, so the flag is read on its own rather than
 // inferred from a nil. Without it and without a key it refuses everything: a
-// tornade that reaches the internet with no key is not an internal one, it
+// vvaves that reaches the internet with no key is not an internal one, it
 // is an open voice, and silence about a missing key must not look like a
 // working service.
 func (d Deps) guardSpeak(r *http.Request, scope, id, text string) error {
@@ -72,7 +72,7 @@ const speakPath = "/speak"
 // services may call.
 var ErrSignatureNotAcceptedHere = errors.New("signed: this endpoint takes an app key, not a signature")
 
-// ErrNoGuard is a speak request on a tornade with no key configured and no
+// ErrNoGuard is a speak request on a vvaves with no key configured and no
 // leave to run without one.
 var ErrNoGuard = errors.New("speak: no key configured, and not unguarded")
 

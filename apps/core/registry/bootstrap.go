@@ -1,5 +1,5 @@
 // Package registry is the bounded context of the applications allowed to
-// speak through tornade: who they are, the key they sign and call with, and
+// speak through vvaves: who they are, the key they sign and call with, and
 // the admin API that admits, rotates and revokes them.
 package registry
 

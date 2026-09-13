@@ -43,7 +43,7 @@ func postBearer(t *testing.T, d httpapi.Deps, path, token, body string) *httptes
 }
 
 // A service that obtained a token from the suite's identity provider needs
-// neither an app key nor a signature: the token names this tornade.
+// neither an app key nor a signature: the token names this vvaves.
 func TestSpeakAcceptsABearerTokenWithTheSpeakScope(t *testing.T) {
 	rec := postBearer(t, tokenDeps(t), "/speak", "speaks", `{"text":"`+longText+`","scope":"chat","id":"m1"}`)
 	if rec.Code != http.StatusOK {
@@ -73,7 +73,7 @@ func TestPrimeAcceptsABearerToken(t *testing.T) {
 	}
 }
 
-// A bearer header on a tornade that trusts no issuer is not a credential, and
+// A bearer header on a vvaves that trusts no issuer is not a credential, and
 // the app key path must still be reached.
 func TestBearerHeaderIsIgnoredWithoutAnIssuer(t *testing.T) {
 	d := guardedDeps(t)
@@ -83,7 +83,7 @@ func TestBearerHeaderIsIgnoredWithoutAnIssuer(t *testing.T) {
 	}
 }
 
-// Tokens alone are a guard: a tornade trusting an issuer but holding no key
+// Tokens alone are a guard: a vvaves trusting an issuer but holding no key
 // must not report itself unguarded.
 func TestTokensAloneCountAsAGuard(t *testing.T) {
 	d := audioDeps(&stubVoice{pieces: [][]byte{[]byte("aaa")}}, nil)

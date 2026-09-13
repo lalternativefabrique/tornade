@@ -1,5 +1,5 @@
 // Package middleware verifies the JWT the admin web app mints from its
-// Better Auth session. Tornade never signs tokens; it checks the HS256 token
+// Better Auth session. Vvaves never signs tokens; it checks the HS256 token
 // against JWT_SECRET and reads sub, email and name.
 package middleware
 

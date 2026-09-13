@@ -2,7 +2,7 @@ import { createHmac } from 'node:crypto'
 import type { PlatformSession } from '@lalternative/auth'
 
 /**
- * Mints the JWT tornade verifies (apps/core/middleware/jwt.go). Short-lived
+ * Mints the JWT vvaves verifies (apps/core/middleware/jwt.go). Short-lived
  * because it is minted per request from a session already validated, and it
  * never reaches the browser: the proxy attaches it server-side.
  */
@@ -19,7 +19,7 @@ function base64url(input: Buffer | string): string {
 export function mintCoreToken(session: PlatformSession): string {
   const secret = process.env.JWT_SECRET
   if (!secret) {
-    throw new Error('JWT_SECRET is not set; tornade would reject every request')
+    throw new Error('JWT_SECRET is not set; vvaves would reject every request')
   }
   const header = base64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
   const payload = base64url(

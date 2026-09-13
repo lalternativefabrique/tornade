@@ -1,4 +1,4 @@
-// Package httpapi is tornade's HTTP contract over the search, fetch and tts
+// Package httpapi is vvaves's HTTP contract over the search, fetch and tts
 // libraries.
 //
 // Handlers take interfaces rather than concrete backends, so the contract —
@@ -23,7 +23,7 @@ import (
 // that feature is not configured, which the handlers report rather than
 // working around.
 //
-// A nil Primer with a non-nil Reader is the ordinary shape of a tornade with
+// A nil Primer with a non-nil Reader is the ordinary shape of a vvaves with
 // no bucket: readings still stream and are still served, they are just never
 // kept, and nothing can be read ahead of time.
 type Deps struct {
@@ -48,7 +48,7 @@ type Deps struct {
 	Tokens BearerVerifier
 	// Unguarded lets the speak routes answer with neither of the above: a
 	// deployment reachable only from inside the cluster, or a laptop. It has
-	// to be said; a tornade that forgot its keys must refuse, not serve.
+	// to be said; a vvaves that forgot its keys must refuse, not serve.
 	Unguarded bool
 }
 

@@ -1,8 +1,8 @@
-# tornade
+# vvaves
 
 The HTTP facade over this platform's search, page extraction, JavaScript
 rendering and speech backends. One service, one image: SearXNG, Brave and
-the speech server sit behind it, and callers only ever address tornade.
+the speech server sit behind it, and callers only ever address vvaves.
 
 ```
 POST /search   {"q": "gramsci"}                     -> ranked results
@@ -152,7 +152,7 @@ the whole file to answer yes or no.
 | | |
 |---|---|
 | `SPEAK_KEYS` | `issuer:key` pairs, an issuer repeatable: the key a service presents on `X-Tornade-Key` and signs its browser URLs with; the registry supersedes them per issuer |
-| `SPEAK_UNGUARDED` | `true` lets the speak routes answer with no key at all: a cluster-internal tornade or a laptop, never one behind a public name. Without it and without keys, `/speak` refuses everyone |
+| `SPEAK_UNGUARDED` | `true` lets the speak routes answer with no key at all: a cluster-internal vvaves or a laptop, never one behind a public name. Without it and without keys, `/speak` refuses everyone |
 | `SEARXNG_URL` | required by `/search`, else `503` |
 | `BRAVE_API_KEY` | optional; enables the general-category fallback |
 | `FETCH_PROXY` | residential endpoint `/fetch` and its render fallback read through; unset goes direct, unparseable is fatal |
@@ -198,7 +198,7 @@ how much of a text counts as its opening. They must not be conflated: the
 primer and the reader each split the text themselves, and two different sizes
 have the halves meet somewhere other than the same cut.
 
-With no `S3_*` set, tornade still reads text aloud — every reading is simply
+With no `S3_*` set, vvaves still reads text aloud — every reading is simply
 paid for again, which is what it did before there was a bucket. A half-set
 configuration is fatal instead: someone meant to have a cache, and starting
 without one would hide that behind a bill nobody notices until it arrives.
@@ -228,7 +228,7 @@ A **browser** cannot hold a key, so it carries a signature instead: the
 application that knows who is listening signs `scope`, `id`, a hash of the
 text and an expiry with a MAC key derived from that same key, and hands the
 listener a URL good for
-that one reading. Tornade recomputes the MAC and compares. It still knows
+that one reading. Vvaves recomputes the MAC and compares. It still knows
 nothing about users — a signature over what was asked for is the whole of its
 notion of identity, the same shape as an S3 presigned URL and for the same
 reason: the service holding the bytes serves them, the service holding the
@@ -250,7 +250,7 @@ listener must not also buy a whole article being read ahead of them. That is
 enforced in the handler rather than left to routing, because a front door that
 matches paths by prefix sends `/speak/prime` the same URL as `/speak`.
 
-The browser calls tornade directly rather than through the application that
+The browser calls vvaves directly rather than through the application that
 authorised it. A reading is tens of seconds of bytes: relaying it would have
 that application's own server stream media for the whole of it, one goroutine
 per listener, and buffering anywhere along the way would undo what
@@ -260,7 +260,7 @@ picks, which on the open internet is an SSRF offered to anyone.
 
 ## Admin
 
-Which applications may speak through tornade is a registry tornade owns, not
+Which applications may speak through vvaves is a registry vvaves owns, not
 a pair of environment variables. `apps/web` is the back-office: an operator
 signs in, registers an application by its issuer name, and is shown its key
 once. That one key is what the application's server presents on its own
@@ -277,7 +277,7 @@ person whose roles claim carries `tornade:admin` is admin here, nobody else is,
 and there is no first-admin setup any more. The registry lives in Postgres beside the admin's own accounts
 (`DATABASE_URL`), the keys sealed with `REGISTRY_ENCRYPTION_KEY` the way the
 platform's other credentials are; the list shows their last four characters.
-Without one, tornade runs as before on `SPEAK_KEYS`; with one, those pairs
+Without one, vvaves runs as before on `SPEAK_KEYS`; with one, those pairs
 still count for the issuers the registry does not name. The admin API (`/api/v1/admin/apps`) sits behind the JWT the web app
 mints from its Better Auth session with `JWT_SECRET`; the browser only ever
 reaches it through the web app's own proxy.
@@ -287,11 +287,11 @@ reaches it through the web app's own proxy.
 This module ships both halves of that arrangement, so an application does not
 rewrite the contract:
 
-- `client` (Go) is a `tts.Voice` that speaks through tornade. `client.New`
+- `client` (Go) is a `tts.Voice` that speaks through vvaves. `client.New`
   takes the `Key` for server-to-server calls; `PrimeOpening`,
   `Pregenerate`, `Exists` and the `*Named` variants map onto the routes above.
 - `signed` (Go) holds the signature scheme. `signed.NewSigner` mints the URL
-  the application hands its browser; tornade verifies with the same package.
+  the application hands its browser; vvaves verifies with the same package.
 - `sdk-react` (npm, `@lalternative/tornade-sdk-react`) plays a signed reading
   in the browser: `speakSource` builds the request, `useVoicePlayback`
   streams and decodes it.
@@ -316,7 +316,7 @@ docker run -p 8080:8080 -e SEARXNG_URL=… -e PIPER_URL=… tornade
 Two paths, and each needs the same two values supplied at deploy time —
 `SPEAK_KEYS` (`<issuer>:<key>` pairs, one per application not held in the
 registry) and, on the sklp path, `TORNADE_AUDIO_HOST` (the public name the
-speak route answers on). Neither is committed: unset, tornade simply accepts
+speak route answers on). Neither is committed: unset, vvaves simply accepts
 nothing it did not already accept on the internal network.
 
 The public name must resolve before the certificate can be issued — the
@@ -332,7 +332,7 @@ app-of-apps discovers (declared in kube-infra's `app-v1` stack).
 The `ai` namespace is declared here too, in `infra/k8s/base-ai` behind the
 `production-ai` overlay. It holds searxng, piper and the redis searxng caches
 into — the backends this service exists to put one HTTP contract in front of.
-They used to be declared in synthiz, which reaches them the same way tornade
+They used to be declared in synthiz, which reaches them the same way vvaves
 does; the namespace kept its name through the move, so every caller's DNS
 still resolves.
 
@@ -358,7 +358,7 @@ touching the browser others are using.
 **Waiting for the network, not for `load`.** A JS-rendered page's content
 arrives through a fetch/XHR fired after the load event, so waiting on `load`
 returns the same empty shell a plain HTTP fetch already sees — the entire
-reason rendering exists here. Tornade watches CDP network events and settles
+reason rendering exists here. Vvaves watches CDP network events and settles
 once nothing has been in flight for 500ms, then keeps watching a further two
 seconds: a script that fires its request on a timer leaves the network idle in
 the meantime, and calling that lull "settled" returns the shell.

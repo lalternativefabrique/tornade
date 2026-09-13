@@ -9,7 +9,7 @@
 //
 // This is the S3 presigned-URL shape, for the same reason: the service
 // holding the bytes serves them, and the service holding the rights only
-// authorises. Tornade still knows nothing about users — it checks a MAC over
+// authorises. Vvaves still knows nothing about users — it checks a MAC over
 // what was asked for, and that is the whole of its notion of identity.
 package signed
 
@@ -153,7 +153,7 @@ func (v *Verifier) Verify(q url.Values, scope, id, text string) error {
 }
 
 // Sign builds the query parameters authorising one reading until expires,
-// with key the application's tornade key.
+// with key the application's vvaves key.
 //
 // Exported so the applications that hand out these URLs sign them with this
 // code rather than reimplementing the construction — a signature scheme
@@ -166,7 +166,7 @@ func Sign(issuer, key string, p Params) url.Values {
 	return q
 }
 
-// signingKey derives the MAC key from an application's tornade key.
+// signingKey derives the MAC key from an application's vvaves key.
 //
 // One key per application is what an operator configures: the same value it
 // presents on X-Tornade-Key is what its server signs browser URLs with. The

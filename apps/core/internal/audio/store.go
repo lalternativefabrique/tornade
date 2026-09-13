@@ -1,4 +1,4 @@
-// Package audio wires tornade's voice and object store to
+// Package audio wires vvaves's voice and object store to
 // packages/go/audioreader, the shared caching, priming and streaming layer.
 package audio
 
@@ -31,7 +31,7 @@ var _ audioreader.Store = (*Store)(nil)
 // NewStoreFromEnv builds a Store from S3_ENDPOINT, S3_REGION, S3_ACCESS_KEY,
 // S3_SECRET_KEY and S3_BUCKET.
 //
-// It returns (nil, nil) when none of them are set: a tornade with no bucket
+// It returns (nil, nil) when none of them are set: a vvaves with no bucket
 // still reads text aloud, it just pays for every reading. Half a
 // configuration is an error rather than a silent fallback — it means someone
 // meant to have a cache and will not get one.
