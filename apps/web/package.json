@@ -1,5 +1,5 @@
 {
-  "name": "@tornade/web",
+  "name": "@vvaves/web",
   "private": true,
   "type": "module",
   "imports": {

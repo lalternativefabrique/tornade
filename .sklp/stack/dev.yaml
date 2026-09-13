@@ -126,7 +126,7 @@ services:
   # The admin: who may speak through vvaves. Better Auth owns the accounts in
   # the same Postgres; the app only ever reaches vvaves through its proxy.
   web:
-    run: pnpm install --frozen-lockfile && pnpm --filter @tornade/web dev
+    run: pnpm install --frozen-lockfile && pnpm --filter @vvaves/web dev
     port: 5273
     depends_on: [app]
     env:
