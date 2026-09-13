@@ -91,8 +91,8 @@ services:
       # A streamed reading only starts once its first piece is read in full,
       # so pieces stay short; the server batches concurrent pieces, so three
       # in flight cost little more than one.
-      TTS_MAX_CHARS: "150"
-      TTS_CONCURRENCY: "3"
+      TTS_MAX_CHARS: "100"
+      TTS_CONCURRENCY: "2"
       S3_ENDPOINT: https://s3.gra.io.cloud.ovh.net
       S3_REGION: gra
       S3_BUCKET: tornade-prod-audio
