@@ -248,7 +248,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
-	Title:            "Tornade",
+	Title:            "Vvaves",
 	Description:      "Search, fetch, render and speak for every product, plus the admin API of the applications registry.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

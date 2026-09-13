@@ -1,5 +1,5 @@
 // Package domain holds the App aggregate: one application allowed to speak
-// through tornade, named by the issuer its signatures carry. Its key, the one
+// through vvaves, named by the issuer its signatures carry. Its key, the one
 // its server presents on its own calls and signs browser URLs with, is held
 // sealed; only its last four characters are ever shown back.
 package domain
@@ -22,7 +22,7 @@ var (
 
 var nameRe = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 
-// App is an application registered with tornade.
+// App is an application registered with vvaves.
 type App struct {
 	Name      string
 	Current   []byte

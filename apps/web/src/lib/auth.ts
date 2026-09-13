@@ -21,7 +21,7 @@ export const auth = createPlatformAuth({
   database: pool,
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:5273',
   secret: authSecret,
-  appName: 'tornade',
+  appName: 'vvaves',
   betaMode: true,
   isInvited: async () => false,
   google: process.env.GOOGLE_CLIENT_ID

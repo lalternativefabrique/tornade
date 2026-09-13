@@ -6,7 +6,7 @@ export type VoiceSource = {
 
 /** The reading an application's server signed a URL for. */
 export type SignedReading = {
-  /** The signed URL onto tornade's /speak, as handed out by the application. */
+  /** The signed URL onto vvaves's /speak, as handed out by the application. */
   url: string
   /** The exact text the signature covers: what the server read aloud, not the raw content. */
   text: string
@@ -15,7 +15,7 @@ export type SignedReading = {
 }
 
 /**
- * Builds the request the browser sends tornade for a signed reading. Always
+ * Builds the request the browser sends vvaves for a signed reading. Always
  * streamed: an opening the application primed is only served on the
  * streaming path, and only a stream starts playing before the end is read.
  */

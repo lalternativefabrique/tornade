@@ -4,7 +4,7 @@ COPY go.work go.work.sum go.mod go.sum ./
 COPY apps/core/go.mod apps/core/go.sum ./apps/core/
 RUN cd apps/core && go mod download
 # client/ and signed/ are the root module: the applications that speak
-# through tornade import them, and the server does too.
+# through vvaves import them, and the server does too.
 COPY client/ client/
 COPY signed/ signed/
 COPY apps/core/ apps/core/

@@ -115,7 +115,7 @@ services:
       timeout: 60s
 
   # The admin web app: registers, rotates and revokes the applications that
-  # speak through tornade. It reaches the app only through its own proxy,
+  # speak through vvaves. It reaches the app only through its own proxy,
   # minting the JWT the admin API verifies from the Better Auth session.
   web:
     image: rg.fr-par.scw.cloud/lalternative/tornade-web:20260912-1628-f3b83f91c77b

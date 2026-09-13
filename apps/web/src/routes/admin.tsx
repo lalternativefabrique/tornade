@@ -68,7 +68,7 @@ function AdminShell() {
           </Link>
         </>
       }
-      app={{ name: 'Tornade', tone: 'blue' }}
+      app={{ name: 'Vvaves', tone: 'blue' }}
     >
       <Outlet />
     </AdminLayout>

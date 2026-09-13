@@ -47,7 +47,7 @@ info:
   contact: {}
   description: Search, fetch, render and speak for every product, plus the admin API
     of the applications registry.
-  title: Tornade
+  title: Vvaves
   version: 0.3.0
 paths:
   /admin/apps:

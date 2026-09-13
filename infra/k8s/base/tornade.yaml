@@ -93,7 +93,7 @@ spec:
             # refused exactly like an honest one — so without it /fetch is
             # turned away by a growing share of the web it exists to read.
             #
-            # Optional: unset, tornade fetches direct and says so at startup.
+            # Optional: unset, vvaves fetches direct and says so at startup.
             - name: FETCH_PROXY
               valueFrom:
                 secretKeyRef:

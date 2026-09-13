@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-// Signer hands a browser a URL onto tornade's /speak for one reading.
+// Signer hands a browser a URL onto vvaves's /speak for one reading.
 //
 // The application decides who may hear what, signs that one reading, and the
-// bytes go straight from tornade to the browser: relaying tens of seconds of
+// bytes go straight from vvaves to the browser: relaying tens of seconds of
 // audio through the application's own server is what this avoids.
 type Signer struct {
 	publicURL string
@@ -19,15 +19,15 @@ type Signer struct {
 	ttl       time.Duration
 }
 
-// SignerConfig points at the tornade a browser fetches audio from.
+// SignerConfig points at the vvaves a browser fetches audio from.
 type SignerConfig struct {
-	// PublicURL is the origin the browser reaches tornade on, which is not
+	// PublicURL is the origin the browser reaches vvaves on, which is not
 	// the address the application calls it on from inside the cluster.
 	PublicURL string
-	// Issuer names this application in the signature, so tornade knows which
+	// Issuer names this application in the signature, so vvaves knows which
 	// secret to check it against.
 	Issuer string
-	// Key is the application's tornade key, the one it presents on its own
+	// Key is the application's vvaves key, the one it presents on its own
 	// calls too; the signing key is derived from it.
 	Key string
 	// TTL is how long a handed-out URL stays valid: long enough to press play
@@ -39,7 +39,7 @@ type SignerConfig struct {
 const defaultTTL = 30 * time.Minute
 
 // NewSigner returns nil without a public URL, an issuer or a key: an unsigned
-// URL is one tornade refuses, so handing one out would only produce a player
+// URL is one vvaves refuses, so handing one out would only produce a player
 // that fails on every press.
 func NewSigner(cfg SignerConfig) *Signer {
 	public := strings.TrimRight(strings.TrimSpace(cfg.PublicURL), "/")

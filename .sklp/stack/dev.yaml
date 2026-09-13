@@ -123,8 +123,8 @@ services:
       http: /healthz
       timeout: 120s
 
-  # The admin: who may speak through tornade. Better Auth owns the accounts in
-  # the same Postgres; the app only ever reaches tornade through its proxy.
+  # The admin: who may speak through vvaves. Better Auth owns the accounts in
+  # the same Postgres; the app only ever reaches vvaves through its proxy.
   web:
     run: pnpm install --frozen-lockfile && pnpm --filter @tornade/web dev
     port: 5273

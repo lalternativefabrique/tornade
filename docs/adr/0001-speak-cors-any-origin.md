@@ -2,11 +2,11 @@
 
 ## Context
 
-A listener's browser fetches its audio from tornade directly, on a URL the
+A listener's browser fetches its audio from vvaves directly, on a URL the
 application signed, rather than through that application: a reading is tens
 of seconds of bytes, and relaying it would have the application stream media
-for the whole of it. The page and tornade live on different origins, so the
-browser asks tornade's permission first, and tornade has to say which origins
+for the whole of it. The page and vvaves live on different origins, so the
+browser asks vvaves's permission first, and vvaves has to say which origins
 it serves.
 
 ## Decision

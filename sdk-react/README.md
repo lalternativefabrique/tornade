@@ -1,9 +1,9 @@
 # @lalternative/tornade-sdk-react
 
-Plays a tornade reading in the browser, straight from tornade, on a URL the
+Plays a vvaves reading in the browser, straight from vvaves, on a URL the
 application's server signed. The server never relays audio: it primes the
 opening when the text is produced, signs one URL per press, and the bytes go
-from tornade to the listener.
+from vvaves to the listener.
 
 ```tsx
 import { speakSource, useVoicePlayback } from '@lalternative/tornade-sdk-react'

@@ -1,6 +1,6 @@
 # The ai namespace: searxng, piper, and the redis searxng caches into.
 #
-# It moved here from synthiz, which used to own it. tornade is the service
+# It moved here from synthiz, which used to own it. vvaves is the service
 # built on top of these two — it is the reason they run at all — and synthiz
 # now reaches them the same way any other caller does, by their cluster DNS
 # names. Those names did not change with the move, so nothing that called them

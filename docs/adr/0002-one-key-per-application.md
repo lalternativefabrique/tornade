@@ -2,7 +2,7 @@
 
 ## Context
 
-An application speaking through tornade used to hold two secrets: a signing
+An application speaking through vvaves used to hold two secrets: a signing
 key its server signed browser-bound `/speak` URLs with, and an app key it
 presented on `X-Tornade-Key` for its own calls. The admin panel minted both,
 and every application had to be configured with both.

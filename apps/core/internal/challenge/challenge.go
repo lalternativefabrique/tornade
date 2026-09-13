@@ -3,7 +3,7 @@
 //
 // A Cloudflare "Just a moment…" or a DataDome captcha answers 200 with a
 // plausible title and a few sentences, which readability extracts like any
-// page. Nothing upstream tells it apart, so tornade checks what fetch hands
+// page. Nothing upstream tells it apart, so vvaves checks what fetch hands
 // back before storing, caching or serving it.
 package challenge
 

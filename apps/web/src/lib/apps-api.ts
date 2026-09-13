@@ -25,7 +25,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   })
   if (res.status === 204) return undefined as T
   const body = (await res.json().catch(() => ({}))) as T & { error?: string }
-  if (!res.ok) throw new Error(body.error ?? `tornade answered ${res.status}`)
+  if (!res.ok) throw new Error(body.error ?? `vvaves answered ${res.status}`)
   return body
 }
 

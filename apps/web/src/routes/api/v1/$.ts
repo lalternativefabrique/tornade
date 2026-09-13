@@ -4,8 +4,8 @@ import { auth } from '@/lib/auth'
 import { mintCoreToken } from '@/lib/core-token'
 
 /**
- * Same-origin proxy to tornade's admin API. The browser calls /api/v1/<path>;
- * the session is exchanged here for a short-lived JWT tornade verifies, so no
+ * Same-origin proxy to vvaves's admin API. The browser calls /api/v1/<path>;
+ * the session is exchanged here for a short-lived JWT vvaves verifies, so no
  * token is ever handed to the page. Only an admin session gets through: the
  * registry is the whole point of this app, and there is no other user.
  */

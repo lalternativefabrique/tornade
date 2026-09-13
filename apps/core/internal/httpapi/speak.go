@@ -130,7 +130,7 @@ func handlePrime(d Deps) http.HandlerFunc {
 			ctx, cancel := context.WithTimeout(context.Background(), primeTimeout)
 			defer cancel()
 			if err := d.Primer.PrimeOpening(ctx, ar.Scope, ar.ID, ar.Text); err != nil {
-				log.Printf("tornade: prime %s/%s: %v", ar.Scope, ar.ID, err)
+				log.Printf("vvaves: prime %s/%s: %v", ar.Scope, ar.ID, err)
 			}
 		}()
 		w.WriteHeader(http.StatusAccepted)
@@ -163,7 +163,7 @@ func handlePregenerate(d Deps) http.HandlerFunc {
 			ctx, cancel := context.WithTimeout(context.Background(), primeTimeout)
 			defer cancel()
 			if err := d.Reader.Pregenerate(ctx, ar); err != nil {
-				log.Printf("tornade: pregenerate %s/%s: %v", ar.Scope, ar.ID, err)
+				log.Printf("vvaves: pregenerate %s/%s: %v", ar.Scope, ar.ID, err)
 			}
 		}()
 		w.WriteHeader(http.StatusAccepted)

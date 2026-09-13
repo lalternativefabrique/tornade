@@ -15,21 +15,21 @@ import (
 	"github.com/lalternative/packages/go/tts"
 )
 
-// Config points a voice at a tornade.
+// Config points a voice at a vvaves.
 type Config struct {
 	BaseURL string
-	// Scope names where tornade keeps the readings, so two applications
-	// sharing one tornade do not overwrite each other's cache. Empty leaves
-	// the naming to tornade's default.
+	// Scope names where vvaves keeps the readings, so two applications
+	// sharing one vvaves do not overwrite each other's cache. Empty leaves
+	// the naming to vvaves's default.
 	Scope string
-	// Key authenticates server-to-server calls on a tornade reachable from
+	// Key authenticates server-to-server calls on a vvaves reachable from
 	// the internet, where a signature only ever buys one listen. It is the
 	// same key signed.NewSigner takes. Empty sends nothing, which an
-	// internal-only tornade accepts.
+	// internal-only vvaves accepts.
 	Key string
 	// Authorize attaches a bearer token from the suite's identity provider
 	// to each call, svcauth.ClientCredentials.Authorize typically. Set, it
-	// takes the place of Key: tornade reads the token first.
+	// takes the place of Key: vvaves reads the token first.
 	Authorize func(*http.Request) error
 	// Client defaults to one with no global timeout, same as OpenAIVoice: a
 	// long reading can take minutes, and cancellation belongs to the context.
@@ -39,9 +39,9 @@ type Config struct {
 // HeaderKey carries Key; the server reads the same name.
 const HeaderKey = "X-Tornade-Key"
 
-// Voice reads text through tornade instead of a speech service directly.
-// Tornade owns the synthesis, the cache and the store, so every application
-// speaking through the same tornade shares one paid reading of the same
+// Voice reads text through vvaves instead of a speech service directly.
+// Vvaves owns the synthesis, the cache and the store, so every application
+// speaking through the same vvaves shares one paid reading of the same
 // words, and can prime or pregenerate one ahead of any listener.
 type Voice struct {
 	cfg Config
@@ -49,7 +49,7 @@ type Voice struct {
 
 var _ tts.Voice = (*Voice)(nil)
 
-// New wires a voice against tornade, or nil without a BaseURL: absent, not
+// New wires a voice against vvaves, or nil without a BaseURL: absent, not
 // half-present, so a caller checks for nil and runs without audio.
 func New(cfg Config) *Voice {
 	if strings.TrimSpace(cfg.BaseURL) == "" {
@@ -67,7 +67,7 @@ func (v *Voice) Speak(ctx context.Context, text string) ([]byte, string, error) 
 }
 
 // SpeakNamed reads text under a name, so a reading primed or pregenerated
-// earlier under that same name is the one served. An empty id has tornade key
+// earlier under that same name is the one served. An empty id has vvaves key
 // the reading on the text alone, which is what Speak does.
 func (v *Voice) SpeakNamed(ctx context.Context, id, text string) ([]byte, string, error) {
 	resp, err := v.speak(ctx, id, text, false)
@@ -90,7 +90,7 @@ func (v *Voice) SpeakStream(ctx context.Context, text string, emit func([]byte) 
 }
 
 // SpeakStreamNamed streams text under a name. It is the call that turns a
-// primed opening into something heard: tornade only serves an opening read
+// primed opening into something heard: vvaves only serves an opening read
 // ahead of time on the streaming path, so a caller that primed and then asks
 // whole pays for the opening twice and waits for all of it.
 func (v *Voice) SpeakStreamNamed(ctx context.Context, id, text string, emit func([]byte) error) (string, error) {
@@ -101,7 +101,7 @@ func (v *Voice) SpeakStreamNamed(ctx context.Context, id, text string, emit func
 	defer resp.Body.Close()
 
 	// A cache hit is served whole with its real content type even when the
-	// request asked to stream — tornade answers from the store before it
+	// request asked to stream — vvaves answers from the store before it
 	// considers reading anything aloud. Only a paying listen carries frames.
 	if resp.Header.Get("Content-Type") != audioreader.FramesContentType {
 		audio, err := io.ReadAll(resp.Body)
@@ -144,8 +144,8 @@ func (v *Voice) SpeakStreamNamed(ctx context.Context, id, text string, emit func
 	return tts.MIMEFor("mp3"), nil
 }
 
-// Pregenerate asks tornade to read text in full and keep it, ahead of any
-// listener. Tornade acknowledges before the reading starts, so a nil return
+// Pregenerate asks vvaves to read text in full and keep it, ahead of any
+// listener. Vvaves acknowledges before the reading starts, so a nil return
 // means scheduled, not stored; id is what lets the reading be asked for later
 // under the same name.
 func (v *Voice) Pregenerate(ctx context.Context, id, text string) error {
@@ -161,10 +161,10 @@ func (v *Voice) Pregenerate(ctx context.Context, id, text string) error {
 	return nil
 }
 
-// PrimeOpening asks tornade to read only the start of text and keep it, ahead
+// PrimeOpening asks vvaves to read only the start of text and keep it, ahead
 // of any listener: one request that buys the seconds before play, where
 // Pregenerate pays for the whole text on the chance that someone listens.
-// Tornade acknowledges before the reading starts, so a nil return means
+// Vvaves acknowledges before the reading starts, so a nil return means
 // scheduled, not stored. id is required: an opening nobody can name again is
 // one no listener will ever be served.
 func (v *Voice) PrimeOpening(ctx context.Context, id, text string) error {

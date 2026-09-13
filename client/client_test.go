@@ -323,6 +323,6 @@ func TestAuthorizeFailureStopsTheCall(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 	if called {
-		t.Fatal("tornade was called without a credential")
+		t.Fatal("vvaves was called without a credential")
 	}
 }
