@@ -259,6 +259,44 @@ spaces:
           kind: expensive
           security_headers: true
           timeout: "0"
+        # Search, page extraction and rendering, for the services that used to
+        # reach them on the cluster's own network. They take a key or a token
+        # like the speak routes, and refuse a URL resolving to an address this
+        # deployment holds privately — without both, a public /fetch is an SSRF
+        # primitive offered to anyone.
+        #
+        # The rate is declared rather than left to `expensive` (2/s): one agent
+        # turn is several searches and fetches, three products share one egress
+        # address, and a limit that trips on honest traffic is the one an
+        # operator switches off. Still a limit — a loop that runs away is
+        # slowed, not served.
+        - service: app
+          host: vvaves.dev
+          path: /search
+          kind: expensive
+          rate: 20
+          burst: 40
+          security_headers: true
+          timeout: 30s
+        # /fetch and /render drive a browser, which is why they get more time
+        # than a search: the handler already clamps a render to 20s, and the
+        # timeout here only has to outlast the work the handler permits.
+        - service: app
+          host: vvaves.dev
+          path: /fetch
+          kind: expensive
+          rate: 20
+          burst: 40
+          security_headers: true
+          timeout: 60s
+        - service: app
+          host: vvaves.dev
+          path: /render
+          kind: expensive
+          rate: 10
+          burst: 20
+          security_headers: true
+          timeout: 60s
         - service: web
           host: vvaves.dev
           path: /
