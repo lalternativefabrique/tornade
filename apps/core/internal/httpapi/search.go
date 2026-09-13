@@ -87,6 +87,10 @@ func handleSearch(d Deps) http.HandlerFunc {
 			writeError(w, http.StatusServiceUnavailable, "search is not configured")
 			return
 		}
+		if err := d.guardService(r); err != nil {
+			writeAuthError(w, err)
+			return
+		}
 
 		var req searchRequest
 		if err := decode(r, &req); err != nil {

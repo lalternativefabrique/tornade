@@ -51,6 +51,7 @@ func TestFetchRefusesAChallengeServedAsThePage(t *testing.T) {
 	origin := serveHTML(t, cloudflareChallengeHTML)
 
 	d := baseDeps()
+	d.Unguarded = true
 	d.Renderer = &stubRenderer{html: cloudflareChallengeHTML}
 	d.Cache = challenge.GuardCache(fetch.NewMemoryCache(time.Minute))
 	h := httpapi.New(d)
@@ -76,7 +77,9 @@ func TestFetchRefusesAChallengeServedAsThePage(t *testing.T) {
 func TestFetchServesAnOrdinaryArticle(t *testing.T) {
 	origin := serveHTML(t, articleHTML)
 
-	rec := post(t, httpapi.New(baseDeps()), "/fetch", `{"url":"`+origin.URL+`"}`)
+	d := baseDeps()
+	d.Unguarded = true
+	rec := post(t, httpapi.New(d), "/fetch", `{"url":"`+origin.URL+`"}`)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200; body %s", rec.Code, rec.Body)
 	}

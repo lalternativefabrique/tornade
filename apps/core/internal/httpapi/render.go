@@ -35,6 +35,10 @@ func handleRender(d Deps) http.HandlerFunc {
 			writeError(w, http.StatusServiceUnavailable, "rendering is not configured")
 			return
 		}
+		if err := d.guardService(r); err != nil {
+			writeAuthError(w, err)
+			return
+		}
 
 		var req renderRequest
 		if err := decode(r, &req); err != nil {

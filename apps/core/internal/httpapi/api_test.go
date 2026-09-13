@@ -203,6 +203,7 @@ func TestHealthz(t *testing.T) {
 func TestSearchDefaultsToGeneral(t *testing.T) {
 	p := &stubProvider{results: []search.Result{{Title: "hit", URL: "https://e.com"}}}
 	d := baseDeps()
+	d.Unguarded = true
 	d.Providers = map[search.Category]search.Provider{search.CategoryGeneral: p}
 
 	rec := post(t, httpapi.New(d), "/search", `{"q":"gramsci"}`)
@@ -228,6 +229,7 @@ func TestSearchDefaultsToGeneral(t *testing.T) {
 
 func TestSearchRejectsUnknownCategory(t *testing.T) {
 	d := baseDeps()
+	d.Unguarded = true
 	d.Providers = map[search.Category]search.Provider{search.CategoryGeneral: &stubProvider{}}
 
 	if rec := post(t, httpapi.New(d), "/search", `{"q":"x","categories":["images"]}`); rec.Code != http.StatusBadRequest {
@@ -243,6 +245,7 @@ func TestSearchWithoutProvidersIs503(t *testing.T) {
 
 func TestSearchSurfacesBackendFailureAs502(t *testing.T) {
 	d := baseDeps()
+	d.Unguarded = true
 	d.Providers = map[search.Category]search.Provider{
 		search.CategoryGeneral: &stubProvider{err: errors.New("searxng down")},
 	}
@@ -255,6 +258,7 @@ func TestSearchMergesCategories(t *testing.T) {
 	general := &stubProvider{results: []search.Result{{Title: "web", URL: "https://a.com"}}}
 	academic := &stubProvider{results: []search.Result{{Title: "paper", URL: "https://b.com"}}}
 	d := baseDeps()
+	d.Unguarded = true
 	d.Providers = map[search.Category]search.Provider{
 		search.CategoryGeneral:  general,
 		search.CategoryAcademic: academic,
@@ -281,6 +285,7 @@ func TestSearchMergesCategories(t *testing.T) {
 func TestRenderClampsTimeout(t *testing.T) {
 	r := &stubRenderer{html: "<html></html>", finalURL: "https://e.com/"}
 	d := baseDeps()
+	d.Unguarded = true
 	d.Renderer = r
 
 	rec := post(t, httpapi.New(d), "/render", `{"url":"https://e.com","timeout_ms":900000}`)
@@ -294,6 +299,7 @@ func TestRenderClampsTimeout(t *testing.T) {
 
 func TestRenderRejectsNonHTTPURL(t *testing.T) {
 	d := baseDeps()
+	d.Unguarded = true
 	d.Renderer = &stubRenderer{}
 	if rec := post(t, httpapi.New(d), "/render", `{"url":"file:///etc/passwd"}`); rec.Code != http.StatusBadRequest {
 		t.Fatalf("got %d, want 400", rec.Code)
@@ -302,6 +308,7 @@ func TestRenderRejectsNonHTTPURL(t *testing.T) {
 
 func TestRenderSurfacesFailureAs502(t *testing.T) {
 	d := baseDeps()
+	d.Unguarded = true
 	d.Renderer = &stubRenderer{err: errors.New("navigation timed out")}
 	if rec := post(t, httpapi.New(d), "/render", `{"url":"https://e.com"}`); rec.Code != http.StatusBadGateway {
 		t.Fatalf("got %d, want 502", rec.Code)
@@ -590,6 +597,7 @@ func waitForKeys(t *testing.T, store *memStore, n int) []string {
 
 func TestInvalidJSONIs400(t *testing.T) {
 	d := baseDeps()
+	d.Unguarded = true
 	d.Providers = map[search.Category]search.Provider{search.CategoryGeneral: &stubProvider{}}
 	if rec := post(t, httpapi.New(d), "/search", `{not json`); rec.Code != http.StatusBadRequest {
 		t.Fatalf("got %d, want 400", rec.Code)

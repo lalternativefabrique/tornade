@@ -159,16 +159,70 @@ func TestExistsRejectsAnUnsignedCall(t *testing.T) {
 	}
 }
 
-// Search and render stay internal, so the guard must not have leaked onto
-// them — they answer on the cluster's own network with no key to present.
-func TestSearchIsNotGuarded(t *testing.T) {
+// searchDeps is a guarded vvaves with a search backend behind it.
+func searchDeps(t *testing.T) httpapi.Deps {
+	t.Helper()
 	d := guardedDeps(t)
 	d.Providers = map[search.Category]search.Provider{
 		search.CategoryGeneral: &stubProvider{results: []search.Result{{Title: "hit"}}},
 	}
+	return d
+}
+
+// The speak guard must still not have leaked onto search: a signature buys
+// one reading of one text, and these routes reach a URL the caller picks.
+// What opens them is a service's own credential, never a listener's link.
+func TestASignatureDoesNotReachSearch(t *testing.T) {
+	path := signedQuery("/search", "chat", "m1", longText, time.Now().Add(5*time.Minute))
+	rec := post(t, httpapi.New(searchDeps(t)), path, `{"q":"gramsci"}`)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403: a signed link reached search", rec.Code)
+	}
+}
+
+func TestSearchAcceptsAnAppKey(t *testing.T) {
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/search", strings.NewReader(`{"q":"gramsci"}`))
+	req.Header.Set(httpapi.HeaderKey, "an-app-key")
+	httpapi.New(searchDeps(t)).ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body %q)", rec.Code, rec.Body.String())
+	}
+}
+
+func TestSearchRefusesACallWithNoCredential(t *testing.T) {
+	rec := post(t, httpapi.New(searchDeps(t)), "/search", `{"q":"gramsci"}`)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403", rec.Code)
+	}
+}
+
+// A laptop, or a deployment the network already bounds, says so and keeps
+// answering — the same leave /speak has always taken.
+func TestSearchStaysOpenWhenUnguardedIsSaid(t *testing.T) {
+	d := searchDeps(t)
+	d.Unguarded = true
 	rec := post(t, httpapi.New(d), "/search", `{"q":"gramsci"}`)
-	if rec.Code == http.StatusForbidden {
-		t.Fatal("/search answered 403: the speak guard leaked onto it")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (body %q)", rec.Code, rec.Body.String())
+	}
+}
+
+// /render runs a caller-chosen page's JavaScript, so it takes a service's
+// credential like the other two.
+func TestRenderRefusesACallWithNoCredential(t *testing.T) {
+	d := guardedDeps(t)
+	d.Renderer = &stubRenderer{html: "<html></html>", finalURL: "https://example.com/"}
+	rec := post(t, httpapi.New(d), "/render", `{"url":"https://example.com"}`)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403", rec.Code)
+	}
+}
+
+func TestFetchRefusesACallWithNoCredential(t *testing.T) {
+	rec := post(t, httpapi.New(guardedDeps(t)), "/fetch", `{"url":"https://example.com"}`)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403", rec.Code)
 	}
 }
 
