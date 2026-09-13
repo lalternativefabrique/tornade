@@ -41,7 +41,7 @@ steps:
     scope: [app]
     context: .
     dockerfile: Dockerfile
-    image: rg.fr-par.scw.cloud/lalternative/tornade
+    image: rg.fr-par.scw.cloud/vvaves/core
     tag: "{{ publish_tag }}"
 
   - name: web-image
@@ -49,7 +49,7 @@ steps:
     scope: [web]
     context: .
     dockerfile: Dockerfile.web
-    image: rg.fr-par.scw.cloud/lalternative/tornade-web
+    image: rg.fr-par.scw.cloud/vvaves/web
     tag: "{{ publish_tag }}"
 
   - name: migrate-image
@@ -58,7 +58,7 @@ steps:
     scan: false
     context: apps/migrations
     dockerfile: apps/migrations/Dockerfile
-    image: rg.fr-par.scw.cloud/lalternative/tornade-migrate
+    image: rg.fr-par.scw.cloud/vvaves/migrate
     tag: "{{ publish_tag }}"
 
   - name: tts-image
@@ -66,5 +66,5 @@ steps:
     scope: [tts]
     context: .
     dockerfile: Dockerfile.tts
-    image: rg.fr-par.scw.cloud/lalternative/tornade-tts
+    image: rg.fr-par.scw.cloud/vvaves/tts
     tag: "{{ publish_tag }}"
