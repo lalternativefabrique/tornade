@@ -26,6 +26,11 @@ const defaultMaxRunes = 6000
 
 func handleFetch(d Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if err := d.guardService(r); err != nil {
+			writeAuthError(w, err)
+			return
+		}
+
 		var req fetchRequest
 		if err := decode(r, &req); err != nil {
 			writeError(w, http.StatusBadRequest, "invalid JSON body")
