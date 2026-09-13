@@ -7,8 +7,8 @@ import (
 
 	"github.com/lalternative/packages/go/svcauth"
 
-	"github.com/lalternativefabrique/tornade/client"
-	"github.com/lalternativefabrique/tornade/signed"
+	"github.com/lalternativefabrique/vvaves/client"
+	"github.com/lalternativefabrique/vvaves/signed"
 )
 
 const HeaderKey = client.HeaderKey

@@ -9,8 +9,8 @@ import (
 
 	"github.com/lalternative/packages/go/search"
 
-	"github.com/lalternativefabrique/tornade/core/internal/httpapi"
-	"github.com/lalternativefabrique/tornade/signed"
+	"github.com/lalternativefabrique/vvaves/core/internal/httpapi"
+	"github.com/lalternativefabrique/vvaves/signed"
 )
 
 const (

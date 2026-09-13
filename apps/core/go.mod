@@ -1,4 +1,4 @@
-module github.com/lalternativefabrique/tornade/core
+module github.com/lalternativefabrique/vvaves/core
 
 go 1.26
 
@@ -15,7 +15,7 @@ require (
 	github.com/lalternative/packages/go/eda v0.8.0
 	github.com/lalternative/packages/go/search v0.3.0
 	github.com/lalternative/packages/go/tts v0.4.0
-	github.com/lalternativefabrique/tornade v0.0.0
+	github.com/lalternativefabrique/vvaves v0.0.0
 	github.com/swaggo/swag v1.16.6
 )
 
@@ -68,4 +68,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace github.com/lalternativefabrique/tornade => ../..
+replace github.com/lalternativefabrique/vvaves => ../..

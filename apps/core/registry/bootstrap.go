@@ -14,11 +14,11 @@ import (
 	"github.com/lalternative/packages/go/eda/pkg/logger"
 	"github.com/lalternative/packages/go/eda/pkg/obs"
 
-	"github.com/lalternativefabrique/tornade/core/registry/application/list_apps"
-	"github.com/lalternativefabrique/tornade/core/registry/application/register_app"
-	"github.com/lalternativefabrique/tornade/core/registry/application/revoke_app"
-	"github.com/lalternativefabrique/tornade/core/registry/application/rotate_keys"
-	"github.com/lalternativefabrique/tornade/core/registry/infrastructure"
+	"github.com/lalternativefabrique/vvaves/core/registry/application/list_apps"
+	"github.com/lalternativefabrique/vvaves/core/registry/application/register_app"
+	"github.com/lalternativefabrique/vvaves/core/registry/application/revoke_app"
+	"github.com/lalternativefabrique/vvaves/core/registry/application/rotate_keys"
+	"github.com/lalternativefabrique/vvaves/core/registry/infrastructure"
 )
 
 // Service is the context's HTTP-facing facade.

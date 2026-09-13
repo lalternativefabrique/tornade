@@ -29,16 +29,16 @@ import (
 	"github.com/lalternative/packages/go/svcauth"
 	"github.com/lalternative/packages/go/tts"
 
-	"github.com/lalternativefabrique/tornade/core/internal/audio"
-	"github.com/lalternativefabrique/tornade/core/internal/challenge"
-	"github.com/lalternativefabrique/tornade/core/internal/config"
-	"github.com/lalternativefabrique/tornade/core/internal/httpapi"
-	"github.com/lalternativefabrique/tornade/core/internal/render"
-	"github.com/lalternativefabrique/tornade/core/middleware"
-	"github.com/lalternativefabrique/tornade/core/pkg/db"
-	"github.com/lalternativefabrique/tornade/core/registry"
-	registryinfra "github.com/lalternativefabrique/tornade/core/registry/infrastructure"
-	"github.com/lalternativefabrique/tornade/signed"
+	"github.com/lalternativefabrique/vvaves/core/internal/audio"
+	"github.com/lalternativefabrique/vvaves/core/internal/challenge"
+	"github.com/lalternativefabrique/vvaves/core/internal/config"
+	"github.com/lalternativefabrique/vvaves/core/internal/httpapi"
+	"github.com/lalternativefabrique/vvaves/core/internal/render"
+	"github.com/lalternativefabrique/vvaves/core/middleware"
+	"github.com/lalternativefabrique/vvaves/core/pkg/db"
+	"github.com/lalternativefabrique/vvaves/core/registry"
+	registryinfra "github.com/lalternativefabrique/vvaves/core/registry/infrastructure"
+	"github.com/lalternativefabrique/vvaves/signed"
 )
 
 func main() {
