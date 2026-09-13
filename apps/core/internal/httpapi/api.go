@@ -16,7 +16,7 @@ import (
 	"github.com/lalternative/packages/go/search"
 	"github.com/lalternative/packages/go/search/fetch"
 
-	"github.com/lalternativefabrique/tornade/signed"
+	"github.com/lalternativefabrique/vvaves/signed"
 )
 
 // Deps are the backends the handlers speak to. A nil Reader or Renderer means

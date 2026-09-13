@@ -6,7 +6,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/lalternativefabrique/tornade/core/registry/infrastructure"
+	"github.com/lalternativefabrique/vvaves/core/registry/infrastructure"
 )
 
 type Query struct{}

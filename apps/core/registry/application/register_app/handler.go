@@ -10,9 +10,9 @@ import (
 
 	"github.com/lalternative/packages/go/eda/pkg/cqrs"
 
-	"github.com/lalternativefabrique/tornade/core/registry/application"
-	"github.com/lalternativefabrique/tornade/core/registry/domain"
-	"github.com/lalternativefabrique/tornade/core/registry/infrastructure"
+	"github.com/lalternativefabrique/vvaves/core/registry/application"
+	"github.com/lalternativefabrique/vvaves/core/registry/domain"
+	"github.com/lalternativefabrique/vvaves/core/registry/infrastructure"
 )
 
 type Command struct {

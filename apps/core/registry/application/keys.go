@@ -7,7 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/lalternativefabrique/tornade/core/registry/infrastructure"
+	"github.com/lalternativefabrique/vvaves/core/registry/infrastructure"
 )
 
 // Mint returns a fresh key and its sealed form.

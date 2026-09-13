@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lalternativefabrique/tornade/core/internal/httpapi"
+	"github.com/lalternativefabrique/vvaves/core/internal/httpapi"
 )
 
 func options(t *testing.T, h http.Handler, path string) *httptest.ResponseRecorder {

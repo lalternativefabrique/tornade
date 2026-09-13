@@ -21,7 +21,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/lalternativefabrique/tornade.git
+    repoURL: https://github.com/lalternativefabrique/vvaves.git
     targetRevision: main
     path: infra/k8s/overlays/production-ai
   destination:

@@ -8,11 +8,11 @@ import (
 
 	"github.com/lalternative/packages/go/eda/pkg/cqrs"
 
-	"github.com/lalternativefabrique/tornade/core/registry/application/list_apps"
-	"github.com/lalternativefabrique/tornade/core/registry/application/register_app"
-	"github.com/lalternativefabrique/tornade/core/registry/application/revoke_app"
-	"github.com/lalternativefabrique/tornade/core/registry/application/rotate_keys"
-	"github.com/lalternativefabrique/tornade/core/registry/domain"
+	"github.com/lalternativefabrique/vvaves/core/registry/application/list_apps"
+	"github.com/lalternativefabrique/vvaves/core/registry/application/register_app"
+	"github.com/lalternativefabrique/vvaves/core/registry/application/revoke_app"
+	"github.com/lalternativefabrique/vvaves/core/registry/application/rotate_keys"
+	"github.com/lalternativefabrique/vvaves/core/registry/domain"
 )
 
 // List godoc

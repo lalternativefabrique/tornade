@@ -6,7 +6,7 @@ import (
 
 	"github.com/lalternative/packages/go/search/fetch"
 
-	"github.com/lalternativefabrique/tornade/core/internal/challenge"
+	"github.com/lalternativefabrique/vvaves/core/internal/challenge"
 )
 
 type fetchRequest struct {

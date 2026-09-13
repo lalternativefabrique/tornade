@@ -1,4 +1,4 @@
-module github.com/lalternativefabrique/tornade
+module github.com/lalternativefabrique/vvaves
 
 go 1.26
 

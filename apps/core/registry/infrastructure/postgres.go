@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/lalternativefabrique/tornade/core/registry/domain"
+	"github.com/lalternativefabrique/vvaves/core/registry/domain"
 )
 
 var ErrNotFound = errors.New("registry: app not found")

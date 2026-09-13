@@ -10,7 +10,7 @@ import (
 
 	"github.com/lalternative/packages/go/svcauth"
 
-	"github.com/lalternativefabrique/tornade/core/internal/httpapi"
+	"github.com/lalternativefabrique/vvaves/core/internal/httpapi"
 )
 
 type stubTokens map[string]svcauth.Claims

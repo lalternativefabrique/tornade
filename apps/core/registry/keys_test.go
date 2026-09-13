@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lalternativefabrique/tornade/core/registry/application"
-	"github.com/lalternativefabrique/tornade/core/registry/domain"
-	"github.com/lalternativefabrique/tornade/core/registry/infrastructure"
+	"github.com/lalternativefabrique/vvaves/core/registry/application"
+	"github.com/lalternativefabrique/vvaves/core/registry/domain"
+	"github.com/lalternativefabrique/vvaves/core/registry/infrastructure"
 )
 
 type fakeLister struct {

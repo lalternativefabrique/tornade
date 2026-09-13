@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lalternativefabrique/tornade/core/registry/domain"
+	"github.com/lalternativefabrique/vvaves/core/registry/domain"
 )
 
 // keyLister is what KeySource needs from the store: every app, whole.
