@@ -64,7 +64,7 @@ services:
   # run on main. The model weights are fetched from Hugging Face on first
   # start and kept in the named volume.
   tts:
-    run: cargo run --release -p tornade-tts
+    run: cargo run --release -p vvaves-tts
     workdir: apps/tts
     port: 5000
     volumes: ["sklp-dev-tts-hf:/root/.cache/huggingface"]
@@ -82,10 +82,10 @@ services:
     network: bridge
     port: 5432
     env:
-      POSTGRES_USER: tornade
-      POSTGRES_PASSWORD: tornade
-      POSTGRES_DB: tornade
-    volumes: ["sklp-dev-tornade-pg:/var/lib/postgresql/data"]
+      POSTGRES_USER: vvaves
+      POSTGRES_PASSWORD: vvaves
+      POSTGRES_DB: vvaves
+    volumes: ["sklp-dev-vvaves-pg:/var/lib/postgresql/data"]
     ready:
       tcp: postgres:5432
       timeout: 30s
@@ -98,7 +98,7 @@ services:
     oneshot: true
     depends_on: [postgres]
     env:
-      DATABASE_URL: postgres://tornade:tornade@postgres:5432/tornade?sslmode=disable
+      DATABASE_URL: postgres://vvaves:vvaves@postgres:5432/vvaves?sslmode=disable
     run: >-
       go run -tags postgres github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1
       -path . -database "$DATABASE_URL" up
@@ -116,7 +116,7 @@ services:
       TTS_MAX_CHARS: "600"
       CHROMIUM_PATH: /usr/bin/chromium
       SPEAK_UNGUARDED: "true"
-      DATABASE_URL: postgres://tornade:tornade@postgres:5432/tornade?sslmode=disable
+      DATABASE_URL: postgres://vvaves:vvaves@postgres:5432/vvaves?sslmode=disable
       JWT_SECRET: dev-only-jwt-secret
       REGISTRY_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
     ready:
@@ -130,7 +130,7 @@ services:
     port: 5273
     depends_on: [app]
     env:
-      DATABASE_URL: postgres://tornade:tornade@postgres:5432/tornade?sslmode=disable
+      DATABASE_URL: postgres://vvaves:vvaves@postgres:5432/vvaves?sslmode=disable
       BETTER_AUTH_SECRET: dev-only-better-auth-secret
       BETTER_AUTH_URL: http://localhost:5273
       JWT_SECRET: dev-only-jwt-secret
