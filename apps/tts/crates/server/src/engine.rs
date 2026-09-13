@@ -37,8 +37,8 @@ pub struct Job {
 /// A reading whose first frames stay under this level is a false start:
 /// the model sometimes hesitates for seconds or never speaks, and a fresh
 /// draw of the sampling noise is the cure.
-const FALSE_START_FRAMES: usize = 20;
-const FALSE_START_DB: f32 = -26.0;
+const FALSE_START_FRAMES: usize = 15;
+const FALSE_START_DB: f32 = -30.0;
 const MAX_ATTEMPTS: usize = 4;
 
 struct Active {
