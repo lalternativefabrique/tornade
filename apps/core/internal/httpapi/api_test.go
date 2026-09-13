@@ -283,12 +283,12 @@ func TestSearchMergesCategories(t *testing.T) {
 }
 
 func TestRenderClampsTimeout(t *testing.T) {
-	r := &stubRenderer{html: "<html></html>", finalURL: "https://e.com/"}
+	r := &stubRenderer{html: "<html></html>", finalURL: "https://example.com/"}
 	d := baseDeps()
 	d.Unguarded = true
 	d.Renderer = r
 
-	rec := post(t, httpapi.New(d), "/render", `{"url":"https://e.com","timeout_ms":900000}`)
+	rec := post(t, httpapi.New(d), "/render", `{"url":"https://example.com","timeout_ms":900000}`)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("got %d: %s", rec.Code, rec.Body)
 	}
@@ -310,7 +310,7 @@ func TestRenderSurfacesFailureAs502(t *testing.T) {
 	d := baseDeps()
 	d.Unguarded = true
 	d.Renderer = &stubRenderer{err: errors.New("navigation timed out")}
-	if rec := post(t, httpapi.New(d), "/render", `{"url":"https://e.com"}`); rec.Code != http.StatusBadGateway {
+	if rec := post(t, httpapi.New(d), "/render", `{"url":"https://example.com"}`); rec.Code != http.StatusBadGateway {
 		t.Fatalf("got %d, want 502", rec.Code)
 	}
 }

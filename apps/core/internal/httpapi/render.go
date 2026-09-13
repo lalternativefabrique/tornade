@@ -45,7 +45,7 @@ func handleRender(d Deps) http.HandlerFunc {
 			writeError(w, http.StatusBadRequest, "invalid JSON body")
 			return
 		}
-		if msg := validateURL(req.URL); msg != "" {
+		if msg := validateURL(req.URL, d.AllowPrivateFetch); msg != "" {
 			writeError(w, http.StatusBadRequest, msg)
 			return
 		}
