@@ -1,6 +1,6 @@
 version: 1
 kind: deploy
-name: tornade
+name: vvaves
 
 # The secrets a `sklp deploy` from a laptop expands: the same deploy-readable
 # store the remote roll resolves from, so both paths read one source.
@@ -250,7 +250,7 @@ jobs:
         YAML
 
 spaces:
-  tornade-production:
+  vvaves-production:
     gateway:
       routes:
         - service: app

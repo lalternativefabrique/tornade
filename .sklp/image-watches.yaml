@@ -1,25 +1,25 @@
 watches:
   - name: vvaves-app
     service: app
-    space: tornade-production
+    space: vvaves-production
     image_repo: rg.fr-par.scw.cloud/vvaves/core
     node: sklet-prod-v2
     registry_user: nologin
   - name: vvaves-web
     service: web
-    space: tornade-production
+    space: vvaves-production
     image_repo: rg.fr-par.scw.cloud/vvaves/web
     node: sklet-prod-v2
     registry_user: nologin
   - name: vvaves-migrate
     service: migrate
-    space: tornade-production
+    space: vvaves-production
     image_repo: rg.fr-par.scw.cloud/vvaves/migrate
     node: sklet-prod-v2
     registry_user: nologin
   - name: vvaves-tts
     service: tts
-    space: tornade-production
+    space: vvaves-production
     image_repo: rg.fr-par.scw.cloud/vvaves/tts
     node: sklet-prod-v2
     registry_user: nologin
