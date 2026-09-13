@@ -4,9 +4,9 @@
 # was live when. No deploy reads it: the node keeps a rolled image on
 # its own until deploy.yaml changes that service's tag. Editing this
 # file changes nothing: the next roll overwrites it.
-# last updated: 2026-09-13T06:04:15Z
+# last updated: 2026-09-13T06:06:45Z
 tags:
   tornade-app: "20260913-0556-1448ae9bc0be"
   tornade-migrate: "20260913-0556-1448ae9bc0be"
-  tornade-tts: "20260913-0455-b2dd3e4c6e0e"
+  tornade-tts: "20260913-0556-1448ae9bc0be"
   tornade-web: "20260913-0556-1448ae9bc0be"
