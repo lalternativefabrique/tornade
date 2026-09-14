@@ -6,4 +6,4 @@ metadata:
     argocd.argoproj.io/sync-wave: "-1"
   labels:
     name: ai
-    app.kubernetes.io/part-of: tornade
+    app.kubernetes.io/part-of: vvaves

@@ -1,13 +1,13 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: tornade-production
+  name: vvaves-production
   namespace: argocd
   annotations:
-    argocd-image-updater.argoproj.io/image-list: tornade=rg.fr-par.scw.cloud/lalternative/tornade
-    argocd-image-updater.argoproj.io/tornade.kustomize.image-name: rg.fr-par.scw.cloud/lalternative/tornade
-    argocd-image-updater.argoproj.io/tornade.update-strategy: alphabetical
-    argocd-image-updater.argoproj.io/tornade.allow-tags: regexp:^[0-9]{8}-[0-9]{4}-[0-9a-f]+$
+    argocd-image-updater.argoproj.io/image-list: vvaves=rg.fr-par.scw.cloud/lalternative/vvaves
+    argocd-image-updater.argoproj.io/vvaves.kustomize.image-name: rg.fr-par.scw.cloud/lalternative/vvaves
+    argocd-image-updater.argoproj.io/vvaves.update-strategy: alphabetical
+    argocd-image-updater.argoproj.io/vvaves.allow-tags: regexp:^[0-9]{8}-[0-9]{4}-[0-9a-f]+$
     argocd-image-updater.argoproj.io/write-back-method: git
     argocd-image-updater.argoproj.io/git-branch: main
   finalizers:
@@ -20,7 +20,7 @@ spec:
     path: infra/k8s/base
   destination:
     server: https://kubernetes.default.svc
-    namespace: tornade-prod
+    namespace: vvaves-prod
   syncPolicy:
     automated:
       selfHeal: true

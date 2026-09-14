@@ -39,7 +39,7 @@ type Config struct {
 
 	// Keys are the applications' keys read from SPEAK_KEYS as "issuer:key"
 	// pairs, an issuer repeatable. One key does both jobs: presented on
-	// X-Tornade-Key by the application's server, and the root the signatures
+	// X-Vvaves-Key by the application's server, and the root the signatures
 	// on its browser-bound /speak URLs derive from. Empty admits nobody the
 	// registry does not, which is what a deployment reachable only from the
 	// cluster wants.
@@ -58,7 +58,7 @@ type Config struct {
 	// no token.
 	OIDCIssuerURL string
 	// OIDCAudience is the name this vvaves answers to in a token's aud,
-	// read from OIDC_AUDIENCE, "tornade" by default.
+	// read from OIDC_AUDIENCE, "vvaves" by default.
 	OIDCAudience string
 	// SpeakUnguarded lets the speak routes answer with no key at all, read
 	// from SPEAK_UNGUARDED=true. For a vvaves nothing outside the cluster
@@ -124,7 +124,7 @@ func Load() Config {
 		SpeakUnguarded:        os.Getenv("SPEAK_UNGUARDED") == "true",
 		FetchAllowPrivate:     os.Getenv("FETCH_ALLOW_PRIVATE") == "true",
 		OIDCIssuerURL:         os.Getenv("OIDC_ISSUER_URL"),
-		OIDCAudience:          envString("OIDC_AUDIENCE", "tornade"),
+		OIDCAudience:          envString("OIDC_AUDIENCE", "vvaves"),
 	}
 }
 

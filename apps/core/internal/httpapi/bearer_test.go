@@ -28,8 +28,8 @@ func tokenDeps(t *testing.T) httpapi.Deps {
 	t.Helper()
 	d := guardedDeps(t)
 	d.Tokens = stubTokens{
-		"speaks":   {Subject: "lalter-core", Audience: []string{"tornade"}, Scopes: []string{httpapi.ScopeSpeak}},
-		"searches": {Subject: "lalter-core", Audience: []string{"tornade"}, Scopes: []string{"tornade:search"}},
+		"speaks":   {Subject: "lalter-core", Audience: []string{"vvaves"}, Scopes: []string{httpapi.ScopeSpeak}},
+		"searches": {Subject: "lalter-core", Audience: []string{"vvaves"}, Scopes: []string{"vvaves:search"}},
 	}
 	return d
 }

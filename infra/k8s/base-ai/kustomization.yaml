@@ -15,7 +15,7 @@ resources:
 
 labels:
   - pairs:
-      app.kubernetes.io/part-of: tornade
+      app.kubernetes.io/part-of: vvaves
       app.kubernetes.io/managed-by: kustomize
       app.kubernetes.io/component: ai
     includeSelectors: false

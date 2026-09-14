@@ -94,7 +94,7 @@ const server = createServer(async (req, res) => {
 })
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`tornade web listening on :${PORT}`)
+  console.log(`vvaves web listening on :${PORT}`)
 })
 
 for (const signal of ['SIGTERM', 'SIGINT']) {

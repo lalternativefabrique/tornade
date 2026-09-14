@@ -8,12 +8,12 @@ describe('ssoFromEnv', () => {
     ).toBeUndefined()
   })
 
-  it('defaults to the suite issuer and the tornade-admin client', () => {
+  it('defaults to the suite issuer and the vvaves-admin client', () => {
     expect(ssoFromEnv({ URBANGATE_CLIENT_SECRET: 's' })).toEqual({
       issuer: 'https://id.urbangate.dev',
-      clientId: 'tornade-admin',
+      clientId: 'vvaves-admin',
       clientSecret: 's',
-      adminRole: 'tornade:admin',
+      adminRole: 'vvaves:admin',
       providerId: 'urbangate',
     })
   })
@@ -21,10 +21,10 @@ describe('ssoFromEnv', () => {
   it('takes the issuer and client it is given', () => {
     const c = ssoFromEnv({
       URBANGATE_ISSUER_URL: 'http://localhost:4444',
-      URBANGATE_CLIENT_ID: 'tornade-dev',
+      URBANGATE_CLIENT_ID: 'vvaves-dev',
       URBANGATE_CLIENT_SECRET: 's',
     })
     expect(c?.issuer).toBe('http://localhost:4444')
-    expect(c?.clientId).toBe('tornade-dev')
+    expect(c?.clientId).toBe('vvaves-dev')
   })
 })

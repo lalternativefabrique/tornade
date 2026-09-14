@@ -4,5 +4,5 @@ metadata:
   name: ai
   labels:
     name: ai
-    app.kubernetes.io/part-of: tornade
+    app.kubernetes.io/part-of: vvaves
     environment: production

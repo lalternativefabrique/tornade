@@ -15,13 +15,13 @@ const HeaderKey = client.HeaderKey
 
 // ScopeSpeak is the OAuth2 scope a service's token must carry to have text
 // read: a token meant for another part of the suite must not reach the voice.
-const ScopeSpeak = "tornade:speak"
+const ScopeSpeak = "vvaves:speak"
 
 // ScopeSearch is the scope a token must carry to search, fetch or render.
 // It is not ScopeSpeak: reading text aloud costs a synthesis, while these
 // three reach the open web on a URL the caller picks, and a service granted
 // one has no business doing the other.
-const ScopeSearch = "tornade:search"
+const ScopeSearch = "vvaves:search"
 
 // BearerVerifier checks a token a service obtained from the suite's identity
 // provider. svcauth.Verifier is the one main wires.
