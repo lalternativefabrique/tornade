@@ -113,7 +113,7 @@ function Credentials({
   onDismiss: () => void
 }) {
   const upper = value.name.toUpperCase().replace(/-/g, '_')
-  const lines = `${upper}_TORNADE_KEY=${value.key}`
+  const lines = `${upper}_VVAVES_KEY=${value.key}`
   return (
     <section className="rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
       <div className="flex items-start justify-between gap-4">

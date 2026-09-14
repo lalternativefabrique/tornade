@@ -10,9 +10,9 @@ export function ssoFromEnv(env: SsoEnv) {
   if (!env.URBANGATE_CLIENT_SECRET) return undefined
   return {
     issuer: env.URBANGATE_ISSUER_URL ?? 'https://id.urbangate.dev',
-    clientId: env.URBANGATE_CLIENT_ID ?? 'tornade-admin',
+    clientId: env.URBANGATE_CLIENT_ID ?? 'vvaves-admin',
     clientSecret: env.URBANGATE_CLIENT_SECRET,
-    adminRole: 'tornade:admin',
+    adminRole: 'vvaves:admin',
     providerId: SSO_PROVIDER_ID,
   }
 }

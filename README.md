@@ -151,7 +151,7 @@ the whole file to answer yes or no.
 
 | | |
 |---|---|
-| `SPEAK_KEYS` | `issuer:key` pairs, an issuer repeatable: the key a service presents on `X-Tornade-Key` and signs its browser URLs with; the registry supersedes them per issuer |
+| `SPEAK_KEYS` | `issuer:key` pairs, an issuer repeatable: the key a service presents on `X-Vvaves-Key` and signs its browser URLs with; the registry supersedes them per issuer |
 | `SPEAK_UNGUARDED` | `true` lets the speak routes answer with no key at all: a cluster-internal vvaves or a laptop, never one behind a public name. Without it and without keys, `/speak` refuses everyone |
 | `FETCH_ALLOW_PRIVATE` | `true` lets `/fetch` and `/render` reach an address this deployment holds privately. Unset refuses them: these routes report what came back from a URL their caller picked, so without the check they read the internal network one request at a time |
 | `SEARXNG_URL` | required by `/search`, else `503` |
@@ -218,9 +218,9 @@ backend that synthesizes in parallel.
 
 `/speak*` answers two callers, and nothing else.
 
-A **service** on the cluster's own network sends its key on `X-Tornade-Key`,
+A **service** on the cluster's own network sends its key on `X-Vvaves-Key`,
 or, with `OIDC_ISSUER_URL` set, a bearer token from the suite's identity
-provider carrying `aud: tornade` and the `tornade:speak` scope. The Go client
+provider carrying `aud: vvaves` and the `vvaves:speak` scope. The Go client
 sends it through `client.Config.Authorize`, typically
 `svcauth.ClientCredentials.Authorize` from `packages/go/svcauth`.
 Each application has one key, so it can be rotated or revoked without
@@ -274,7 +274,7 @@ restart.
 
 The team signs in through the suite's identity provider, urbangate
 (`URBANGATE_ISSUER_URL`, `URBANGATE_CLIENT_ID`, `URBANGATE_CLIENT_SECRET`): a
-person whose roles claim carries `tornade:admin` is admin here, nobody else is,
+person whose roles claim carries `vvaves:admin` is admin here, nobody else is,
 and there is no first-admin setup any more. The registry lives in Postgres beside the admin's own accounts
 (`DATABASE_URL`), the keys sealed with `REGISTRY_ENCRYPTION_KEY` the way the
 platform's other credentials are; the list shows their last four characters.
@@ -293,7 +293,7 @@ rewrite the contract:
   `Pregenerate`, `Exists` and the `*Named` variants map onto the routes above.
 - `signed` (Go) holds the signature scheme. `signed.NewSigner` mints the URL
   the application hands its browser; vvaves verifies with the same package.
-- `sdk-react` (npm, `@lalternative/tornade-sdk-react`) plays a signed reading
+- `sdk-react` (npm, `@lalternative/vvaves-sdk-react`) plays a signed reading
   in the browser: `speakSource` builds the request, `useVoicePlayback`
   streams and decodes it.
 
@@ -301,22 +301,22 @@ rewrite the contract:
 
 ```bash
 go test ./...
-SEARXNG_URL=… PIPER_URL=… go run ./cmd/tornade
+SEARXNG_URL=… PIPER_URL=… go run ./cmd/vvaves
 ```
 
 `/render` and `/fetch`'s fallback need a Chromium on `PATH`, or `CHROMIUM_PATH`
 pointing at one. The image carries its own:
 
 ```bash
-docker build -t tornade .
-docker run -p 8080:8080 -e SEARXNG_URL=… -e PIPER_URL=… tornade
+docker build -t vvaves .
+docker run -p 8080:8080 -e SEARXNG_URL=… -e PIPER_URL=… vvaves
 ```
 
 ## Deployment
 
 Two paths, and each needs the same two values supplied at deploy time —
 `SPEAK_KEYS` (`<issuer>:<key>` pairs, one per application not held in the
-registry) and, on the sklp path, `TORNADE_AUDIO_HOST` (the public name the
+registry) and, on the sklp path, `VVAVES_AUDIO_HOST` (the public name the
 speak route answers on). Neither is committed: unset, vvaves simply accepts
 nothing it did not already accept on the internal network.
 
@@ -324,10 +324,10 @@ The public name must resolve before the certificate can be issued — the
 challenge is served on that host — so point the DNS at the front door first
 and let the issuer follow.
 
-It runs on the OVH cluster in its own `tornade-prod` namespace, reaching
+It runs on the OVH cluster in its own `vvaves-prod` namespace, reaching
 searxng and piper across the `ai` namespace by their cluster DNS names.
 Manifests live in `infra/k8s/base`; ArgoCD syncs them from `main` through the
-Application in `infra/k8s/argocd`, which the cluster's `tornade-root`
+Application in `infra/k8s/argocd`, which the cluster's `vvaves-root`
 app-of-apps discovers (declared in kube-infra's `app-v1` stack).
 
 The `ai` namespace is declared here too, in `infra/k8s/base-ai` behind the
@@ -337,7 +337,7 @@ They used to be declared in synthiz, which reaches them the same way vvaves
 does; the namespace kept its name through the move, so every caller's DNS
 still resolves.
 
-It stays a namespace of its own rather than folding into `tornade-prod`: its
+It stays a namespace of its own rather than folding into `vvaves-prod`: its
 ResourceQuota covers workloads shared by more than one product, and that
 budget is easier to reason about next to them than mixed into a single
 service's.

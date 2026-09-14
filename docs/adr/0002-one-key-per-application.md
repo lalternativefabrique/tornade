@@ -4,7 +4,7 @@
 
 An application speaking through vvaves used to hold two secrets: a signing
 key its server signed browser-bound `/speak` URLs with, and an app key it
-presented on `X-Tornade-Key` for its own calls. The admin panel minted both,
+presented on `X-Vvaves-Key` for its own calls. The admin panel minted both,
 and every application had to be configured with both.
 
 The two are held by the same party, side by side in the same configuration.
@@ -20,9 +20,9 @@ signing key could. It was a habit inherited from the `SPEAK_SIGNING_KEYS` /
 An application has one key. The panel mints one value, the application
 configures one variable, and it is used for both purposes:
 
-- presented as-is on `X-Tornade-Key`;
+- presented as-is on `X-Vvaves-Key`;
 - the root of the MAC key its signatures use, derived inside the `signed`
-  package as `HMAC-SHA256(key, "tornade/sign/v1")`.
+  package as `HMAC-SHA256(key, "vvaves/sign/v1")`.
 
 The derivation is internal to `signed`: `Sign`, `NewSigner` and both
 verifiers take the application's key, and nothing outside the package sees
@@ -43,7 +43,7 @@ which is nothing.
 Registered applications keep their app key as their single key: the
 migration carries it over, previous key included. Their signatures stop
 verifying until they redeploy with the `signed` package that derives, and
-that is what the grace period exists for. The `tornade-speak-keys` secret,
+that is what the grace period exists for. The `vvaves-speak-keys` secret,
 where mounted, must expose a `SPEAK_KEYS` entry instead of
 `SPEAK_SIGNING_KEYS`. The `client.Config` field is `Key`, the header
 constant `client.HeaderKey`, and the admin API answers `key` and `last4`

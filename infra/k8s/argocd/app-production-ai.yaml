@@ -12,7 +12,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: tornade-production-ai
+  name: vvaves-production-ai
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "4"

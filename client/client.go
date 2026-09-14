@@ -37,7 +37,7 @@ type Config struct {
 }
 
 // HeaderKey carries Key; the server reads the same name.
-const HeaderKey = "X-Tornade-Key"
+const HeaderKey = "X-Vvaves-Key"
 
 // Voice reads text through vvaves instead of a speech service directly.
 // Vvaves owns the synthesis, the cache and the store, so every application

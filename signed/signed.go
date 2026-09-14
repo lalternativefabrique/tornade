@@ -169,7 +169,7 @@ func Sign(issuer, key string, p Params) url.Values {
 // signingKey derives the MAC key from an application's vvaves key.
 //
 // One key per application is what an operator configures: the same value it
-// presents on X-Tornade-Key is what its server signs browser URLs with. The
+// presents on X-Vvaves-Key is what its server signs browser URLs with. The
 // bytes presented on the wire are never themselves the MAC key, so a
 // signature exposes nothing about the credential it was derived from.
 func signingKey(key string) []byte {
@@ -178,7 +178,7 @@ func signingKey(key string) []byte {
 	return mac.Sum(nil)
 }
 
-const signingKeyLabel = "tornade/sign/v1"
+const signingKeyLabel = "vvaves/sign/v1"
 
 // HashText names a text the way the signature covers it.
 func HashText(text string) string {

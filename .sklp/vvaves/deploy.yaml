@@ -80,7 +80,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       REGISTRY_ENCRYPTION_KEY: ${REGISTRY_ENCRYPTION_KEY}
       OIDC_ISSUER_URL: https://id.urbangate.dev
-      OIDC_AUDIENCE: tornade
+      OIDC_AUDIENCE: vvaves
       SEARXNG_URL: http://searxng:8080
       PIPER_URL: http://tts:5000
       TTS_MODEL: french_24l
@@ -123,7 +123,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       CORE_API_URL: http://app:8080
       URBANGATE_ISSUER_URL: https://id.urbangate.dev
-      URBANGATE_CLIENT_ID: tornade-admin
+      URBANGATE_CLIENT_ID: vvaves-admin
       URBANGATE_CLIENT_SECRET: ${URBANGATE_CLIENT_SECRET}
     resources:
       cpu: "0.5"
