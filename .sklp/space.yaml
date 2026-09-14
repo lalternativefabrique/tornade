@@ -1,5 +1,5 @@
 runner:
-  registry: rg.fr-par.scw.cloud/lalternative
+  registry: rg.fr-par.scw.cloud/vvaves
   registry_auth_secret: scw-registry-credentials
 
   toolchain:
