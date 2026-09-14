@@ -49,13 +49,6 @@ services:
       http: /search?q=ping&format=json
       timeout: 120s
 
-  # Speech: apps/tts, Kyutai Pocket TTS on CPU, every listener advanced one
-  # frame per step. The caps are ceilings, not reservations: three of the
-  # node's four vCPUs only get used at peak, when a step for every listener
-  # has to fit in 80 ms, and the node idles otherwise. Memory holds the float
-  # weights (670 MB), their int8 copy and one cache per listener. The first
-  # start downloads the weights from Hugging Face into the volume, hence the
-  # long readiness.
   tts:
     image: rg.fr-par.scw.cloud/vvaves/tts:20260913-0831-6d7b87a20f08
     port: 5000
