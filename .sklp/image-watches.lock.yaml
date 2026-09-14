@@ -1,0 +1,9 @@
+# Tags rolled onto the node by Skalpai's image watches — WRITTEN BY THE
+# ROLL, not by hand. image-watches.yaml declares what to watch; this
+# file is a journal of what actually shipped, so `git log` answers what
+# was live when. No deploy reads it: the node keeps a rolled image on
+# its own until deploy.yaml changes that service's tag. Editing this
+# file changes nothing: the next roll overwrites it.
+# last updated: 2026-09-14T07:39:28Z
+tags:
+  vvaves-migrate: "20260914-0532-6becdaedf8e2"
