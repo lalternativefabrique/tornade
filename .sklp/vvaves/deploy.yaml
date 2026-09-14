@@ -12,64 +12,6 @@ registries:
     password: ${SCW_SECRET_KEY}
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    port: 5432
-    env:
-      POSTGRES_USER: vvaves
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: vvaves
-    volumes: ["vvaves-pg-data:/var/lib/postgresql/data"]
-    ready:
-      tcp: "5432"
-      timeout: 60s
-
-  redis:
-    image: redis:7-alpine
-    port: 6379
-    command: ["redis-server", "--save", "60", "1"]
-    volumes: ["redis-data:/data"]
-    ready:
-      tcp: "6379"
-      timeout: 60s
-
-  searxng:
-    # Pinned by digest: searxng publishes no immutable tags, so a tag would
-    # silently change what runs.
-    image: docker.io/searxng/searxng@sha256:e45d5894bfaa0bf8773b9f283795ae57f1c15ddb29c8cecb70b3665b0ce9ec60
-    port: 8080
-    depends_on: [redis, searxng-config]
-    volumes: ["searxng-config:/etc/searxng"]
-    env:
-      SEARXNG_BASE_URL: http://searxng:8080
-      SEARXNG_REDIS_URL: redis://redis:6379/0
-    ready:
-      # /healthz answers 200 even when the JSON format is denied, which is the
-      # only thing callers use: probe the format they actually ask for.
-      http: /search?q=ping&format=json
-      timeout: 120s
-
-  tts:
-    image: rg.fr-par.scw.cloud/vvaves/tts:20260913-0831-6d7b87a20f08
-    port: 5000
-    env:
-      LISTEN_ADDR: 0.0.0.0:5000
-      TTS_MODEL: french_24l
-      # A reading's attention cache grows with the text it reads, so a slot
-      # is not a fixed cost: six slots on synthiz-length texts still reached
-      # the cap and the kernel killed the server mid-reading, which the
-      # listener sees as a 502. Three live readings hold within it.
-      TTS_LIVE_SLOTS: "3"
-      TTS_BACKGROUND_SLOTS: "1"
-      RAYON_NUM_THREADS: "3"
-    volumes: ["tts-hf-cache:/home/tts/.cache/huggingface"]
-    resources:
-      cpu: "3"
-      memory: 3584M
-    ready:
-      http: /healthz
-      timeout: 600s
-
   app:
     image: rg.fr-par.scw.cloud/vvaves/core:20260913-0831-6d7b87a20f08
     port: 8080
@@ -100,9 +42,6 @@ services:
       http: /healthz
       timeout: 60s
 
-  # The admin web app: registers, rotates and revokes the applications that
-  # speak through vvaves. It reaches the app only through its own proxy,
-  # minting the JWT the admin API verifies from the Better Auth session.
   web:
     image: rg.fr-par.scw.cloud/vvaves/web:20260913-0831-6d7b87a20f08
     port: 5273
@@ -125,6 +64,56 @@ services:
       http: /admin/login
       timeout: 120s
 
+  postgres:
+    image: postgres:16-alpine
+    port: 5432
+    env:
+      POSTGRES_USER: vvaves
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: vvaves
+    volumes: ["vvaves-pg-data:/var/lib/postgresql/data"]
+    ready:
+      tcp: "5432"
+      timeout: 60s
+
+  redis:
+    image: redis:7-alpine
+    port: 6379
+    command: ["redis-server", "--save", "60", "1"]
+    volumes: ["redis-data:/data"]
+    ready:
+      tcp: "6379"
+      timeout: 60s
+
+  searxng:
+    image: docker.io/searxng/searxng@sha256:e45d5894bfaa0bf8773b9f283795ae57f1c15ddb29c8cecb70b3665b0ce9ec60
+    port: 8080
+    depends_on: [redis, searxng-config]
+    volumes: ["searxng-config:/etc/searxng"]
+    env:
+      SEARXNG_BASE_URL: http://searxng:8080
+      SEARXNG_REDIS_URL: redis://redis:6379/0
+    ready:
+      http: /search?q=ping&format=json
+      timeout: 120s
+
+  tts:
+    image: rg.fr-par.scw.cloud/vvaves/tts:20260913-0831-6d7b87a20f08
+    port: 5000
+    env:
+      LISTEN_ADDR: 0.0.0.0:5000
+      TTS_MODEL: french_24l
+      TTS_LIVE_SLOTS: "3"
+      TTS_BACKGROUND_SLOTS: "1"
+      RAYON_NUM_THREADS: "3"
+    volumes: ["tts-hf-cache:/home/tts/.cache/huggingface"]
+    resources:
+      cpu: "3"
+      memory: 3584M
+    ready:
+      http: /healthz
+      timeout: 600s
+
 jobs:
   migrate:
     image: rg.fr-par.scw.cloud/vvaves/migrate:20260913-0831-6d7b87a20f08
@@ -135,10 +124,6 @@ jobs:
       ]
     depends_on: [postgres]
 
-  # The stock image only serves HTML; the search client asks for JSON, which
-  # SearXNG refuses (403) unless the format is enabled in settings.yml. The
-  # image has no env override for it, so the file is written into the config
-  # volume before searxng starts.
   searxng-config:
     image: alpine:3.21
     volumes: ["searxng-config:/etc/searxng"]
@@ -226,11 +211,6 @@ jobs:
             disabled: true
           - name: startpage
             disabled: true
-          # arxiv is a physics/CS preprint server: on humanities queries it matches
-          # on stray keywords and floods the ranking with unrelated papers ("Fast
-          # Graph-based Higher-Order Clustering" scoring 1.0 on a Gramsci query).
-          # "disabled" only drops it from the default set — an explicit category
-          # request still reaches it, so it takes "inactive" to remove it entirely.
           - name: arxiv
             inactive: true
         YAML
@@ -245,17 +225,6 @@ spaces:
           kind: expensive
           security_headers: true
           timeout: "0"
-        # Search, page extraction and rendering, for the services that used to
-        # reach them on the cluster's own network. They take a key or a token
-        # like the speak routes, and refuse a URL resolving to an address this
-        # deployment holds privately — without both, a public /fetch is an SSRF
-        # primitive offered to anyone.
-        #
-        # The rate is declared rather than left to `expensive` (2/s): one agent
-        # turn is several searches and fetches, three products share one egress
-        # address, and a limit that trips on honest traffic is the one an
-        # operator switches off. Still a limit — a loop that runs away is
-        # slowed, not served.
         - service: app
           host: vvaves.dev
           path: /search
@@ -264,9 +233,6 @@ spaces:
           burst: 40
           security_headers: true
           timeout: 30s
-        # /fetch and /render drive a browser, which is why they get more time
-        # than a search: the handler already clamps a render to 20s, and the
-        # timeout here only has to outlast the work the handler permits.
         - service: app
           host: vvaves.dev
           path: /fetch
