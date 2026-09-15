@@ -171,7 +171,12 @@ impl Proj {
         self.inner.weight()
     }
 
+    /// The int8 rows kernel reads host memory, so weights that live on
+    /// another device stay as they are and go through candle's matmul.
     pub fn quantize(&mut self) -> Result<()> {
+        if !self.inner.weight().device().is_cpu() {
+            return Ok(());
+        }
         self.q8 = Some(Arc::new(Q8Weights::from_linear(&self.inner)?));
         Ok(())
     }
@@ -181,7 +186,7 @@ impl Proj {
     }
 
     fn rows_2d(&self, x: &Tensor) -> Result<Tensor> {
-        if std::env::var_os("TTS_NO_SMALLM").is_some() {
+        if !x.device().is_cpu() || std::env::var_os("TTS_NO_SMALLM").is_some() {
             return self.inner.forward(x);
         }
         match &self.q8 {

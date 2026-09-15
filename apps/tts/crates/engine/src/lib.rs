@@ -2,6 +2,7 @@ pub mod audio;
 pub mod batch;
 pub mod conditioners;
 pub mod config;
+pub mod device;
 pub mod models;
 pub mod modules;
 pub mod pause;

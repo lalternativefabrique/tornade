@@ -12,6 +12,7 @@ name = "tts_engine"
 [features]
 default = []
 quantized = []
+cuda = ["candle-core/cuda", "candle-nn/cuda", "candle-transformers/cuda"]
 
 [dependencies]
 candle-core.workspace = true

@@ -14,8 +14,14 @@ fn main() -> anyhow::Result<()> {
         anyhow::bail!("usage: batch_bench <variant> <voice> <streams> [out.wav]");
     }
     let (variant, voice, n) = (&args[1], &args[2], args[3].parse::<usize>()?);
+    let text = match std::env::var("BENCH_TEXT") {
+        Ok(path) => std::fs::read_to_string(path)?,
+        Err(_) => TEXT.to_string(),
+    };
+    let text = text.trim();
 
-    let mut model = TTSModel::load(variant)?;
+    let device = tts_engine::device::from_env()?;
+    let mut model = TTSModel::load_on(variant, &device)?;
     if std::env::var("TTS_Q8").is_ok() {
         model.quantize_batch_path()?;
     }
@@ -25,7 +31,7 @@ fn main() -> anyhow::Result<()> {
 
     let t0 = Instant::now();
     for _ in 0..n {
-        batcher.add(TEXT, &state)?;
+        batcher.add(text, &state)?;
     }
     let prompt_s = t0.elapsed().as_secs_f64();
 
@@ -65,9 +71,11 @@ fn main() -> anyhow::Result<()> {
     let p95 = step_ms[step_ms.len() * 95 / 100];
 
     println!(
-        "streams={n} prompt_s={prompt_s:.2} steps={steps} wall_s={wall:.2} step_ms_p50={p50:.1} \
+        "device={} chars={} streams={n} prompt_s={prompt_s:.2} steps={steps} wall_s={wall:.2} step_ms_p50={p50:.1} \
          step_ms_p95={p95:.1} audio_total_s={audio_total:.1} rtf_per_stream={:.3} \
          first_audio_ms={:.0} lm_ms_per_step={:.1} mimi_ms_per_step={:.1}",
+        tts_engine::device::describe(&device),
+        text.chars().count(),
         wall / audio_min,
         first_ms[0].unwrap_or(0.0),
         lm_ms / steps as f64,
