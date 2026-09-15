@@ -136,10 +136,10 @@ from the store. For a text that will be heard more than once — a published
 page — where paying the whole synthesis up front is amortised, and where the
 first visitor should not be the one who triggers it.
 
-Piper synthesizes one utterance at a time, so a reading nobody asked for
-occupies the voice while someone who pressed play waits behind it. Reach for
-`/speak/prime` unless the reading is genuinely expected to be heard more than
-once.
+The speech server serves a bounded number of readings at once, so a reading
+nobody asked for holds a slot someone who pressed play may be refused. Reach
+for `/speak/prime` unless the reading is genuinely expected to be heard more
+than once.
 
 ### `POST /speak/exists`
 
@@ -159,7 +159,7 @@ the whole file to answer yes or no.
 | `FETCH_PROXY` | residential endpoint `/fetch` and its render fallback read through; unset goes direct, unparseable is fatal |
 | `PIPER_URL` | required by `/speak`, else `503` |
 | `TTS_MODEL`, `TTS_VOICE`, `TTS_FORMAT` | voice selection; format must be frame-based (`mp3`, `opus`, `aac`, `flac`) |
-| `TTS_MAX_CHARS` | text per request, default 120 |
+| `TTS_MAX_CHARS` | text per request, default 4000 |
 | `AUDIO_OPENING_CHARS` | how much of a text counts as its opening, default 800 |
 | `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION` | where readings are kept; unset disables the cache, half-set is fatal |
 | `TTS_CONCURRENCY` | pieces read at once, default 1 |
@@ -194,7 +194,7 @@ processes, since `--proxy-server` is process-wide.
 An unconfigured backend disables its endpoint rather than degrading silently.
 
 `AUDIO_OPENING_CHARS` is not `TTS_MAX_CHARS`, though both count characters.
-The latter is how small a reading is cut for Piper to work on; the former is
+The latter is how much text goes to the speech server at once; the former is
 how much of a text counts as its opening. They must not be conflated: the
 primer and the reader each split the text themselves, and two different sizes
 have the halves meet somewhere other than the same cut.
@@ -204,15 +204,17 @@ paid for again, which is what it did before there was a bucket. A half-set
 configuration is fatal instead: someone meant to have a cache, and starting
 without one would hide that behind a bill nobody notices until it arrives.
 
-`TTS_MAX_CHARS` and `TTS_CONCURRENCY` are the latency levers, and a
-self-hosted Piper wants the opposite of a hosted endpoint. It serializes
-synthesis — one utterance at a time per process — so reading pieces
-concurrently only queues them, and every piece in the queue delays the one the
-listener is actually waiting for. Measured against it on a 1200-character
-text, concurrency 1 returns first audio in 2.2s against 3.9s at 4, for 6% more
-total time; 120 characters a piece beats both 80 (more per-request overhead,
-5.7s) and 200 (a longer first piece, 3.4s). Raise the concurrency only for a
-backend that synthesizes in parallel.
+`TTS_MAX_CHARS` used to be the latency lever: Piper answered a request only
+once it had read all of it, so a short piece was the only way to hear anything
+early, and 120 characters was the measured optimum. The server in `apps/tts`
+streams each sentence as it is read and, asked with
+`Accept: application/x-lalter-audio-frames`, delimits them the way vvaves
+delimits them for the browser — so a request can carry the whole text, the
+first sentence is heard after about two seconds whatever the length, and
+fewer requests mean fewer prompt prefills and fewer seams. Measured on a
+1200-character text, one request against twelve of 100 characters: first
+sentence at 2.0s against 2.5s, the same total. `TTS_CONCURRENCY` stays at 1:
+one request now covers a reading, and the server takes one slot per request.
 
 ## Who may speak
 
