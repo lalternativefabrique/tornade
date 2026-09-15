@@ -4,23 +4,25 @@ mod lame;
 mod metrics;
 
 use std::collections::HashMap;
+use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Instant;
 
-use axum::body::Body;
+use axum::body::{Body, Bytes};
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use clap::Parser;
+use futures_util::stream;
 use serde::Deserialize;
 use tts_engine::TTSModel;
 use tts_engine::voice_state::ModelState;
 
 use crate::encode::Format;
-use crate::engine::{Class, EngineHandle, Job};
+use crate::engine::{Class, EngineHandle, Job, Piece};
 use crate::metrics::Metrics;
 
 #[derive(Parser, Debug)]
@@ -210,18 +212,157 @@ async fn speech(
             .into_response();
     }
 
-    let mut pcm: Vec<i16> = Vec::new();
-    while let Some(frame) = rx.recv().await {
-        pcm.extend_from_slice(&frame);
-    }
-    let pcm = encode::trim_leading_silence(pcm, state.engine.sample_rate);
-    if pcm.is_empty() {
-        return error(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "the reading produced no audio",
-        );
-    }
+    let first = loop {
+        match rx.recv().await {
+            Some(Piece::Frame(frame)) => break frame,
+            Some(Piece::SegmentEnd) => continue,
+            None => {
+                return error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "the reading produced no audio",
+                );
+            }
+        }
+    };
     let sample_rate = state.engine.sample_rate;
+    let framed = headers
+        .get(header::ACCEPT)
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|v| v.contains(FRAMES_CONTENT_TYPE));
+    match encode::Chunked::new(format, sample_rate) {
+        Ok(Some(chunked)) => stream(chunked, first, rx, format, sample_rate, framed),
+        Ok(None) => buffered(first, rx, format, sample_rate).await,
+        Err(e) => error(StatusCode::INTERNAL_SERVER_ERROR, format!("encode: {e}")),
+    }
+}
+
+/// Each sentence as its own length-prefixed, independently decodable piece:
+/// a big-endian u32 byte count then that many bytes. Asked for with
+/// `Accept`, for a client that decodes pieces one at a time.
+const FRAMES_CONTENT_TYPE: &str = "application/x-lalter-audio-frames";
+
+fn framed(piece: Vec<u8>) -> Bytes {
+    let mut out = Vec::with_capacity(4 + piece.len());
+    out.extend_from_slice(&(piece.len() as u32).to_be_bytes());
+    out.extend(piece);
+    Bytes::from(out)
+}
+
+/// Sends the reading as it is made. Every sentence is encoded on its own,
+/// so what a listener holds at any point is a valid stream; without framing
+/// the bytes go out as soon as they exist, with it each sentence goes out
+/// whole. A listener who leaves drops the body, which drops the receiver,
+/// which the scheduler sees.
+fn stream(
+    chunked: encode::Chunked,
+    first: Vec<i16>,
+    mut rx: tokio::sync::mpsc::UnboundedReceiver<Piece>,
+    format: Format,
+    sample_rate: u32,
+    framed_pieces: bool,
+) -> Response {
+    let (tx, out) = tokio::sync::mpsc::channel::<Bytes>(16);
+    tokio::spawn(async move {
+        let mut enc = chunked;
+        let mut fed = false;
+        let mut segment: Vec<u8> = Vec::new();
+        let mut next = Some(Piece::Frame(first));
+        loop {
+            let piece = match next.take() {
+                Some(piece) => piece,
+                None => match rx.recv().await {
+                    Some(piece) => piece,
+                    None => break,
+                },
+            };
+            let (bytes, end) = match piece {
+                Piece::Frame(frame) => {
+                    fed = true;
+                    (enc.push(&frame), false)
+                }
+                Piece::SegmentEnd => {
+                    let fresh = match encode::Chunked::new(format, sample_rate) {
+                        Ok(Some(fresh)) => fresh,
+                        Ok(None) => return,
+                        Err(e) => {
+                            tracing::error!(error = %e, "encoder reset failed; cutting the stream");
+                            return;
+                        }
+                    };
+                    fed = false;
+                    (std::mem::replace(&mut enc, fresh).finish(), true)
+                }
+            };
+            let bytes = match bytes {
+                Ok(bytes) => bytes,
+                Err(e) => {
+                    tracing::error!(error = %e, "encode failed; cutting the stream");
+                    return;
+                }
+            };
+            let out = if framed_pieces {
+                segment.extend(bytes);
+                if !end || segment.is_empty() {
+                    continue;
+                }
+                framed(std::mem::take(&mut segment))
+            } else {
+                if bytes.is_empty() {
+                    continue;
+                }
+                Bytes::from(bytes)
+            };
+            if tx.send(out).await.is_err() {
+                return;
+            }
+        }
+        if !fed {
+            return;
+        }
+        let tail = match enc.finish() {
+            Ok(tail) => tail,
+            Err(e) => {
+                tracing::error!(error = %e, "encode flush failed");
+                return;
+            }
+        };
+        segment.extend(tail);
+        if segment.is_empty() {
+            return;
+        }
+        let out = if framed_pieces {
+            framed(segment)
+        } else {
+            Bytes::from(segment)
+        };
+        let _ = tx.send(out).await;
+    });
+    let body = Body::from_stream(stream::unfold(out, |mut out| async move {
+        out.recv()
+            .await
+            .map(|bytes| (Ok::<_, Infallible>(bytes), out))
+    }));
+    let content_type = if framed_pieces {
+        FRAMES_CONTENT_TYPE
+    } else {
+        format.mime()
+    };
+    (StatusCode::OK, [(header::CONTENT_TYPE, content_type)], body).into_response()
+}
+
+async fn buffered(
+    first: Vec<i16>,
+    mut rx: tokio::sync::mpsc::UnboundedReceiver<Piece>,
+    format: Format,
+    sample_rate: u32,
+) -> Response {
+    let mut pcm = first;
+    while let Some(piece) = rx.recv().await {
+        if let Piece::Frame(frame) = piece {
+            pcm.extend_from_slice(&frame);
+        }
+    }
+    let pcm = encode::trim_leading_silence(pcm, sample_rate);
     let encoded =
         tokio::task::spawn_blocking(move || encode::encode(format, &pcm, sample_rate)).await;
     match encoded {

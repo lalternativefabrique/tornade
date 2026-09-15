@@ -25,12 +25,19 @@ pub enum Class {
     Background,
 }
 
+/// What a reading emits: its frames, and a mark after the last frame of each
+/// sentence so the encoder can close one piece and open the next.
+pub enum Piece {
+    Frame(Vec<i16>),
+    SegmentEnd,
+}
+
 pub struct Job {
     pub segments: Vec<String>,
     pub voice: Arc<ModelState>,
     pub class: Class,
-    /// Receives each frame's samples; dropped when the reading is complete.
-    pub frames: tokio::sync::mpsc::UnboundedSender<Vec<i16>>,
+    /// Receives the reading; dropped when it is complete.
+    pub frames: tokio::sync::mpsc::UnboundedSender<Piece>,
     pub submitted: Instant,
 }
 
@@ -265,7 +272,7 @@ fn run(
                 }
                 let mut delivered = true;
                 for chunk in a.pending.drain(..) {
-                    if a.job.frames.send(chunk).is_err() {
+                    if a.job.frames.send(Piece::Frame(chunk)).is_err() {
                         delivered = false;
                         break;
                     }
@@ -279,6 +286,9 @@ fn run(
             }
             if !frame.done {
                 active.insert(frame.id, a);
+                continue;
+            }
+            if a.job.frames.send(Piece::SegmentEnd).is_err() {
                 continue;
             }
             a.segment += 1;

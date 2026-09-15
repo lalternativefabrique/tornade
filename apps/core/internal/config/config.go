@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/lalternative/packages/go/tts"
 )
 
 type Config struct {
@@ -104,20 +106,20 @@ func Load() Config {
 		TTSModel:  os.Getenv("TTS_MODEL"),
 		TTSVoice:  os.Getenv("TTS_VOICE"),
 		TTSFormat: env("TTS_FORMAT", "mp3"),
-		// Piper has no per-request limit and is slower per character than a
-		// hosted endpoint, so the hosted default would read a whole page as a
-		// single utterance and nothing could be streamed until it was done.
-		TTSMaxChars: envInt("TTS_MAX_CHARS", 120),
-		// A self-hosted Piper serializes synthesis — one utterance at a time
-		// per process — so concurrent requests queue rather than overlap, and
-		// each one only delays the piece the listener is waiting for. Measured
-		// against it, concurrency 1 returns first audio in 2.4s where 4 takes
-		// 3.9s, for 6% more total time. Raise it only for a backend that
-		// actually synthesizes in parallel.
+		// WholeText sends every text as one request: the speech server takes any
+		// length, cuts by sentence itself and streams each one as it is read,
+		// so a cut here only adds requests, and each one a prompt prefill and
+		// a seam. A positive value cuts at that many characters, which a
+		// hosted endpoint would need; 120 was the measured optimum when Piper
+		// answered a request only once it had read all of it.
+		TTSMaxChars: envInt("TTS_MAX_CHARS", tts.WholeText),
+		// One request now covers a reading, and the speech server takes one
+		// slot per request: reading pieces concurrently would spend a
+		// listener's slots on their own text.
 		TTSConcurrency: envInt("TTS_CONCURRENCY", 1),
 
 		// Not TTSMaxChars, though both are a number of characters. That one is
-		// how small a reading is cut for Piper to work on; this is how much of
+		// how much text goes to the speech server at once; this is how much of
 		// a text counts as its opening, and the primer and the reader must
 		// agree on it exactly — they each split the text themselves, and a
 		// disagreement has the two halves meet somewhere other than the same

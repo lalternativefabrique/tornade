@@ -16,7 +16,7 @@ require (
 	github.com/lalternative/packages/go/fileguard v0.1.0
 	github.com/lalternative/packages/go/search v0.3.0
 	github.com/lalternative/packages/go/svcauth v0.1.0
-	github.com/lalternative/packages/go/tts v0.4.0
+	github.com/lalternative/packages/go/tts v0.6.0
 	github.com/lalternativefabrique/vvaves v0.0.0
 	github.com/nats-io/nats-server/v2 v2.14.6
 	github.com/nats-io/nats.go v1.52.0
