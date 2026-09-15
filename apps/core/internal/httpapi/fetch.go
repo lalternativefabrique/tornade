@@ -16,13 +16,22 @@ type fetchRequest struct {
 	MaxRunes int    `json:"max_runes"`
 	Render   *bool  `json:"render"`
 	Paginate int    `json:"paginate"`
+	// Format picks which rendering of the page comes back: "text" flattens
+	// it, "markdown" keeps headings, tables and links. Empty returns both.
+	Format string `json:"format"`
 }
 
 type fetchResponse struct {
-	Title string   `json:"title"`
-	Text  string   `json:"text,omitempty"`
-	Pages []string `json:"pages,omitempty"`
+	Title    string   `json:"title"`
+	Text     string   `json:"text,omitempty"`
+	Markdown string   `json:"markdown,omitempty"`
+	Pages    []string `json:"pages,omitempty"`
 }
+
+const (
+	formatText     = "text"
+	formatMarkdown = "markdown"
+)
 
 const defaultMaxRunes = 6000
 
@@ -40,6 +49,10 @@ func handleFetch(d Deps) http.HandlerFunc {
 		}
 		if msg := validateURL(req.URL, d.AllowPrivateFetch); msg != "" {
 			writeError(w, http.StatusBadRequest, msg)
+			return
+		}
+		if req.Format != "" && req.Format != formatText && req.Format != formatMarkdown {
+			writeError(w, http.StatusBadRequest, "format must be text or markdown")
 			return
 		}
 
@@ -62,14 +75,29 @@ func handleFetch(d Deps) http.HandlerFunc {
 			return
 		}
 
-		out := fetchResponse{Title: page.Title}
-		if req.Paginate > 0 {
-			out.Pages = page.Paginate(req.Paginate)
-		} else {
-			out.Text = page.Text
-		}
-		writeJSON(w, http.StatusOK, out)
+		writeJSON(w, http.StatusOK, fetchResponseFor(page, req))
 	}
+}
+
+// fetchResponseFor shapes the page as asked. Pages always come from one
+// rendering: the markdown one when it was asked for, the text otherwise.
+func fetchResponseFor(page *fetch.Page, req fetchRequest) fetchResponse {
+	out := fetchResponse{Title: page.Title}
+	if req.Paginate > 0 {
+		paged := page
+		if req.Format == formatMarkdown {
+			paged = &fetch.Page{Text: page.Markdown}
+		}
+		out.Pages = paged.Paginate(req.Paginate)
+		return out
+	}
+	if req.Format != formatMarkdown {
+		out.Text = page.Text
+	}
+	if req.Format != formatText {
+		out.Markdown = page.Markdown
+	}
+	return out
 }
 
 // validateURL answers why a URL may not be fetched, or "" when it may.

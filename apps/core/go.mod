@@ -14,7 +14,7 @@ require (
 	github.com/lalternative/packages/go/audioreader v0.2.1
 	github.com/lalternative/packages/go/eda v0.8.0
 	github.com/lalternative/packages/go/fileguard v0.1.0
-	github.com/lalternative/packages/go/search v0.3.0
+	github.com/lalternative/packages/go/search v0.4.0
 	github.com/lalternative/packages/go/svcauth v0.1.0
 	github.com/lalternative/packages/go/tts v0.6.0
 	github.com/lalternativefabrique/vvaves v0.0.0
@@ -28,7 +28,7 @@ require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
-	github.com/andybalholm/cascadia v1.3.3 // indirect
+	github.com/andybalholm/cascadia v1.3.4 // indirect
 	github.com/antithesishq/antithesis-sdk-go v0.7.2-default-no-op // indirect
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.20 // indirect

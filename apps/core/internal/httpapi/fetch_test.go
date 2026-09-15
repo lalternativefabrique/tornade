@@ -89,6 +89,94 @@ func TestFetchServesAnOrdinaryArticle(t *testing.T) {
 	}
 }
 
+const tableArticleHTML = `<html><head><title>Exemple — offres</title></head><body><article>
+<h2>Tarifs</h2>
+<p>Nos offres sont pensées pour accompagner chaque équipe, de la première expérimentation
+au déploiement en production sur des volumes importants, avec un support adapté.</p>
+<table>
+<tr><th>Plan</th><th>Prix</th></tr>
+<tr><td>Pro</td><td>49 €</td></tr>
+</table>
+<p>Voir la <a href="/pricing">grille complète</a> pour le détail des options et des
+engagements de disponibilité qui accompagnent chacun des plans proposés ici.</p>
+</article></body></html>`
+
+func fetchJSON(t *testing.T, body string) (int, map[string]any) {
+	t.Helper()
+	d := baseDeps()
+	d.Unguarded = true
+	d.AllowPrivateFetch = true
+	rec := post(t, httpapi.New(d), "/fetch", body)
+	var out map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+		t.Fatalf("decode %s: %v", rec.Body, err)
+	}
+	return rec.Code, out
+}
+
+func TestFetchReturnsBothRenderingsByDefault(t *testing.T) {
+	origin := serveHTML(t, tableArticleHTML)
+
+	code, out := fetchJSON(t, `{"url":"`+origin.URL+`"}`)
+	if code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body %v", code, out)
+	}
+	text, _ := out["text"].(string)
+	md, _ := out["markdown"].(string)
+	if strings.Contains(text, "|") || !strings.Contains(text, "49 €") {
+		t.Errorf("text should be flat, got %q", text)
+	}
+	if !strings.Contains(md, "| Pro") || !strings.Contains(md, "[grille complète](") {
+		t.Errorf("markdown should keep the table and the link, got %q", md)
+	}
+}
+
+func TestFetchFormatSelectsOneRendering(t *testing.T) {
+	origin := serveHTML(t, tableArticleHTML)
+
+	_, out := fetchJSON(t, `{"url":"`+origin.URL+`","format":"markdown"}`)
+	if _, has := out["text"]; has {
+		t.Error("format markdown should omit text")
+	}
+	if _, has := out["markdown"]; !has {
+		t.Error("format markdown should carry markdown")
+	}
+
+	_, out = fetchJSON(t, `{"url":"`+origin.URL+`","format":"text"}`)
+	if _, has := out["markdown"]; has {
+		t.Error("format text should omit markdown")
+	}
+	if _, has := out["text"]; !has {
+		t.Error("format text should carry text")
+	}
+}
+
+func TestFetchPaginatesTheMarkdownWhenAsked(t *testing.T) {
+	origin := serveHTML(t, tableArticleHTML)
+
+	_, out := fetchJSON(t, `{"url":"`+origin.URL+`","format":"markdown","paginate":80}`)
+	pages, _ := out["pages"].([]any)
+	if len(pages) < 2 {
+		t.Fatalf("expected several pages, got %v", out)
+	}
+	joined := ""
+	for _, p := range pages {
+		joined += p.(string)
+	}
+	if !strings.Contains(joined, "| Pro") {
+		t.Errorf("pages should be cut from the markdown, got %q", joined)
+	}
+}
+
+func TestFetchRefusesAnUnknownFormat(t *testing.T) {
+	origin := serveHTML(t, tableArticleHTML)
+
+	code, _ := fetchJSON(t, `{"url":"`+origin.URL+`","format":"html"}`)
+	if code != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", code)
+	}
+}
+
 // /fetch and /render take a URL from their caller and report what came back,
 // so without an address check they read the internal network one request at
 // a time. The reason is never named to the caller: answering "is this
