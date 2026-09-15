@@ -9,7 +9,6 @@ import (
 
 	"github.com/lalternative/packages/go/search/fetch"
 
-	"github.com/lalternativefabrique/vvaves/core/internal/challenge"
 	"github.com/lalternativefabrique/vvaves/core/internal/crawl"
 )
 
@@ -38,14 +37,7 @@ func (f pageFetcher) Fetch(ctx context.Context, url string) (*fetch.Page, error)
 	if maxRunes <= 0 {
 		maxRunes = f.d.CrawlMaxRunes
 	}
-	page, err := fetch.FetchWithFallback(ctx, url, f.d.Renderer, maxRunes, f.d.Cache)
-	if err != nil {
-		return nil, err
-	}
-	if err := challenge.Check(page); err != nil {
-		return nil, err
-	}
-	return page, nil
+	return readPage(ctx, f.d, url, f.d.Renderer, maxRunes)
 }
 
 // Crawler is the crawl service over d's store and queue. main runs its Run

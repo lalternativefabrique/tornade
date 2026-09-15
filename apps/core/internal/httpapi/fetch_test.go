@@ -2,6 +2,7 @@ package httpapi_test
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -224,5 +225,57 @@ func TestAllowPrivateFetchStillRefusesANonHTTPScheme(t *testing.T) {
 	d.Renderer = &stubRenderer{}
 	if rec := post(t, httpapi.New(d), "/render", `{"url":"file:///etc/passwd"}`); rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want 400", rec.Code)
+	}
+}
+
+// A publisher that serves a bot check to the deployment's own address and
+// the article to a residential one: the check is the refusal, and the page
+// is read again through the proxy.
+func TestFetchRetriesThroughTheProxyWhenAChallengeIsServed(t *testing.T) {
+	var direct, proxied int
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Via-Proxy") == "" {
+			direct++
+			w.Write([]byte(cloudflareChallengeHTML))
+			return
+		}
+		proxied++
+		w.Write([]byte(articleHTML))
+	}))
+	t.Cleanup(origin.Close)
+	proxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		req, _ := http.NewRequest(http.MethodGet, r.URL.String(), nil)
+		req.Header.Set("X-Via-Proxy", "1")
+		resp, err := http.DefaultTransport.RoundTrip(req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		defer resp.Body.Close()
+		w.WriteHeader(resp.StatusCode)
+		io.Copy(w, resp.Body)
+	}))
+	t.Cleanup(proxy.Close)
+	if err := fetch.UseProxy(proxy.URL); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { fetch.UseProxy("") })
+
+	d := baseDeps()
+	d.Unguarded = true
+	d.AllowPrivateFetch = true
+	d.Cache = challenge.GuardCache(fetch.NewMemoryCache(time.Minute))
+	h := httpapi.New(d)
+
+	rec := post(t, h, "/fetch", `{"url":"`+origin.URL+`/article"}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body %s", rec.Code, rec.Body)
+	}
+	if direct != 1 || proxied != 1 {
+		t.Errorf("direct %d proxied %d, want one try each", direct, proxied)
+	}
+	rec = post(t, h, "/fetch", `{"url":"`+origin.URL+`/next"}`)
+	if rec.Code != http.StatusOK || direct != 1 || proxied != 2 {
+		t.Errorf("second fetch: status %d direct %d proxied %d, want the host remembered", rec.Code, direct, proxied)
 	}
 }

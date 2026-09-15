@@ -14,7 +14,7 @@ require (
 	github.com/lalternative/packages/go/audioreader v0.2.1
 	github.com/lalternative/packages/go/eda v0.8.0
 	github.com/lalternative/packages/go/fileguard v0.1.0
-	github.com/lalternative/packages/go/search v0.7.1
+	github.com/lalternative/packages/go/search v0.8.0
 	github.com/lalternative/packages/go/svcauth v0.1.0
 	github.com/lalternative/packages/go/tts v0.6.0
 	github.com/lalternativefabrique/vvaves v0.0.0
