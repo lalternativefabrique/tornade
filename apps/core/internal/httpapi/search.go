@@ -3,9 +3,16 @@ package httpapi
 import (
 	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/lalternative/packages/go/search"
+)
+
+const (
+	maxContentResults   = 10
+	defaultContentRunes = 4000
+	contentDeadline     = 15 * time.Second
 )
 
 type searchRequest struct {
@@ -16,6 +23,11 @@ type searchRequest struct {
 	TimeRange  string   `json:"time_range"`
 	Page       int      `json:"page"`
 	DeadlineMS int64    `json:"deadline_ms"`
+	// Content reads the first N results' pages into the response, so one
+	// call gives an agent what it would otherwise fetch one by one.
+	Content      int    `json:"content"`
+	ContentRunes int    `json:"content_runes"`
+	Format       string `json:"format"`
 }
 
 type searchResponse struct {
@@ -41,6 +53,10 @@ type result struct {
 	Favicon     string  `json:"favicon,omitempty"`
 
 	OpenGraph *openGraph `json:"open_graph,omitempty"`
+
+	Text         string `json:"text,omitempty"`
+	Markdown     string `json:"markdown,omitempty"`
+	ContentError string `json:"content_error,omitempty"`
 }
 
 type openGraph struct {
@@ -101,6 +117,13 @@ func handleSearch(d Deps) http.HandlerFunc {
 			writeError(w, http.StatusBadRequest, "q is required")
 			return
 		}
+		if req.Format != "" && req.Format != formatText && req.Format != formatMarkdown {
+			writeError(w, http.StatusBadRequest, "format must be text or markdown")
+			return
+		}
+		if req.Content > maxContentResults {
+			req.Content = maxContentResults
+		}
 
 		categories, err := resolveCategories(d, req.Categories)
 		if err != nil {
@@ -136,12 +159,55 @@ func handleSearch(d Deps) http.HandlerFunc {
 			return
 		}
 
+		results := toResults(res.Results)
+		if req.Content > 0 {
+			attachContent(r.Context(), d, results, req)
+		}
 		writeJSON(w, http.StatusOK, searchResponse{
 			Query:   res.Query,
-			Results: toResults(res.Results),
+			Results: results,
 			Partial: res.Partial,
 		})
 	}
+}
+
+// attachContent reads the first req.Content results' pages in parallel,
+// each through the /fetch path, and writes what came back onto the result.
+// A page that fails or misses the deadline reports why on its own result
+// rather than failing the search.
+func attachContent(ctx context.Context, d Deps, results []result, req searchRequest) {
+	ctx, cancel := context.WithTimeout(ctx, contentDeadline)
+	defer cancel()
+
+	maxRunes := req.ContentRunes
+	if maxRunes <= 0 {
+		maxRunes = defaultContentRunes
+	}
+	f := pageFetcher{d: d, maxRunes: maxRunes}
+
+	n := req.Content
+	if n > len(results) {
+		n = len(results)
+	}
+	var wg sync.WaitGroup
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func(r *result) {
+			defer wg.Done()
+			page, err := f.Fetch(ctx, r.URL)
+			if err != nil {
+				r.ContentError = err.Error()
+				return
+			}
+			if req.Format != formatMarkdown {
+				r.Text = page.Text
+			}
+			if req.Format != formatText {
+				r.Markdown = page.Markdown
+			}
+		}(&results[i])
+	}
+	wg.Wait()
 }
 
 func resolveCategories(d Deps, requested []string) ([]search.Category, error) {

@@ -26,14 +26,19 @@ const (
 // address check, cache, renderer and challenge check, so a crawl can reach
 // nothing a single fetch could not.
 type pageFetcher struct {
-	d Deps
+	d        Deps
+	maxRunes int
 }
 
 func (f pageFetcher) Fetch(ctx context.Context, url string) (*fetch.Page, error) {
 	if msg := validateURL(url, f.d.AllowPrivateFetch); msg != "" {
 		return nil, errors.New(msg)
 	}
-	page, err := fetch.FetchWithFallback(ctx, url, f.d.Renderer, f.d.CrawlMaxRunes, f.d.Cache)
+	maxRunes := f.maxRunes
+	if maxRunes <= 0 {
+		maxRunes = f.d.CrawlMaxRunes
+	}
+	page, err := fetch.FetchWithFallback(ctx, url, f.d.Renderer, maxRunes, f.d.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +51,7 @@ func (f pageFetcher) Fetch(ctx context.Context, url string) (*fetch.Page, error)
 // Crawler is the crawl service over d's store and queue. main runs its Run
 // loop; the handlers build the same value per request, it holds no state.
 func Crawler(d Deps) *crawl.Service {
-	return &crawl.Service{Store: d.CrawlStore, Queue: d.CrawlQueue, Fetcher: pageFetcher{d}, MaxRunes: d.CrawlMaxRunes}
+	return &crawl.Service{Store: d.CrawlStore, Queue: d.CrawlQueue, Fetcher: pageFetcher{d: d}, MaxRunes: d.CrawlMaxRunes}
 }
 
 type scopeRequest struct {
@@ -118,7 +123,7 @@ func handleMap(d Deps) http.HandlerFunc {
 		defer cancel()
 
 		useSitemap := req.Sitemap == nil || *req.Sitemap
-		links := crawl.Map(ctx, scope, pageFetcher{d}, limit, useSitemap)
+		links := crawl.Map(ctx, scope, pageFetcher{d: d}, limit, useSitemap)
 		writeJSON(w, http.StatusOK, mapResponse{URL: scope.Start, Links: links})
 	}
 }
