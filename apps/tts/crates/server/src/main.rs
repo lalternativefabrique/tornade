@@ -197,6 +197,7 @@ async fn speech(
     }
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
     let job = Job {
+        id: 0,
         segments,
         voice: voice.clone(),
         class,

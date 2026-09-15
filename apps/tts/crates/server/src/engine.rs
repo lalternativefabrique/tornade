@@ -7,7 +7,7 @@
 
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::time::{Duration, Instant};
 
@@ -33,6 +33,8 @@ pub enum Piece {
 }
 
 pub struct Job {
+    /// Names the reading in the logs; assigned at submission.
+    pub id: u64,
     pub segments: Vec<String>,
     pub voice: Arc<ModelState>,
     pub class: Class,
@@ -51,9 +53,12 @@ const MAX_ATTEMPTS: usize = 4;
 struct Active {
     job: Job,
     segment: usize,
+    started_at: Instant,
     first_frame_at: Option<Instant>,
     attempt: usize,
     frames_seen: usize,
+    samples_sent: usize,
+    false_starts: usize,
     peak_db: f32,
     pending: Vec<Vec<i16>>,
 }
@@ -63,12 +68,24 @@ impl Active {
         Self {
             job,
             segment: 0,
+            started_at: Instant::now(),
             first_frame_at: None,
             attempt: 1,
             frames_seen: 0,
+            samples_sent: 0,
+            false_starts: 0,
             peak_db: f32::NEG_INFINITY,
             pending: Vec::new(),
         }
+    }
+
+    fn excerpt(&self) -> String {
+        let text = &self.job.segments[self.segment];
+        let mut cut: String = text.chars().take(60).collect();
+        if cut.len() < text.len() {
+            cut.push('…');
+        }
+        cut
     }
 
     fn reset_segment(&mut self) {
@@ -86,6 +103,7 @@ fn rms_db(samples: &[f32]) -> f32 {
 #[derive(Clone)]
 pub struct EngineHandle {
     jobs: Sender<Job>,
+    next_id: Arc<AtomicU64>,
     pub metrics: Arc<Metrics>,
     pub live_slots: usize,
     pub background_slots: usize,
@@ -95,7 +113,8 @@ pub struct EngineHandle {
 impl EngineHandle {
     /// Refuses at once when no slot of the job's class is free, so the caller
     /// can answer with a retry hint instead of holding the connection.
-    pub fn submit(&self, job: Job) -> Result<(), Job> {
+    pub fn submit(&self, mut job: Job) -> Result<(), Job> {
+        job.id = self.next_id.fetch_add(1, Ordering::Relaxed);
         let m = &self.metrics;
         let (active, queued, slots) = match job.class {
             Class::Live => (&m.live_active, &m.live_queued, self.live_slots),
@@ -105,10 +124,31 @@ impl EngineHandle {
                 self.background_slots,
             ),
         };
-        if active.load(Ordering::Relaxed) + queued.load(Ordering::Relaxed) >= slots {
+        let (n_active, n_queued) = (
+            active.load(Ordering::Relaxed),
+            queued.load(Ordering::Relaxed),
+        );
+        if n_active + n_queued >= slots {
             m.rejected.fetch_add(1, Ordering::Relaxed);
+            tracing::warn!(
+                job = job.id,
+                class = ?job.class,
+                active = n_active,
+                queued = n_queued,
+                slots,
+                "refused: every slot is busy"
+            );
             return Err(job);
         }
+        tracing::info!(
+            job = job.id,
+            class = ?job.class,
+            segments = job.segments.len(),
+            chars = job.segments.iter().map(|s| s.chars().count()).sum::<usize>(),
+            active = n_active,
+            queued = n_queued,
+            "admitted"
+        );
         queued.fetch_add(1, Ordering::Relaxed);
         m.admitted.fetch_add(1, Ordering::Relaxed);
         self.jobs.send(job).map_err(|e| {
@@ -129,6 +169,7 @@ pub fn spawn(
     let (tx, rx) = mpsc::channel();
     let handle = EngineHandle {
         jobs: tx,
+        next_id: Arc::new(AtomicU64::new(1)),
         metrics: metrics.clone(),
         live_slots,
         background_slots,
@@ -153,6 +194,9 @@ fn run(
     let mut background: VecDeque<Job> = VecDeque::new();
     let mut active: HashMap<StreamId, Active> = HashMap::new();
     let sample_rate = batcher.model().sample_rate as f64;
+    let mut steps: u64 = 0;
+    let mut step_ms_window = 0.0;
+    const REPORT_EVERY: u64 = 250;
 
     loop {
         let idle = active.is_empty();
@@ -221,7 +265,24 @@ fn run(
                 continue;
             }
         };
-        metrics.step_ms.observe(t0.elapsed().as_secs_f64() * 1000.0);
+        let step_ms = t0.elapsed().as_secs_f64() * 1000.0;
+        metrics.step_ms.observe(step_ms);
+        steps += 1;
+        step_ms_window += step_ms;
+        if steps.is_multiple_of(REPORT_EVERY) {
+            tracing::info!(
+                active = active.len(),
+                live = active
+                    .values()
+                    .filter(|a| a.job.class == Class::Live)
+                    .count(),
+                queued_live = live.len(),
+                queued_background = background.len(),
+                step_ms_mean = step_ms_window / REPORT_EVERY as f64,
+                "engine"
+            );
+            step_ms_window = 0.0;
+        }
 
         let mut produced = 0.0;
         for frame in frames {
@@ -242,11 +303,15 @@ fn run(
             let silent_end = frame.done && a.peak_db < FALSE_START_DB;
             if (silent_start || silent_end) && a.attempt < MAX_ATTEMPTS {
                 tracing::warn!(
+                    job = a.job.id,
+                    segment = a.segment,
                     attempt = a.attempt,
                     peak_db = a.peak_db,
                     frames = a.frames_seen,
+                    text = %a.excerpt(),
                     "false start, reading the segment again"
                 );
+                a.false_starts += 1;
                 if !frame.done {
                     let _ = batcher.remove(frame.id);
                 }
@@ -266,18 +331,31 @@ fn run(
             if speaking || a.frames_seen >= FALSE_START_FRAMES || frame.done {
                 if a.first_frame_at.is_none() {
                     a.first_frame_at = Some(Instant::now());
-                    metrics
-                        .first_audio_ms
-                        .observe(a.job.submitted.elapsed().as_secs_f64() * 1000.0);
+                    let first_audio_ms = a.job.submitted.elapsed().as_secs_f64() * 1000.0;
+                    metrics.first_audio_ms.observe(first_audio_ms);
+                    tracing::info!(
+                        job = a.job.id,
+                        first_audio_ms = first_audio_ms as u64,
+                        "first audio"
+                    );
                 }
                 let mut delivered = true;
                 for chunk in a.pending.drain(..) {
+                    let samples = chunk.len();
                     if a.job.frames.send(Piece::Frame(chunk)).is_err() {
                         delivered = false;
                         break;
                     }
+                    a.samples_sent += samples;
                 }
                 if !delivered {
+                    tracing::info!(
+                        job = a.job.id,
+                        segment = a.segment,
+                        audio_s = a.samples_sent as f64 / sample_rate,
+                        wall_s = a.started_at.elapsed().as_secs_f64(),
+                        "listener left, dropping the reading"
+                    );
                     if !frame.done {
                         let _ = batcher.remove(frame.id);
                     }
@@ -291,7 +369,24 @@ fn run(
             if a.job.frames.send(Piece::SegmentEnd).is_err() {
                 continue;
             }
+            tracing::debug!(
+                job = a.job.id,
+                segment = a.segment,
+                frames = a.frames_seen,
+                attempt = a.attempt,
+                "segment done"
+            );
             a.segment += 1;
+            if a.segment >= a.job.segments.len() {
+                tracing::info!(
+                    job = a.job.id,
+                    segments = a.job.segments.len(),
+                    audio_s = a.samples_sent as f64 / sample_rate,
+                    wall_s = a.started_at.elapsed().as_secs_f64(),
+                    false_starts = a.false_starts,
+                    "reading done"
+                );
+            }
             if a.segment < a.job.segments.len() {
                 a.attempt = 1;
                 a.reset_segment();
