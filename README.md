@@ -159,7 +159,7 @@ the whole file to answer yes or no.
 | `FETCH_PROXY` | residential endpoint `/fetch` and its render fallback read through; unset goes direct, unparseable is fatal |
 | `PIPER_URL` | required by `/speak`, else `503` |
 | `TTS_MODEL`, `TTS_VOICE`, `TTS_FORMAT` | voice selection; format must be frame-based (`mp3`, `opus`, `aac`, `flac`) |
-| `TTS_MAX_CHARS` | text per request, default 4000 |
+| `TTS_MAX_CHARS` | characters per request; the default, -1, sends each text whole |
 | `AUDIO_OPENING_CHARS` | how much of a text counts as its opening, default 800 |
 | `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION` | where readings are kept; unset disables the cache, half-set is fatal |
 | `TTS_CONCURRENCY` | pieces read at once, default 1 |
@@ -209,12 +209,12 @@ once it had read all of it, so a short piece was the only way to hear anything
 early, and 120 characters was the measured optimum. The server in `apps/tts`
 streams each sentence as it is read and, asked with
 `Accept: application/x-lalter-audio-frames`, delimits them the way vvaves
-delimits them for the browser — so a request can carry the whole text, the
-first sentence is heard after about two seconds whatever the length, and
-fewer requests mean fewer prompt prefills and fewer seams. Measured on a
+delimits them for the browser — so each text goes as one request whatever
+its length, the first sentence is heard after about two seconds, and there is
+no cut on this side to add prompt prefills and seams. Measured on a
 1200-character text, one request against twelve of 100 characters: first
 sentence at 2.0s against 2.5s, the same total. `TTS_CONCURRENCY` stays at 1:
-one request now covers a reading, and the server takes one slot per request.
+one request covers a reading, and the server takes one slot per request.
 
 ## Who may speak
 

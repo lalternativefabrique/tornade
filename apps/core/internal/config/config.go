@@ -96,12 +96,13 @@ func Load() Config {
 		TTSModel:  os.Getenv("TTS_MODEL"),
 		TTSVoice:  os.Getenv("TTS_VOICE"),
 		TTSFormat: env("TTS_FORMAT", "mp3"),
-		// The speech server streams every sentence as it is read, so a request
-		// can carry a whole text and still be heard on its first sentence;
-		// cutting smaller only adds requests, and each one a prompt prefill
-		// and a seam. This was 120 when Piper answered a request only once it
-		// had read all of it.
-		TTSMaxChars: envInt("TTS_MAX_CHARS", 4000),
+		// -1 sends every text as one request: the speech server takes any
+		// length, cuts by sentence itself and streams each one as it is read,
+		// so a cut here only adds requests, and each one a prompt prefill and
+		// a seam. A positive value cuts at that many characters, which a
+		// hosted endpoint would need; 120 was the measured optimum when Piper
+		// answered a request only once it had read all of it.
+		TTSMaxChars: envInt("TTS_MAX_CHARS", -1),
 		// One request now covers a reading, and the speech server takes one
 		// slot per request: reading pieces concurrently would spend a
 		// listener's slots on their own text.
