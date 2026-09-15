@@ -66,6 +66,18 @@ impl TTSModel {
         )
     }
 
+    /// Loads with the default generation parameters on `device`.
+    pub fn load_on(variant: &str, device: &Device) -> Result<Self> {
+        Self::load_with_params_device(
+            variant,
+            defaults::TEMPERATURE,
+            defaults::LSD_DECODE_STEPS,
+            defaults::EOS_THRESHOLD,
+            None,
+            device,
+        )
+    }
+
     /// Load with custom generation parameters
     pub fn load_with_params(
         variant: &str,
