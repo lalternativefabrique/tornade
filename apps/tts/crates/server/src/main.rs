@@ -47,6 +47,12 @@ struct Args {
     /// Readings nobody waits on; they only take slots the live ones leave.
     #[arg(long, env = "TTS_BACKGROUND_SLOTS", default_value_t = 2)]
     background_slots: usize,
+    /// Where the model runs: cpu, cuda or cuda:<index>. cuda needs a build
+    /// with the cuda feature.
+    #[arg(long, env = "TTS_DEVICE", default_value = "cpu")]
+    device: String,
+    /// int8 weights for the per-frame steps; only the CPU kernel has them,
+    /// on another device the weights stay as loaded.
     #[arg(long, env = "TTS_Q8", default_value_t = true, action = clap::ArgAction::Set)]
     q8: bool,
     /// Output gain in dB applied to every reading.
@@ -88,7 +94,8 @@ async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
 
     let t0 = Instant::now();
-    let mut model = TTSModel::load(&args.model)?;
+    let device = tts_engine::device::parse(&args.device)?;
+    let mut model = TTSModel::load_on(&args.model, &device)?;
     if let Some(temp) = args.temp {
         model.temp = temp;
     }
@@ -96,7 +103,8 @@ async fn main() -> anyhow::Result<()> {
         model.noise_clamp = args.noise_clamp;
         model.flow_lm.noise_clamp = args.noise_clamp;
     }
-    if args.q8 {
+    let q8 = args.q8 && device.is_cpu();
+    if q8 {
         model.quantize_batch_path()?;
     }
     let mut voices = HashMap::new();
@@ -113,7 +121,8 @@ async fn main() -> anyhow::Result<()> {
     let default_voice = default_voice.ok_or_else(|| anyhow::anyhow!("no voice configured"))?;
     tracing::info!(
         model = %args.model,
-        q8 = args.q8,
+        device = %tts_engine::device::describe(&device),
+        q8,
         temp = model.temp,
         noise_clamp = ?model.noise_clamp,
         voices = ?voices.keys().collect::<Vec<_>>(),

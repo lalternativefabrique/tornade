@@ -549,7 +549,7 @@ impl StackedKv {
     /// `q` is [B, H, 1, D]; returns [B, H, 1, D].
     fn attend(&self, q: &Tensor) -> Result<Tensor> {
         let (b, h, cap, d) = self.k.dims4()?;
-        if std::env::var_os("TTS_CANDLE_ATTN").is_some() {
+        if !q.device().is_cpu() || std::env::var_os("TTS_CANDLE_ATTN").is_some() {
             let k = self.k.to_dtype(DType::F32)?;
             let v = self.v.to_dtype(DType::F32)?;
             let scale = 1.0 / (d as f64).sqrt();
