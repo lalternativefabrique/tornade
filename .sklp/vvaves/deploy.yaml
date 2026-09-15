@@ -115,7 +115,7 @@ services:
     env:
       LISTEN_ADDR: 0.0.0.0:5000
       TTS_MODEL: french_24l
-      TTS_LIVE_SLOTS: "3"
+      TTS_LIVE_SLOTS: "4"
       TTS_BACKGROUND_SLOTS: "1"
       RAYON_NUM_THREADS: "3"
     volumes: ["tts-hf-cache:/home/tts/.cache/huggingface"]
