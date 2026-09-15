@@ -21,11 +21,11 @@ const (
 // when it matches one of IncludePaths (or there are none) and none of
 // ExcludePaths.
 type Scope struct {
-	Start        string
-	MaxDepth     int
-	MaxPages     int
-	IncludePaths []string
-	ExcludePaths []string
+	Start        string   `json:"url"`
+	MaxDepth     int      `json:"max_depth"`
+	MaxPages     int      `json:"max_pages"`
+	IncludePaths []string `json:"include_paths,omitempty"`
+	ExcludePaths []string `json:"exclude_paths,omitempty"`
 
 	start *url.URL
 }
