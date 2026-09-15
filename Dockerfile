@@ -21,7 +21,10 @@ COPY --from=build /out/vvaves /usr/local/bin/vvaves
 # fixed version published, which fails the publish scan. It is Chromium's video
 # decoding path: this service renders HTML and reads no media, so the
 # dependency buys nothing here and removing it beats ignoring the finding.
-RUN apt-get remove -y --purge \
+# poppler-utils is pdftotext and pdfinfo, which /fetch reads PDFs with.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends poppler-utils \
+    && apt-get remove -y --purge \
       gstreamer1.0-plugins-bad \
       libgstreamer-plugins-bad1.0-0 \
     && apt-get autoremove -y \

@@ -40,6 +40,9 @@ var textMarkers = []struct {
 	{"imperva", "incapsula incident id"},
 	{"perimeterx", "press & hold"},
 	{"akamai", "you don't have permission to access"},
+	{"anubis", "this site uses anubis"},
+	{"anubis", "ce site utilise anubis"},
+	{"anubis", "making sure you're not a bot"},
 }
 
 var titleMarkers = []string{
