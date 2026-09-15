@@ -14,7 +14,7 @@ require (
 	github.com/lalternative/packages/go/audioreader v0.2.1
 	github.com/lalternative/packages/go/eda v0.8.0
 	github.com/lalternative/packages/go/fileguard v0.1.0
-	github.com/lalternative/packages/go/search v0.4.0
+	github.com/lalternative/packages/go/search v0.4.1
 	github.com/lalternative/packages/go/svcauth v0.1.0
 	github.com/lalternative/packages/go/tts v0.6.0
 	github.com/lalternativefabrique/vvaves v0.0.0
@@ -25,6 +25,8 @@ require (
 
 require (
 	codeberg.org/readeck/go-readability/v2 v2.1.1 // indirect
+	github.com/JohannesKaufmann/dom v0.3.1 // indirect
+	github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.2 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
