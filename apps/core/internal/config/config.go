@@ -31,6 +31,11 @@ type Config struct {
 	// FetchCacheMaxBytes bounds the shared bucket, read from
 	// FETCH_CACHE_MAX_BYTES; JetStream evicts the oldest pages past it.
 	FetchCacheMaxBytes int64
+	// CrawlMaxRunes bounds each rendering of a crawled page, read from
+	// CRAWL_MAX_RUNES. CrawlMaxBytes bounds the bucket crawled pages wait in,
+	// read from CRAWL_MAX_BYTES.
+	CrawlMaxRunes int
+	CrawlMaxBytes int64
 
 	ChromiumPath     string
 	RenderMaxTimeout time.Duration
@@ -97,6 +102,8 @@ func Load() Config {
 		FetchCacheTTL:      envDuration("FETCH_CACHE_TTL_MS", 15*time.Minute),
 		NatsURL:            os.Getenv("NATS_URL"),
 		FetchCacheMaxBytes: envInt64("FETCH_CACHE_MAX_BYTES", 256<<20),
+		CrawlMaxRunes:      envInt("CRAWL_MAX_RUNES", 6000),
+		CrawlMaxBytes:      envInt64("CRAWL_MAX_BYTES", 512<<20),
 
 		ChromiumPath:     os.Getenv("CHROMIUM_PATH"),
 		RenderMaxTimeout: envDuration("RENDER_MAX_TIMEOUT_MS", 20*time.Second),
