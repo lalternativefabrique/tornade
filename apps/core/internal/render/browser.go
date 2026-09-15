@@ -4,12 +4,14 @@ package render
 
 import (
 	"context"
+	neturl "net/url"
 	"sync"
 	"time"
 
 	"github.com/chromedp/cdproto/fetch"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
+	libfetch "github.com/lalternative/packages/go/search/fetch"
 )
 
 // Browser holds one Chromium process shared across every request. A fresh
@@ -88,15 +90,25 @@ func (b *Browser) startProxied() {
 // Render implements fetch.Renderer, the fallback FetchWithFallback reaches
 // for once a static fetch has failed or come back near-empty.
 //
-// It goes through the proxy, when one is configured, because that is exactly
-// the population of pages this is called on: a page refused on our egress, or
-// one whose shell hides its content. Rendering it direct would repeat the
-// fetch that already lost. Nothing else calls this — /render has its own
-// handler on RenderPage — so the metered residential bandwidth is spent on
-// retries alone.
+// It renders through the proxy only for a host the fetch library has seen
+// refuse the direct egress, so the browser matches the fetch: a JS shell on
+// an open site renders direct, and a page refused on our address renders
+// through the residential exit its fetch already needed.
 func (b *Browser) Render(ctx context.Context, url string, timeout time.Duration) (string, error) {
-	html, _, err := b.RenderViaProxy(ctx, url, timeout)
+	if b.proxy.configured() && libfetch.ProxyPreferred(hostOf(url)) {
+		html, _, err := b.RenderViaProxy(ctx, url, timeout)
+		return html, err
+	}
+	html, _, err := b.RenderPage(ctx, url, timeout)
 	return html, err
+}
+
+func hostOf(rawURL string) string {
+	u, err := neturl.Parse(rawURL)
+	if err != nil {
+		return ""
+	}
+	return u.Host
 }
 
 // RenderPage navigates to url, waits for the network to go quiet and returns

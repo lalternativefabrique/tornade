@@ -7,8 +7,6 @@ import (
 
 	"github.com/lalternative/packages/go/fileguard"
 	"github.com/lalternative/packages/go/search/fetch"
-
-	"github.com/lalternativefabrique/vvaves/core/internal/challenge"
 )
 
 type fetchRequest struct {
@@ -66,10 +64,7 @@ func handleFetch(d Deps) http.HandlerFunc {
 			renderer = nil
 		}
 
-		page, err := fetch.FetchWithFallback(r.Context(), req.URL, renderer, maxRunes, d.Cache)
-		if err == nil {
-			err = challenge.Check(page)
-		}
+		page, err := readPage(r.Context(), d, req.URL, renderer, maxRunes)
 		if err != nil {
 			writeError(w, http.StatusBadGateway, err.Error())
 			return
