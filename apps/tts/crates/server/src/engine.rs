@@ -196,6 +196,8 @@ fn run(
     let sample_rate = batcher.model().sample_rate as f64;
     let mut steps: u64 = 0;
     let mut step_ms_window = 0.0;
+    let mut window_started = Instant::now();
+    let mut cpu_at_window = process_cpu_seconds();
     const REPORT_EVERY: u64 = 250;
 
     loop {
@@ -270,6 +272,8 @@ fn run(
         steps += 1;
         step_ms_window += step_ms;
         if steps.is_multiple_of(REPORT_EVERY) {
+            let cpu_now = process_cpu_seconds();
+            let elapsed = window_started.elapsed().as_secs_f64();
             tracing::info!(
                 active = active.len(),
                 live = active
@@ -279,9 +283,13 @@ fn run(
                 queued_live = live.len(),
                 queued_background = background.len(),
                 step_ms_mean = step_ms_window / REPORT_EVERY as f64,
+                cpu_cores = (cpu_now - cpu_at_window) / elapsed.max(1e-3),
+                rss_mb = process_rss_mb(),
                 "engine"
             );
             step_ms_window = 0.0;
+            window_started = Instant::now();
+            cpu_at_window = cpu_now;
         }
 
         let mut produced = 0.0;
@@ -425,4 +433,31 @@ fn start(batcher: &mut Batcher, active: &mut HashMap<StreamId, Active>, job: Job
             false
         }
     }
+}
+
+/// CPU seconds this process has consumed, user plus system, from /proc;
+/// zero where /proc is not there.
+fn process_cpu_seconds() -> f64 {
+    let Ok(stat) = std::fs::read_to_string("/proc/self/stat") else {
+        return 0.0;
+    };
+    let Some(after_comm) = stat.rsplit(')').next() else {
+        return 0.0;
+    };
+    let fields: Vec<&str> = after_comm.split_whitespace().collect();
+    let ticks = |i: usize| {
+        fields
+            .get(i)
+            .and_then(|v| v.parse::<f64>().ok())
+            .unwrap_or(0.0)
+    };
+    (ticks(11) + ticks(12)) / 100.0
+}
+
+fn process_rss_mb() -> u64 {
+    std::fs::read_to_string("/proc/self/statm")
+        .ok()
+        .and_then(|s| s.split_whitespace().nth(1)?.parse::<u64>().ok())
+        .map(|pages| pages * 4096 / (1024 * 1024))
+        .unwrap_or(0)
 }
