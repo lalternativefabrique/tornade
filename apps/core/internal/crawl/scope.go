@@ -17,20 +17,28 @@ const (
 	MaxMaxPages     = 500
 )
 
+// SeedSitemap starts a walk from every URL the site's sitemaps declare,
+// not just Start, so a whole site is read flat rather than by depth.
+const SeedSitemap = "sitemap"
+
 // Scope bounds a walk. Paths are prefixes on the URL path: a URL is kept
 // when it matches one of IncludePaths (or there are none) and none of
 // ExcludePaths.
 type Scope struct {
-	Start        string
-	MaxDepth     int
-	MaxPages     int
-	IncludePaths []string
-	ExcludePaths []string
+	Start        string   `json:"url"`
+	MaxDepth     int      `json:"max_depth"`
+	MaxPages     int      `json:"max_pages"`
+	IncludePaths []string `json:"include_paths,omitempty"`
+	ExcludePaths []string `json:"exclude_paths,omitempty"`
+	Seed         string   `json:"seed,omitempty"`
 
 	start *url.URL
 }
 
-var ErrBadStart = errors.New("start url must be http or https")
+var (
+	ErrBadStart = errors.New("start url must be http or https")
+	ErrBadSeed  = errors.New("seed must be empty or sitemap")
+)
 
 // Normalize fills the defaults, clamps the bounds and parses Start. It is
 // what a handler calls before handing the scope to a walk.
@@ -42,6 +50,9 @@ func (s *Scope) Normalize() error {
 	u.Fragment = ""
 	s.start = u
 	s.Start = u.String()
+	if s.Seed != "" && s.Seed != SeedSitemap {
+		return ErrBadSeed
+	}
 
 	if s.MaxDepth <= 0 {
 		s.MaxDepth = DefaultMaxDepth
@@ -89,6 +100,21 @@ func (s *Scope) Admits(raw string) bool {
 		}
 	}
 	return false
+}
+
+// canonical is the key two spellings of one page share: the fragment gone,
+// and a trailing slash ignored, since /doc and /doc/ are one page on
+// nearly every site and listing both wastes a read.
+func canonical(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	u.Fragment = ""
+	if len(u.Path) > 1 {
+		u.Path = strings.TrimSuffix(u.Path, "/")
+	}
+	return u.String()
 }
 
 func siteOf(host string) string {

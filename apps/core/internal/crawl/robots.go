@@ -15,7 +15,8 @@ import (
 const userAgent = "vvaves"
 
 type robots struct {
-	group *robotstxt.Group
+	group    *robotstxt.Group
+	sitemaps []string
 }
 
 // loadRobots reads the site's robots.txt. A site without one, or one that
@@ -47,7 +48,7 @@ func loadRobots(ctx context.Context, site *url.URL) robots {
 	if err != nil {
 		return robots{}
 	}
-	return robots{group: data.FindGroup(userAgent)}
+	return robots{group: data.FindGroup(userAgent), sitemaps: data.Sitemaps}
 }
 
 func (r robots) allows(raw string) bool {

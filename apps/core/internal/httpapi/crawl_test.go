@@ -65,6 +65,48 @@ func TestMapListsTheSiteURLs(t *testing.T) {
 	}
 }
 
+func TestMapReadsTheSitemapUnlessToldNotTo(t *testing.T) {
+	var srv *httptest.Server
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/sitemap.xml":
+			fmt.Fprintf(w, `<urlset><url><loc>%s/only-in-sitemap</loc></url></urlset>`, srv.URL)
+		case "/robots.txt":
+			http.NotFound(w, r)
+		default:
+			fmt.Fprint(w, `<html><head><title>x</title></head><body><article><p>Ce paragraphe est assez long pour que readability le garde comme contenu principal de la page.</p></article></body></html>`)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	d, cancel := crawlDeps(t)
+	defer cancel()
+	h := httpapi.New(d)
+
+	var out struct {
+		Links []string `json:"links"`
+	}
+	rec := post(t, h, "/map", `{"url":"`+srv.URL+`/"}`)
+	json.Unmarshal(rec.Body.Bytes(), &out)
+	if len(out.Links) != 2 || !strings.HasSuffix(out.Links[1], "/only-in-sitemap") {
+		t.Errorf("default map should read the sitemap: %v", out.Links)
+	}
+	out.Links = nil
+	rec = post(t, h, "/map", `{"url":"`+srv.URL+`/","sitemap":false}`)
+	json.Unmarshal(rec.Body.Bytes(), &out)
+	if len(out.Links) != 1 {
+		t.Errorf("sitemap:false should walk links only: %v", out.Links)
+	}
+}
+
+func TestCrawlRefusesAnUnknownSeed(t *testing.T) {
+	d, cancel := crawlDeps(t)
+	defer cancel()
+	rec := post(t, httpapi.New(d), "/crawl", `{"url":"https://example.com/","seed":"rss"}`)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400", rec.Code)
+	}
+}
+
 func TestCrawlQueuesThenServesPages(t *testing.T) {
 	site := serveSite(t)
 	d, cancel := crawlDeps(t)

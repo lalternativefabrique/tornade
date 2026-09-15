@@ -55,13 +55,15 @@ type scopeRequest struct {
 	MaxPages     int      `json:"max_pages"`
 	IncludePaths []string `json:"include_paths"`
 	ExcludePaths []string `json:"exclude_paths"`
+	// Seed "sitemap" starts the crawl from every URL the site declares.
+	Seed string `json:"seed"`
 }
 
 func (r scopeRequest) scope(d Deps) (crawl.Scope, string) {
 	if msg := validateURL(r.URL, d.AllowPrivateFetch); msg != "" {
 		return crawl.Scope{}, msg
 	}
-	s := crawl.Scope{Start: r.URL, MaxDepth: r.MaxDepth, MaxPages: r.MaxPages, IncludePaths: r.IncludePaths, ExcludePaths: r.ExcludePaths}
+	s := crawl.Scope{Start: r.URL, MaxDepth: r.MaxDepth, MaxPages: r.MaxPages, IncludePaths: r.IncludePaths, ExcludePaths: r.ExcludePaths, Seed: r.Seed}
 	if err := s.Normalize(); err != nil {
 		return crawl.Scope{}, err.Error()
 	}
@@ -72,6 +74,9 @@ type mapRequest struct {
 	scopeRequest
 	Limit      int   `json:"limit"`
 	DeadlineMS int64 `json:"deadline_ms"`
+	// Sitemap reads the site's sitemaps before walking its links. On by
+	// default: it is the cheapest and most complete source there is.
+	Sitemap *bool `json:"sitemap"`
 }
 
 type mapResponse struct {
@@ -112,7 +117,8 @@ func handleMap(d Deps) http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), deadline)
 		defer cancel()
 
-		links := crawl.Map(ctx, scope, pageFetcher{d}, limit)
+		useSitemap := req.Sitemap == nil || *req.Sitemap
+		links := crawl.Map(ctx, scope, pageFetcher{d}, limit, useSitemap)
 		writeJSON(w, http.StatusOK, mapResponse{URL: scope.Start, Links: links})
 	}
 }
