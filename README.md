@@ -316,33 +316,20 @@ docker run -p 8080:8080 -e SEARXNG_URL=… -e PIPER_URL=… vvaves
 
 ## Deployment
 
-Two paths, and each needs the same two values supplied at deploy time —
-`SPEAK_KEYS` (`<issuer>:<key>` pairs, one per application not held in the
-registry) and, on the sklp path, `VVAVES_AUDIO_HOST` (the public name the
-speak route answers on). Neither is committed: unset, vvaves simply accepts
-nothing it did not already accept on the internal network.
+It runs on the `sklet-prod-v2` node in the `vvaves-production` space,
+declared in `.sklp/vvaves/deploy.yaml` and rolled by the image watches in
+`.sklp/image-watches.yaml`. searxng, redis and the speech server are services
+of that space: nothing outside it has to be reachable for vvaves to answer.
+
+Two values are supplied at deploy time and never committed — `SPEAK_KEYS`
+(`<issuer>:<key>` pairs, one per application not held in the registry) and
+`VVAVES_AUDIO_HOST` (the public name the speak route answers on). Unset,
+vvaves simply accepts nothing it did not already accept on the internal
+network.
 
 The public name must resolve before the certificate can be issued — the
 challenge is served on that host — so point the DNS at the front door first
 and let the issuer follow.
-
-It runs on the OVH cluster in its own `vvaves-prod` namespace, reaching
-searxng and piper across the `ai` namespace by their cluster DNS names.
-Manifests live in `infra/k8s/base`; ArgoCD syncs them from `main` through the
-Application in `infra/k8s/argocd`, which the cluster's `vvaves-root`
-app-of-apps discovers (declared in kube-infra's `app-v1` stack).
-
-The `ai` namespace is declared here too, in `infra/k8s/base-ai` behind the
-`production-ai` overlay. It holds searxng, piper and the redis searxng caches
-into — the backends this service exists to put one HTTP contract in front of.
-They used to be declared in synthiz, which reaches them the same way vvaves
-does; the namespace kept its name through the move, so every caller's DNS
-still resolves.
-
-It stays a namespace of its own rather than folding into `vvaves-prod`: its
-ResourceQuota covers workloads shared by more than one product, and that
-budget is easier to reason about next to them than mixed into a single
-service's.
 
 Rolling a version means publishing an image: argocd-image-updater watches the
 registry for immutable date-sha tags and writes the new one back to `main`
