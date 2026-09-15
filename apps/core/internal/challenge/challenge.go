@@ -43,6 +43,8 @@ var textMarkers = []struct {
 	{"anubis", "this site uses anubis"},
 	{"anubis", "ce site utilise anubis"},
 	{"anubis", "making sure you're not a bot"},
+	{"anubis", "you are seeing this because the administrator of this website has set up anubis"},
+	{"anubis", "you are seeing this because the administrator of"},
 }
 
 var titleMarkers = []string{
@@ -58,6 +60,7 @@ var titleMarkers = []string{
 	"please wait",
 	"one more step",
 	"enable javascript and cookies",
+	"making sure you're not a bot",
 }
 
 // Detect reports whether a page's extracted title and text are those of a

@@ -27,6 +27,7 @@ func TestDetectRecognisesVendorWording(t *testing.T) {
 		{"datadome", "example.com", "Please enable JS and disable any ad blocker", "datadome"},
 		{"imperva", "example.com", "Request unsuccessful. Incapsula incident ID: 123-456", "imperva"},
 		{"akamai", "Access Denied", "You don't have permission to access \"/a\" on this server. Reference #18.1", "akamai"},
+		{"anubis-hal", "Making sure you're not a bot!", "Loading...\n\nYou are seeing this because the administrator of this website has set up Anubis to protect the server against the scourge of AI companies aggressively scraping websites.", "anubis"},
 		{"anubis", "Making sure you're not a bot!", "Ce site utilise Anubis, un outil qui filtre les robots nuisibles.\nNous vérifions actuellement que vous n'êtes pas un robot.\n\nThis site uses Anubis, a tool which filters out harmful bots.", "anubis"},
 	}
 	for _, c := range cases {
