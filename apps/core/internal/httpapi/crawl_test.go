@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lalternative/packages/go/search"
+
 	"github.com/lalternativefabrique/vvaves/core/internal/crawl"
 	"github.com/lalternativefabrique/vvaves/core/internal/httpapi"
 )
@@ -217,5 +219,65 @@ func TestCrawlReportsItselfUnconfigured(t *testing.T) {
 	rec := post(t, httpapi.New(d), "/crawl", `{"url":"https://example.com/"}`)
 	if rec.Code != http.StatusServiceUnavailable {
 		t.Errorf("status = %d, want 503", rec.Code)
+	}
+}
+
+func TestSearchWithContentReadsTheFirstResults(t *testing.T) {
+	site := serveSite(t)
+	p := &stubProvider{results: []search.Result{
+		{Title: "b", URL: site.URL + "/b"},
+		{Title: "a", URL: site.URL + "/a"},
+		{Title: "missing", URL: site.URL + "/nope"},
+		{Title: "private", URL: "http://169.254.169.254/"},
+	}}
+	d := baseDeps()
+	d.Unguarded = true
+	d.AllowPrivateFetch = true
+	d.CrawlMaxRunes = 6000
+	d.Providers = map[search.Category]search.Provider{search.CategoryGeneral: p}
+
+	rec := post(t, httpapi.New(d), "/search", `{"q":"x","content":3,"format":"markdown","content_runes":500}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d; body %s", rec.Code, rec.Body)
+	}
+	var out struct {
+		Results []struct {
+			URL          string `json:"url"`
+			Text         string `json:"text"`
+			Markdown     string `json:"markdown"`
+			ContentError string `json:"content_error"`
+		} `json:"results"`
+	}
+	json.Unmarshal(rec.Body.Bytes(), &out)
+	if len(out.Results) != 4 {
+		t.Fatalf("results = %+v", out.Results)
+	}
+	if !strings.Contains(out.Results[0].Markdown, "| k |") || out.Results[0].Text != "" {
+		t.Errorf("first result should carry markdown only: %+v", out.Results[0])
+	}
+	if out.Results[1].Markdown == "" {
+		t.Errorf("second result should carry content: %+v", out.Results[1])
+	}
+	if out.Results[2].ContentError == "" || out.Results[2].Markdown != "" {
+		t.Errorf("a 404 should be reported on its result: %+v", out.Results[2])
+	}
+	if out.Results[3].Markdown != "" || out.Results[3].ContentError != "" {
+		t.Errorf("results past content=N stay untouched: %+v", out.Results[3])
+	}
+}
+
+func TestSearchWithoutContentStaysAsBefore(t *testing.T) {
+	p := &stubProvider{results: []search.Result{{Title: "hit", URL: "https://e.com"}}}
+	d := baseDeps()
+	d.Unguarded = true
+	d.Providers = map[search.Category]search.Provider{search.CategoryGeneral: p}
+
+	rec := post(t, httpapi.New(d), "/search", `{"q":"x"}`)
+	if strings.Contains(rec.Body.String(), `"text"`) || strings.Contains(rec.Body.String(), `"markdown"`) {
+		t.Errorf("no content asked, none should appear: %s", rec.Body)
+	}
+	rec = post(t, httpapi.New(d), "/search", `{"q":"x","content":1,"format":"html"}`)
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400 for an unknown format", rec.Code)
 	}
 }
