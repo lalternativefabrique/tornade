@@ -62,6 +62,8 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/dslipak/pdf v0.0.2 h1:djAvcM5neg9Ush+zR6QXB+VMJzR6TdnX766HPIg1JmI=
+github.com/dslipak/pdf v0.0.2/go.mod h1:2L3SnkI9cQwnAS9gfPz2iUoLC0rUZwbucpbKi5R1mUo=
 github.com/go-json-experiment/json v0.0.0-20260623181947-01eb4420fa68 h1:KZaTBSyshWX3MP5jukJcNSuXDQTO+rNpt0J564dX/eg=
 github.com/go-json-experiment/json v0.0.0-20260623181947-01eb4420fa68/go.mod h1:tphK2c80bpPhMOI4v6bIc2xWywPfbqi1Z06+RcrMkDg=
 github.com/go-openapi/jsonpointer v0.19.3/go.mod h1:Pl9vOtqEWErmShwVjC8pYs9cog34VGT37dQOVbmoatg=
@@ -117,8 +119,8 @@ github.com/lalternative/packages/go/eda v0.8.0 h1:+VXQ5ogbzwcV1yiXxBIMsLi0PzPU2f
 github.com/lalternative/packages/go/eda v0.8.0/go.mod h1:rEJZsWrl6SwIEPSAk+2wGzxL10N4Z+NNx6SHVKSUkE0=
 github.com/lalternative/packages/go/fileguard v0.1.0 h1:+LtQ7GO4WqMTKEJxzV1dOmOGw2YQn6rlkmm5VgZ/1Fk=
 github.com/lalternative/packages/go/fileguard v0.1.0/go.mod h1:YwKcUcyncOGZxlEMZCIdbNFnUiRlMIVa8bwMdkkwpsc=
-github.com/lalternative/packages/go/search v0.5.0 h1:Y+yqJI8dtK9JLKgbEpiT9PRwl3ZU7nvCW2soabofJSk=
-github.com/lalternative/packages/go/search v0.5.0/go.mod h1:T6u9ZOBdg/bWYk2Uc7nMaxSvfCRUBuB2ZtUQJvGfjbc=
+github.com/lalternative/packages/go/search v0.6.0 h1:f4aOs9VFg8dXmzDRi7TG15Ax2i2XhSQdVKpgsYtdXVM=
+github.com/lalternative/packages/go/search v0.6.0/go.mod h1:192WHpCTGDaglmLJv9tGzMoDgbqDYJXutgX/CDzZarU=
 github.com/lalternative/packages/go/svcauth v0.1.0 h1:dT1PbE+/zNbOielEEcV+YbotdpFx8+ahW1zB+IvS+SA=
 github.com/lalternative/packages/go/svcauth v0.1.0/go.mod h1:I3AFiK7snrcH8KgUOEI3l/1RZ3leJtM6BF3mP11wqsY=
 github.com/lalternative/packages/go/tts v0.6.0 h1:iT3VQw0jghf9dJanyf1vrXmZYKY2tTClPNPqpGEe7g0=
