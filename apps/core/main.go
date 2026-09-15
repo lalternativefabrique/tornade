@@ -15,6 +15,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,6 +23,8 @@ import (
 	"time"
 
 	"github.com/lalternative/packages/go/audioreader"
+	"github.com/lalternative/packages/go/eda/pkg/logger"
+	"github.com/lalternative/packages/go/eda/pkg/natsbus"
 	"github.com/lalternative/packages/go/search"
 	"github.com/lalternative/packages/go/search/brave"
 	"github.com/lalternative/packages/go/search/fetch"
@@ -33,6 +36,7 @@ import (
 	"github.com/lalternativefabrique/vvaves/core/internal/challenge"
 	"github.com/lalternativefabrique/vvaves/core/internal/config"
 	"github.com/lalternativefabrique/vvaves/core/internal/httpapi"
+	"github.com/lalternativefabrique/vvaves/core/internal/pagecache"
 	"github.com/lalternativefabrique/vvaves/core/internal/render"
 	"github.com/lalternativefabrique/vvaves/core/middleware"
 	"github.com/lalternativefabrique/vvaves/core/pkg/db"
@@ -60,6 +64,8 @@ func main() {
 	}
 	defer browser.Close()
 
+	defer natsbus.CloseSharedConnection()
+
 	reader, primer := buildAudio(cfg)
 
 	apps, keys := buildRegistry(cfg)
@@ -67,7 +73,7 @@ func main() {
 	deps := httpapi.Deps{
 		Providers:         buildProviders(cfg),
 		Renderer:          browser,
-		Cache:             challenge.GuardCache(fetch.NewMemoryCache(cfg.FetchCacheTTL)),
+		Cache:             challenge.GuardCache(buildPageCache(cfg)),
 		Reader:            reader,
 		Primer:            primer,
 		SearchDeadline:    cfg.SearchDeadline,
@@ -166,6 +172,30 @@ func buildProviders(cfg config.Config) map[search.Category]search.Provider {
 			providers[search.CategoryGeneral], brave.New(cfg.BraveAPIKey, nil))
 	}
 	return providers
+}
+
+// buildPageCache shares fetched pages across replicas through NATS when a
+// broker is configured, and keeps them in this process otherwise. A broker
+// that is configured but unreachable is fatal: someone asked for a shared
+// cache, and each replica quietly refetching the same pages would hide that.
+//
+// The connection is natsbus's process-wide one, which reads NATS_URL itself;
+// cfg.NatsURL is the same value and only decides whether to connect at all.
+func buildPageCache(cfg config.Config) fetch.Cache {
+	if cfg.NatsURL == "" {
+		return fetch.NewMemoryCache(cfg.FetchCacheTTL)
+	}
+	natsbus.SetLogger(logger.NewJSONSlogLogger(slog.LevelInfo))
+	nc, _, err := natsbus.GetSharedConnection()
+	if err != nil {
+		log.Fatalf("vvaves: NATS_URL: %v", err)
+	}
+	cache, err := pagecache.NewNATS(nc, cfg.FetchCacheTTL, cfg.FetchCacheMaxBytes)
+	if err != nil {
+		log.Fatalf("vvaves: page cache: %v", err)
+	}
+	log.Printf("vvaves: page cache shared through %s", cfg.NatsURL)
+	return cache
 }
 
 // buildAudio wires the reader that serves readings and the primer that reads
