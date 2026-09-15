@@ -16,7 +16,7 @@ require (
 	github.com/lalternative/packages/go/fileguard v0.1.0
 	github.com/lalternative/packages/go/search v0.3.0
 	github.com/lalternative/packages/go/svcauth v0.1.0
-	github.com/lalternative/packages/go/tts v0.4.0
+	github.com/lalternative/packages/go/tts v0.6.0
 	github.com/lalternativefabrique/vvaves v0.0.0
 	github.com/swaggo/swag v1.16.6
 )

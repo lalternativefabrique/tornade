@@ -111,8 +111,8 @@ github.com/lalternative/packages/go/search v0.3.0 h1:0W9+pWd+OEaSZLHHNpT8tjBclSR
 github.com/lalternative/packages/go/search v0.3.0/go.mod h1:G7ohkjwpS/n9HCByGUqihnzPL+2hAQ1wsAGK7EEcDUw=
 github.com/lalternative/packages/go/svcauth v0.1.0 h1:dT1PbE+/zNbOielEEcV+YbotdpFx8+ahW1zB+IvS+SA=
 github.com/lalternative/packages/go/svcauth v0.1.0/go.mod h1:I3AFiK7snrcH8KgUOEI3l/1RZ3leJtM6BF3mP11wqsY=
-github.com/lalternative/packages/go/tts v0.4.0 h1:0T8XfuQURxnvhFCkIjK9iDpd0SmQd0CRn/uAGUUgcrc=
-github.com/lalternative/packages/go/tts v0.4.0/go.mod h1:75KtxuFNBMQfVXAcg1cMllRMG/7iwfSSnjmCblFTYVA=
+github.com/lalternative/packages/go/tts v0.6.0 h1:iT3VQw0jghf9dJanyf1vrXmZYKY2tTClPNPqpGEe7g0=
+github.com/lalternative/packages/go/tts v0.6.0/go.mod h1:75KtxuFNBMQfVXAcg1cMllRMG/7iwfSSnjmCblFTYVA=
 github.com/ledongthuc/pdf v0.0.0-20220302134840-0c2507a12d80 h1:6Yzfa6GP0rIo/kULo2bwGEkFvCePZ3qHDDTC3/J9Swo=
 github.com/ledongthuc/pdf v0.0.0-20220302134840-0c2507a12d80/go.mod h1:imJHygn/1yfhB7XSJJKlFZKl/J+dCPAknuiaGOshXAs=
 github.com/mailru/easyjson v0.0.0-20190614124828-94de47d64c63/go.mod h1:C1wdFJiN94OJF2b5HbByQZoLdCWB1Yqtg26g4irojpc=

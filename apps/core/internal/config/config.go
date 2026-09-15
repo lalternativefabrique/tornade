@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/lalternative/packages/go/tts"
 )
 
 type Config struct {
@@ -96,13 +98,13 @@ func Load() Config {
 		TTSModel:  os.Getenv("TTS_MODEL"),
 		TTSVoice:  os.Getenv("TTS_VOICE"),
 		TTSFormat: env("TTS_FORMAT", "mp3"),
-		// -1 sends every text as one request: the speech server takes any
+		// WholeText sends every text as one request: the speech server takes any
 		// length, cuts by sentence itself and streams each one as it is read,
 		// so a cut here only adds requests, and each one a prompt prefill and
 		// a seam. A positive value cuts at that many characters, which a
 		// hosted endpoint would need; 120 was the measured optimum when Piper
 		// answered a request only once it had read all of it.
-		TTSMaxChars: envInt("TTS_MAX_CHARS", -1),
+		TTSMaxChars: envInt("TTS_MAX_CHARS", tts.WholeText),
 		// One request now covers a reading, and the speech server takes one
 		// slot per request: reading pieces concurrently would spend a
 		// listener's slots on their own text.
