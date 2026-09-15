@@ -115,7 +115,10 @@ services:
     env:
       LISTEN_ADDR: 0.0.0.0:5000
       TTS_MODEL: french_24l
-      TTS_LIVE_SLOTS: "4"
+      # Measured on this node, not derived: one reading runs at 1.5x real
+      # time, three at 0.75x. Two is where each listener still keeps up. The
+      # dev stack, on faster cores, holds four.
+      TTS_LIVE_SLOTS: "2"
       TTS_BACKGROUND_SLOTS: "1"
       RAYON_NUM_THREADS: "3"
     volumes: ["tts-hf-cache:/home/tts/.cache/huggingface"]
