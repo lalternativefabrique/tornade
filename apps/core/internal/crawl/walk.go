@@ -32,8 +32,16 @@ const concurrency = 3
 func Walk(ctx context.Context, scope Scope, f Fetcher, emit func(Result)) int {
 	robots := loadRobots(ctx, scope.start)
 
-	seen := map[string]bool{scope.Start: true}
+	seen := map[string]bool{canonical(scope.Start): true}
 	frontier := []string{scope.Start}
+	if scope.Seed == SeedSitemap {
+		for _, u := range sitemapURLs(ctx, scope, robots.sitemaps, scope.MaxPages) {
+			if !seen[canonical(u)] {
+				seen[canonical(u)] = true
+				frontier = append(frontier, u)
+			}
+		}
+	}
 	read := 0
 
 	for depth := 0; depth <= scope.MaxDepth && len(frontier) > 0 && read < scope.MaxPages; depth++ {
@@ -65,8 +73,8 @@ func Walk(ctx context.Context, scope Scope, f Fetcher, emit func(Result)) int {
 					return
 				}
 				for _, link := range page.Links {
-					if !seen[link] && scope.Admits(link) {
-						seen[link] = true
+					if key := canonical(link); !seen[key] && scope.Admits(link) {
+						seen[key] = true
 						next = append(next, link)
 					}
 				}

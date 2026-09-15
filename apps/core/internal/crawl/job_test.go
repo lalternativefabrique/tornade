@@ -72,7 +72,7 @@ func TestMapListsURLsUpToLimit(t *testing.T) {
 	if err := scope.Normalize(); err != nil {
 		t.Fatal(err)
 	}
-	all := Map(context.Background(), scope, staticFetcher{}, 100)
+	all := Map(context.Background(), scope, staticFetcher{}, 100, false)
 	want := []string{"/", "/a", "/b", "/docs/x", "/private", "/a/1", "/docs/y", "/a/1/deep"}
 	if len(all) != len(want) {
 		t.Errorf("mapped %v, want %d urls", all, len(want))
@@ -80,7 +80,7 @@ func TestMapListsURLsUpToLimit(t *testing.T) {
 	if !strings.HasSuffix(all[0], "/") || !strings.HasSuffix(all[1], "/a") {
 		t.Errorf("discovery order lost: %v", all)
 	}
-	few := Map(context.Background(), scope, staticFetcher{}, 3)
+	few := Map(context.Background(), scope, staticFetcher{}, 3, false)
 	if len(few) != 3 {
 		t.Errorf("limit not honoured: %v", few)
 	}
