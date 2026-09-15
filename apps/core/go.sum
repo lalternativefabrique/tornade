@@ -117,8 +117,8 @@ github.com/lalternative/packages/go/eda v0.8.0 h1:+VXQ5ogbzwcV1yiXxBIMsLi0PzPU2f
 github.com/lalternative/packages/go/eda v0.8.0/go.mod h1:rEJZsWrl6SwIEPSAk+2wGzxL10N4Z+NNx6SHVKSUkE0=
 github.com/lalternative/packages/go/fileguard v0.1.0 h1:+LtQ7GO4WqMTKEJxzV1dOmOGw2YQn6rlkmm5VgZ/1Fk=
 github.com/lalternative/packages/go/fileguard v0.1.0/go.mod h1:YwKcUcyncOGZxlEMZCIdbNFnUiRlMIVa8bwMdkkwpsc=
-github.com/lalternative/packages/go/search v0.8.0 h1:0kCDOK7MBD4ZfjEItLY4Q2TKQxKzvgd+q6LNdSSYsvU=
-github.com/lalternative/packages/go/search v0.8.0/go.mod h1:T6u9ZOBdg/bWYk2Uc7nMaxSvfCRUBuB2ZtUQJvGfjbc=
+github.com/lalternative/packages/go/search v0.8.1 h1:AT5AQYKjETmymh1AuH7dTJV7wZS45hRnoT933y7eECk=
+github.com/lalternative/packages/go/search v0.8.1/go.mod h1:T6u9ZOBdg/bWYk2Uc7nMaxSvfCRUBuB2ZtUQJvGfjbc=
 github.com/lalternative/packages/go/svcauth v0.1.0 h1:dT1PbE+/zNbOielEEcV+YbotdpFx8+ahW1zB+IvS+SA=
 github.com/lalternative/packages/go/svcauth v0.1.0/go.mod h1:I3AFiK7snrcH8KgUOEI3l/1RZ3leJtM6BF3mP11wqsY=
 github.com/lalternative/packages/go/tts v0.6.0 h1:iT3VQw0jghf9dJanyf1vrXmZYKY2tTClPNPqpGEe7g0=
