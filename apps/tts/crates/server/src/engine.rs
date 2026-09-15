@@ -7,7 +7,7 @@
 
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::time::{Duration, Instant};
 
@@ -32,9 +32,21 @@ pub enum Piece {
     SegmentEnd,
 }
 
+/// One of a class's slots, held from admission to the end of the reading
+/// whatever ends it, and given back when dropped.
+pub struct Slot(Arc<AtomicUsize>);
+
+impl Drop for Slot {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::Relaxed);
+    }
+}
+
 pub struct Job {
     /// Names the reading in the logs; assigned at submission.
     pub id: u64,
+    /// The slot admission granted; None until then.
+    pub slot: Option<Slot>,
     pub segments: Vec<String>,
     pub voice: Arc<ModelState>,
     pub class: Class,
@@ -104,6 +116,8 @@ fn rms_db(samples: &[f32]) -> f32 {
 pub struct EngineHandle {
     jobs: Sender<Job>,
     next_id: Arc<AtomicU64>,
+    live_taken: Arc<AtomicUsize>,
+    background_taken: Arc<AtomicUsize>,
     pub metrics: Arc<Metrics>,
     pub live_slots: usize,
     pub background_slots: usize,
@@ -112,41 +126,42 @@ pub struct EngineHandle {
 
 impl EngineHandle {
     /// Refuses at once when no slot of the job's class is free, so the caller
-    /// can answer with a retry hint instead of holding the connection.
+    /// can answer with a retry hint instead of holding the connection. The
+    /// slot is taken here, atomically against every other submission, and
+    /// travels with the job until the reading ends however it ends.
     pub fn submit(&self, mut job: Job) -> Result<(), Job> {
         job.id = self.next_id.fetch_add(1, Ordering::Relaxed);
         let m = &self.metrics;
-        let (active, queued, slots) = match job.class {
-            Class::Live => (&m.live_active, &m.live_queued, self.live_slots),
+        let (taken, queued, slots) = match job.class {
+            Class::Live => (&self.live_taken, &m.live_queued, self.live_slots),
             Class::Background => (
-                &m.background_active,
+                &self.background_taken,
                 &m.background_queued,
                 self.background_slots,
             ),
         };
-        let (n_active, n_queued) = (
-            active.load(Ordering::Relaxed),
-            queued.load(Ordering::Relaxed),
-        );
-        if n_active + n_queued >= slots {
+        let admitted = taken.fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+            (n < slots).then_some(n + 1)
+        });
+        let Ok(before) = admitted else {
             m.rejected.fetch_add(1, Ordering::Relaxed);
             tracing::warn!(
                 job = job.id,
                 class = ?job.class,
-                active = n_active,
-                queued = n_queued,
+                taken = slots,
                 slots,
                 "refused: every slot is busy"
             );
             return Err(job);
-        }
+        };
+        job.slot = Some(Slot(taken.clone()));
         tracing::info!(
             job = job.id,
             class = ?job.class,
             segments = job.segments.len(),
             chars = job.segments.iter().map(|s| s.chars().count()).sum::<usize>(),
-            active = n_active,
-            queued = n_queued,
+            taken = before + 1,
+            slots,
             "admitted"
         );
         queued.fetch_add(1, Ordering::Relaxed);
@@ -170,6 +185,8 @@ pub fn spawn(
     let handle = EngineHandle {
         jobs: tx,
         next_id: Arc::new(AtomicU64::new(1)),
+        live_taken: Arc::new(AtomicUsize::new(0)),
+        background_taken: Arc::new(AtomicUsize::new(0)),
         metrics: metrics.clone(),
         live_slots,
         background_slots,
