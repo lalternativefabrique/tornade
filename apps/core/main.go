@@ -15,6 +15,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,13 +23,14 @@ import (
 	"time"
 
 	"github.com/lalternative/packages/go/audioreader"
+	"github.com/lalternative/packages/go/eda/pkg/logger"
+	"github.com/lalternative/packages/go/eda/pkg/natsbus"
 	"github.com/lalternative/packages/go/search"
 	"github.com/lalternative/packages/go/search/brave"
 	"github.com/lalternative/packages/go/search/fetch"
 	"github.com/lalternative/packages/go/search/searxng"
 	"github.com/lalternative/packages/go/svcauth"
 	"github.com/lalternative/packages/go/tts"
-	"github.com/nats-io/nats.go"
 
 	"github.com/lalternativefabrique/vvaves/core/internal/audio"
 	"github.com/lalternativefabrique/vvaves/core/internal/challenge"
@@ -61,6 +63,8 @@ func main() {
 		log.Fatalf("vvaves: FETCH_PROXY: %v", err)
 	}
 	defer browser.Close()
+
+	defer natsbus.CloseSharedConnection()
 
 	reader, primer := buildAudio(cfg)
 
@@ -174,11 +178,15 @@ func buildProviders(cfg config.Config) map[search.Category]search.Provider {
 // broker is configured, and keeps them in this process otherwise. A broker
 // that is configured but unreachable is fatal: someone asked for a shared
 // cache, and each replica quietly refetching the same pages would hide that.
+//
+// The connection is natsbus's process-wide one, which reads NATS_URL itself;
+// cfg.NatsURL is the same value and only decides whether to connect at all.
 func buildPageCache(cfg config.Config) fetch.Cache {
 	if cfg.NatsURL == "" {
 		return fetch.NewMemoryCache(cfg.FetchCacheTTL)
 	}
-	nc, err := nats.Connect(cfg.NatsURL, nats.MaxReconnects(-1), nats.ReconnectWait(2*time.Second))
+	natsbus.SetLogger(logger.NewJSONSlogLogger(slog.LevelInfo))
+	nc, _, err := natsbus.GetSharedConnection()
 	if err != nil {
 		log.Fatalf("vvaves: NATS_URL: %v", err)
 	}
