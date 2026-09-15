@@ -28,11 +28,13 @@ import (
 	"github.com/lalternative/packages/go/search/searxng"
 	"github.com/lalternative/packages/go/svcauth"
 	"github.com/lalternative/packages/go/tts"
+	"github.com/nats-io/nats.go"
 
 	"github.com/lalternativefabrique/vvaves/core/internal/audio"
 	"github.com/lalternativefabrique/vvaves/core/internal/challenge"
 	"github.com/lalternativefabrique/vvaves/core/internal/config"
 	"github.com/lalternativefabrique/vvaves/core/internal/httpapi"
+	"github.com/lalternativefabrique/vvaves/core/internal/pagecache"
 	"github.com/lalternativefabrique/vvaves/core/internal/render"
 	"github.com/lalternativefabrique/vvaves/core/middleware"
 	"github.com/lalternativefabrique/vvaves/core/pkg/db"
@@ -67,7 +69,7 @@ func main() {
 	deps := httpapi.Deps{
 		Providers:         buildProviders(cfg),
 		Renderer:          browser,
-		Cache:             challenge.GuardCache(fetch.NewMemoryCache(cfg.FetchCacheTTL)),
+		Cache:             challenge.GuardCache(buildPageCache(cfg)),
 		Reader:            reader,
 		Primer:            primer,
 		SearchDeadline:    cfg.SearchDeadline,
@@ -166,6 +168,26 @@ func buildProviders(cfg config.Config) map[search.Category]search.Provider {
 			providers[search.CategoryGeneral], brave.New(cfg.BraveAPIKey, nil))
 	}
 	return providers
+}
+
+// buildPageCache shares fetched pages across replicas through NATS when a
+// broker is configured, and keeps them in this process otherwise. A broker
+// that is configured but unreachable is fatal: someone asked for a shared
+// cache, and each replica quietly refetching the same pages would hide that.
+func buildPageCache(cfg config.Config) fetch.Cache {
+	if cfg.NatsURL == "" {
+		return fetch.NewMemoryCache(cfg.FetchCacheTTL)
+	}
+	nc, err := nats.Connect(cfg.NatsURL, nats.MaxReconnects(-1), nats.ReconnectWait(2*time.Second))
+	if err != nil {
+		log.Fatalf("vvaves: NATS_URL: %v", err)
+	}
+	cache, err := pagecache.NewNATS(nc, cfg.FetchCacheTTL, cfg.FetchCacheMaxBytes)
+	if err != nil {
+		log.Fatalf("vvaves: page cache: %v", err)
+	}
+	log.Printf("vvaves: page cache shared through %s", cfg.NatsURL)
+	return cache
 }
 
 // buildAudio wires the reader that serves readings and the primer that reads

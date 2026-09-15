@@ -77,6 +77,15 @@ services:
       http: /healthz
       timeout: 900s
 
+  nats:
+    image: nats:2-alpine
+    network: bridge
+    port: 4222
+    command: ["-js"]
+    ready:
+      log: "Server is ready"
+      timeout: 15s
+
   postgres:
     image: postgres:16-alpine
     network: bridge
@@ -107,9 +116,10 @@ services:
     run: go run .
     workdir: apps/core
     port: 8080
-    depends_on: [searxng, postgres, migrate, tts]
+    depends_on: [searxng, postgres, migrate, tts, nats]
     env:
       SEARXNG_URL: http://searxng:8888
+      NATS_URL: nats://nats:4222
       PIPER_URL: http://tts:5000
       TTS_MODEL: french_24l
       TTS_VOICE: estelle

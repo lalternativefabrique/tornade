@@ -23,6 +23,12 @@ type Config struct {
 
 	SearchDeadline time.Duration
 	FetchCacheTTL  time.Duration
+	// NatsURL, read from NATS_URL, points the page cache at a JetStream KV
+	// bucket every replica shares. Empty keeps the cache in this process.
+	NatsURL string
+	// FetchCacheMaxBytes bounds the shared bucket, read from
+	// FETCH_CACHE_MAX_BYTES; JetStream evicts the oldest pages past it.
+	FetchCacheMaxBytes int64
 
 	ChromiumPath     string
 	RenderMaxTimeout time.Duration
@@ -85,8 +91,10 @@ func Load() Config {
 		BraveAPIKey: os.Getenv("BRAVE_API_KEY"),
 		FetchProxy:  os.Getenv("FETCH_PROXY"),
 
-		SearchDeadline: envDuration("SEARCH_DEADLINE_MS", 4*time.Second),
-		FetchCacheTTL:  envDuration("FETCH_CACHE_TTL_MS", 15*time.Minute),
+		SearchDeadline:     envDuration("SEARCH_DEADLINE_MS", 4*time.Second),
+		FetchCacheTTL:      envDuration("FETCH_CACHE_TTL_MS", 15*time.Minute),
+		NatsURL:            os.Getenv("NATS_URL"),
+		FetchCacheMaxBytes: envInt64("FETCH_CACHE_MAX_BYTES", 256<<20),
 
 		ChromiumPath:     os.Getenv("CHROMIUM_PATH"),
 		RenderMaxTimeout: envDuration("RENDER_MAX_TIMEOUT_MS", 20*time.Second),
@@ -160,6 +168,13 @@ func envString(key, fallback string) string {
 
 func envInt(key string, fallback int) int {
 	if v, err := strconv.Atoi(os.Getenv(key)); err == nil && v > 0 {
+		return v
+	}
+	return fallback
+}
+
+func envInt64(key string, fallback int64) int64 {
+	if v, err := strconv.ParseInt(os.Getenv(key), 10, 64); err == nil && v > 0 {
 		return v
 	}
 	return fallback
