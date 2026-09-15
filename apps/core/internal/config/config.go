@@ -102,7 +102,7 @@ func Load() Config {
 		FetchCacheTTL:      envDuration("FETCH_CACHE_TTL_MS", 15*time.Minute),
 		NatsURL:            os.Getenv("NATS_URL"),
 		FetchCacheMaxBytes: envInt64("FETCH_CACHE_MAX_BYTES", 256<<20),
-		CrawlMaxRunes:      envInt("CRAWL_MAX_RUNES", 6000),
+		CrawlMaxRunes:      envInt("CRAWL_MAX_RUNES", 20000),
 		CrawlMaxBytes:      envInt64("CRAWL_MAX_BYTES", 512<<20),
 
 		ChromiumPath:     os.Getenv("CHROMIUM_PATH"),
