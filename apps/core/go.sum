@@ -8,6 +8,8 @@ github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 h1:d+Bc7a5rLufV
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
 github.com/andybalholm/cascadia v1.3.3 h1:AG2YHrzJIm4BZ19iwJ/DAua6Btl3IwJX+VI4kktS1LM=
 github.com/andybalholm/cascadia v1.3.3/go.mod h1:xNd9bqTn98Ln4DwST8/nG+H0yuB8Hmgu1YHNnWw0GeA=
+github.com/andybalholm/cascadia v1.3.4 h1:vM2lgh0Vru9Vwyfm4cQqWP2HHMW0u0+2PAW7Q38Qufg=
+github.com/andybalholm/cascadia v1.3.4/go.mod h1:BLRmbRjpEtNKieZOCCvYj4RqN+KRA41GBe/5O+G93kM=
 github.com/antithesishq/antithesis-sdk-go v0.7.2-default-no-op h1:p2zFsAzvhIpFya8AIOHIbWf7NGvO34QpLGclyf7nXj8=
 github.com/antithesishq/antithesis-sdk-go v0.7.2-default-no-op/go.mod h1:FQyySiasQQM8735Ddel3MRojmy4dA1IqCeyJ5jmPMbI=
 github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de h1:FxWPpzIjnTlhPwqqXc4/vE0f7GvRjuAsbW+HOIe8KnA=
@@ -115,6 +117,8 @@ github.com/lalternative/packages/go/fileguard v0.1.0 h1:+LtQ7GO4WqMTKEJxzV1dOmOG
 github.com/lalternative/packages/go/fileguard v0.1.0/go.mod h1:YwKcUcyncOGZxlEMZCIdbNFnUiRlMIVa8bwMdkkwpsc=
 github.com/lalternative/packages/go/search v0.3.0 h1:0W9+pWd+OEaSZLHHNpT8tjBclSRLy69/4Z/cMMho5K8=
 github.com/lalternative/packages/go/search v0.3.0/go.mod h1:G7ohkjwpS/n9HCByGUqihnzPL+2hAQ1wsAGK7EEcDUw=
+github.com/lalternative/packages/go/search v0.4.0 h1:SCr0tHGBGR91j2UDBVSgxo6vsbG+ugj1z6eFxQ4cbbM=
+github.com/lalternative/packages/go/search v0.4.0/go.mod h1:T6u9ZOBdg/bWYk2Uc7nMaxSvfCRUBuB2ZtUQJvGfjbc=
 github.com/lalternative/packages/go/svcauth v0.1.0 h1:dT1PbE+/zNbOielEEcV+YbotdpFx8+ahW1zB+IvS+SA=
 github.com/lalternative/packages/go/svcauth v0.1.0/go.mod h1:I3AFiK7snrcH8KgUOEI3l/1RZ3leJtM6BF3mP11wqsY=
 github.com/lalternative/packages/go/tts v0.6.0 h1:iT3VQw0jghf9dJanyf1vrXmZYKY2tTClPNPqpGEe7g0=
