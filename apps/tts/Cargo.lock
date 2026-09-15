@@ -2796,6 +2796,7 @@ dependencies = [
  "axum",
  "candle-core",
  "clap",
+ "futures-util",
  "serde",
  "serde_json",
  "tokio",

@@ -4,17 +4,19 @@ mod lame;
 mod metrics;
 
 use std::collections::HashMap;
+use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Instant;
 
-use axum::body::Body;
+use axum::body::{Body, Bytes};
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use clap::Parser;
+use futures_util::stream;
 use serde::Deserialize;
 use tts_engine::TTSModel;
 use tts_engine::voice_state::ModelState;
@@ -210,18 +212,85 @@ async fn speech(
             .into_response();
     }
 
-    let mut pcm: Vec<i16> = Vec::new();
-    while let Some(frame) = rx.recv().await {
-        pcm.extend_from_slice(&frame);
-    }
-    let pcm = encode::trim_leading_silence(pcm, state.engine.sample_rate);
-    if pcm.is_empty() {
+    let Some(first) = rx.recv().await else {
         return error(
             StatusCode::INTERNAL_SERVER_ERROR,
             "the reading produced no audio",
         );
-    }
+    };
     let sample_rate = state.engine.sample_rate;
+    match encode::Chunked::new(format, sample_rate) {
+        Ok(Some(chunked)) => stream(chunked, first, rx, format),
+        Ok(None) => buffered(first, rx, format, sample_rate).await,
+        Err(e) => error(StatusCode::INTERNAL_SERVER_ERROR, format!("encode: {e}")),
+    }
+}
+
+/// Sends each frame's bytes as it is made, so the listener hears the first
+/// sentence while the rest is still being read. A listener who leaves drops
+/// the body, which drops the frame receiver, which the scheduler sees.
+fn stream(
+    mut chunked: encode::Chunked,
+    first: Vec<i16>,
+    mut rx: tokio::sync::mpsc::UnboundedReceiver<Vec<i16>>,
+    format: Format,
+) -> Response {
+    let (tx, out) = tokio::sync::mpsc::channel::<Bytes>(16);
+    tokio::spawn(async move {
+        let mut next = Some(first);
+        loop {
+            let frame = match next.take() {
+                Some(frame) => frame,
+                None => match rx.recv().await {
+                    Some(frame) => frame,
+                    None => break,
+                },
+            };
+            match chunked.push(&frame) {
+                Ok(bytes) if bytes.is_empty() => {}
+                Ok(bytes) => {
+                    if tx.send(Bytes::from(bytes)).await.is_err() {
+                        return;
+                    }
+                }
+                Err(e) => {
+                    tracing::error!(error = %e, "encode failed; cutting the stream");
+                    return;
+                }
+            }
+        }
+        match chunked.finish() {
+            Ok(bytes) if bytes.is_empty() => {}
+            Ok(bytes) => {
+                let _ = tx.send(Bytes::from(bytes)).await;
+            }
+            Err(e) => tracing::error!(error = %e, "encode flush failed"),
+        }
+    });
+    let body = Body::from_stream(stream::unfold(out, |mut out| async move {
+        out.recv()
+            .await
+            .map(|bytes| (Ok::<_, Infallible>(bytes), out))
+    }));
+    (
+        StatusCode::OK,
+        [(header::CONTENT_TYPE, format.mime())],
+        body,
+    )
+        .into_response()
+}
+
+async fn buffered(
+    first: Vec<i16>,
+    mut rx: tokio::sync::mpsc::UnboundedReceiver<Vec<i16>>,
+    format: Format,
+    sample_rate: u32,
+) -> Response {
+    let mut pcm = first;
+    while let Some(frame) = rx.recv().await {
+        pcm.extend_from_slice(&frame);
+    }
+    let pcm = encode::trim_leading_silence(pcm, sample_rate);
     let encoded =
         tokio::task::spawn_blocking(move || encode::encode(format, &pcm, sample_rate)).await;
     match encoded {
