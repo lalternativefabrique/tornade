@@ -35,6 +35,7 @@ import (
 	"github.com/lalternativefabrique/vvaves/core/internal/audio"
 	"github.com/lalternativefabrique/vvaves/core/internal/challenge"
 	"github.com/lalternativefabrique/vvaves/core/internal/config"
+	"github.com/lalternativefabrique/vvaves/core/internal/crawl"
 	"github.com/lalternativefabrique/vvaves/core/internal/httpapi"
 	"github.com/lalternativefabrique/vvaves/core/internal/pagecache"
 	"github.com/lalternativefabrique/vvaves/core/internal/render"
@@ -70,10 +71,15 @@ func main() {
 
 	apps, keys := buildRegistry(cfg)
 
+	crawlStore, crawlQueue := buildCrawl(cfg)
+
 	deps := httpapi.Deps{
 		Providers:         buildProviders(cfg),
 		Renderer:          browser,
 		Cache:             challenge.GuardCache(buildPageCache(cfg)),
+		CrawlStore:        crawlStore,
+		CrawlQueue:        crawlQueue,
+		CrawlMaxRunes:     cfg.CrawlMaxRunes,
 		Reader:            reader,
 		Primer:            primer,
 		SearchDeadline:    cfg.SearchDeadline,
@@ -97,6 +103,14 @@ func main() {
 	}
 
 	srv := &http.Server{Addr: cfg.Addr, Handler: mux}
+
+	crawlCtx, stopCrawls := context.WithCancel(context.Background())
+	defer stopCrawls()
+	go func() {
+		if err := httpapi.Crawler(deps).Run(crawlCtx); err != nil && !errors.Is(err, context.Canceled) {
+			log.Printf("vvaves: crawl runner stopped: %v", err)
+		}
+	}()
 
 	go func() {
 		log.Printf("vvaves: listening on %s", cfg.Addr)
@@ -196,6 +210,28 @@ func buildPageCache(cfg config.Config) fetch.Cache {
 	}
 	log.Printf("vvaves: page cache shared through %s", cfg.NatsURL)
 	return cache
+}
+
+// buildCrawl keeps crawl jobs in NATS when a broker is configured, so any
+// replica runs a job and any replica answers for it; without one they stay
+// in this process, which a laptop is fine with.
+func buildCrawl(cfg config.Config) (crawl.Store, crawl.Queue) {
+	if cfg.NatsURL == "" {
+		return crawl.NewMemoryStore(), crawl.NewMemoryQueue()
+	}
+	nc, _, err := natsbus.GetSharedConnection()
+	if err != nil {
+		log.Fatalf("vvaves: NATS_URL: %v", err)
+	}
+	store, err := crawl.NewNATSStore(nc, cfg.CrawlMaxBytes)
+	if err != nil {
+		log.Fatalf("vvaves: crawl store: %v", err)
+	}
+	queue, err := crawl.NewNATSQueue(nc)
+	if err != nil {
+		log.Fatalf("vvaves: crawl queue: %v", err)
+	}
+	return store, queue
 }
 
 // buildAudio wires the reader that serves readings and the primer that reads

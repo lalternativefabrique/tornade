@@ -16,6 +16,7 @@ import (
 	"github.com/lalternative/packages/go/search"
 	"github.com/lalternative/packages/go/search/fetch"
 
+	"github.com/lalternativefabrique/vvaves/core/internal/crawl"
 	"github.com/lalternativefabrique/vvaves/signed"
 )
 
@@ -35,6 +36,13 @@ type Deps struct {
 
 	SearchDeadline   time.Duration
 	RenderMaxTimeout time.Duration
+
+	// CrawlStore and CrawlQueue back /crawl. Nil leaves it unconfigured;
+	// /map needs neither, it answers within the request.
+	CrawlStore crawl.Store
+	CrawlQueue crawl.Queue
+	// CrawlMaxRunes bounds each rendering of a crawled page.
+	CrawlMaxRunes int
 
 	// Verifier authenticates a /speak request that came straight from a
 	// browser. Nil accepts none, which is what a deployment reachable only
@@ -69,6 +77,9 @@ func New(d Deps) *http.ServeMux {
 	mux.Handle("POST /search", handleSearch(d))
 	mux.Handle("POST /fetch", handleFetch(d))
 	mux.Handle("POST /render", handleRender(d))
+	mux.Handle("POST /map", handleMap(d))
+	mux.Handle("POST /crawl", handleCrawl(d))
+	mux.Handle("GET /crawl/{id}", handleCrawlStatus(d))
 	mux.Handle("OPTIONS /speak", handleSpeakPreflight())
 	mux.Handle("POST /speak", withCORS(handleSpeak(d)))
 	mux.Handle("POST /speak/prime", handlePrime(d))
